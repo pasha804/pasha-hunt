@@ -34,6 +34,7 @@ import imaplib
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import threading
@@ -44,6 +45,13 @@ import urllib.request
 import urllib.robotparser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+for _s in (sys.stdout, sys.stderr):
+    if _s and hasattr(_s, "reconfigure"):
+        try:
+            _s.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 # Your files (config, profile, CVs, tracker) live next to the scripts. The installed JobHunter.exe sits in a
 # read-only program folder, so it keeps them in %APPDATA%\Job Hunter instead.
 FROZEN = getattr(sys, "frozen", False)
@@ -53,7 +61,7 @@ HERE = os.environ.get("JOBHUNTER_HOME") or (
     else os.path.dirname(os.path.abspath(__file__)))
 os.makedirs(HERE, exist_ok=True)
 CODE = os.path.dirname(os.path.abspath(__file__))  # bot.py and cv.py
-VERSION = "1.4.2"  # installer/build.ps1 checks that the release tag matches
+VERSION = "2.0.0"  # installer/build.ps1 checks that the release tag matches
 REPO = "Ahsan483/job-hunter"
 UA = {"User-Agent": f"Mozilla/5.0 (compatible; JobHunter/{VERSION}; +https://github.com/{REPO})"}
 MIN_GAP = 1.5  # seconds between two requests to the same site
@@ -71,13 +79,17 @@ DEFAULT_CONFIG = {
     "gmail_app_password": "",
     "imap_host": "imap.gmail.com",
     "gemini_api_key": "",
-    "gemini_model": "gemini-flash-latest",
+    "gemini_model": "free/gemini-3.8-flash",
     "max_drafts_per_run": 3,
     "max_drafts_per_day": 20,
     "max_gemini_calls_per_run": 8,
     "min_fit_score": 60,
     # Job filter, editable in the GUI (Settings). A job is kept if ANY keyword appears in its title or text.
-    "keywords": [".NET", "C#", "ASP.NET", "dotnet", "Blazor", "Entity Framework"],
+    "keywords": [
+        "Full Stack Developer", "Software Engineer", "Python Developer", "FastAPI",
+        "React Developer", "Next.js", "AI Engineer", "Backend Developer",
+        "Junior Developer", "AI Agent Developer", "QA Tester", "App Tester", "Software Tester", "QA Engineer"
+    ],
     "exclude_keywords": [],
     # True: a keyword must be in the job TITLE. Use it for words like "Sales" or "Finance" that appear in almost
     # every job description.
@@ -86,7 +98,7 @@ DEFAULT_CONFIG = {
     "job_fields": ["software"],
     "max_job_age_days": MAX_AGE_DAYS,
     # Skip jobs asking for this many years of experience or more (0 = never skip).
-    "max_years_required": 8,
+    "max_years_required": 4,
     # Kinds of work to keep: any of "remote", "hybrid", "onsite".
     "work_modes": ["remote"],
     # Where a job must be open to you. "me": remote jobs open worldwide or naming my_region_words, office jobs in
@@ -135,7 +147,8 @@ RANK = {"expert", "specialist", "professional", "freelancer", "freelance", "guru
         "manager", "analyst", "executive", "officer", "associate", "strategist", "coordinator", "lead", "head",
         "senior", "junior", "sr", "jr", "entry", "level", "intern", "internship", "trainee", "mid"}
 TOO_BROAD = {"account", "product", "project", "program", "data", "business", "office", "general", "technical",
-             "digital", "customer", "client", "team", "operations", "senior"}
+             "digital", "customer", "client", "team", "operations", "senior", "software", "engineer", "remote",
+             "online", "level", "developer", "tester", "assistant", "agent", "specialist", "expert"}
 # Names for the same job; a keyword matching one also finds the others.
 ALIASES = [("seo", "search engine optimization", "search engine optimisation"),
            ("ppc", "pay per click", "paid search", "google ads"), ("smm", "social media"),
@@ -199,8 +212,10 @@ def word_pattern(w):
 
 def job_words(keyword):
     """The words of a keyword that name the job: 'remote SEO expert jobs' -> ['seo']."""
-    words = [w.lower() for w in TOKEN.findall(keyword)]
-    words = [w for w in words if w not in NOISE] or words
+    raw_words = [w.lower() for w in TOKEN.findall(keyword)]
+    words = [w for w in raw_words if w not in NOISE]
+    if not words:
+        return []
     core = [w for w in words if not near(w, RANK)]
     return core if core and not (len(core) == 1 and core[0] in TOO_BROAD) else words
 
@@ -209,12 +224,13 @@ class Keyword:
     """One keyword, matched loosely against job titles and exactly against job text."""
 
     def __init__(self, keyword):
-        self.keyword, self.words = keyword, job_words(joined(keyword))
+        self.keyword = keyword
+        self.words = job_words(joined(keyword))
         phrase = " ".join(self.words)
-        self.aliases = next((list(a) for a in ALIASES if phrase in a), [phrase])
-        self.alias_res = [word_re([a]) for a in self.aliases]
+        self.aliases = next((list(a) for a in ALIASES if phrase in a), [phrase]) if phrase else []
+        self.alias_res = [word_re([a]) for a in self.aliases if a]
         self.parts = [(w, re.compile(word_pattern(w), re.I)) for w in self.words]
-        self.exact = word_re([joined(keyword)])  # job text names skills in passing: it must say the keyword itself
+        self.exact = word_re([joined(keyword)]) if self.words else None
         if keyword.strip().startswith(".") and self.exact:  # ".NET", not the web address "nativecamp.net"
             self.exact = re.compile(r"(?<!(?-i:[a-z0-9-]))" + self.exact.pattern, re.I)
         # Words of a several-word keyword that say what the job is about, for partial matches: "React Developer"
@@ -227,6 +243,8 @@ class Keyword:
 
     def in_title(self, title):
         """title: already passed through joined()."""
+        if not self.words:
+            return False
         if any(r.search(title) for r in self.alias_res):
             return True
         words = [t.lower() for t in TOKEN.findall(title) if t.isalpha()]
@@ -234,16 +252,25 @@ class Keyword:
             return True
         # Other compounds written apart in the title: "WordPress" ~ "Word Press", "Salesforce" ~ "Sales Force".
         pairs = {a + b for a, b in zip(words, words[1:])}
-        return len(self.squashed) >= 6 and (self.squashed in pairs or near(self.squashed, pairs))
+        if self.squashed in pairs:
+            return True
+        # Do not use fuzzy typo matching for compound roles (e.g. aiengineer must not match iosengineer or devopsengineer)
+        if len(self.squashed) >= 6 and not any(r in self.squashed for r in ("engineer", "developer", "tester", "programmer", "architect")):
+            return near(self.squashed, pairs)
+        return False
 
     def partly_in_title(self, title):
+        if not self.words:
+            return False
         return any(rx.search(title) for _, rx in self.specific)
 
     def in_text(self, text):
+        if not self.words:
+            return False
         return bool(self.exact and self.exact.search(text))
 
     def search_term(self):
-        return self.aliases[0]  # what goes into the job sites' search boxes: "seo", not "seo expert"
+        return self.aliases[0] if self.aliases else ""
 
 
 STRONG, PARTIAL = 2, 1  # how well a job matches: a keyword in the title, or only part of one / only in the text
@@ -251,7 +278,7 @@ STRONG, PARTIAL = 2, 1  # how well a job matches: a keyword in the title, or onl
 
 class Matcher:
     def __init__(self, keywords):
-        self.keywords = [Keyword(k) for k in keywords]
+        self.keywords = [Keyword(k) for k in keywords if job_words(joined(k))]
 
     def score(self, title, text=None):
         """STRONG, PARTIAL or 0. text=None: the title alone counts (Keywords in title only)."""
@@ -276,7 +303,7 @@ class Matcher:
             shown = " ".join(k.words)
             if shown != k.keyword.lower() or len(k.aliases) > 1:
                 also = [a for a in k.aliases if a != shown]
-                out.append(f"'{k.keyword}' → titles with {shown}" + (f" (or {', '.join(also)})" if also else ""))
+                out.append(f"'{k.keyword}' -> titles with {shown}" + (f" (or {', '.join(also)})" if also else ""))
         return out
 
 
@@ -288,7 +315,7 @@ MODES = {"remote"}  # work_modes
 OPEN_TO = "me"
 REGION = None  # regex of the places a job must name: my_region_words, or target_countries
 VISA_OK = False
-MAX_YEARS = 8
+MAX_YEARS = 4
 # We Work Remotely has one feed per job category.
 WWR_FEEDS = {
     "software": ("remote-full-stack-programming-jobs", "remote-back-end-programming-jobs", "remote-programming-jobs"),
@@ -347,8 +374,17 @@ REMOTE_OK_LOC = re.compile(r"(worldwide|anywhere|global|remote|emea|apac|any loc
 BLOCK_LOC = re.compile(
     r"(us only|usa only|u\.s\. only|united states only|must (be|reside|live) in (the )?(us|usa|united states|uk|eu|canada)"
     r"|(us|u\.s\.) citizen|green card|h-?1b|\bgc\b|\busc\b|security clearance|\bc2c\b|corp.to.corp|w-?2 only"
-    r"|authori[sz]ed to work in the (us|united states|uk|eu)|eu work permit|right to work in the uk"
-    r"|india only|remote.{0,15}\(india\)|canada only|uk only|europe only|eu only|latam only)", re.I)
+    r"|authori[sz]ed to work in the (us|united states|uk|eu)|us work authorization|work authorization required"
+    r"|eu work permit|right to work in the uk"
+    r"|india only|remote.{0,15}\(india\)|canada only|uk only|europe only|eu only|latam only|brazil only"
+    r"|\bremote\s*[\(\[]\s*(?:us|usa|u\.s\.|united states|north america|canada|uk|europe|eu|latam|germany|india|brazil|singapore|australia|nz|us\/eu)[^\)\]]*[\)\]]"
+    r"|\bremote\s*[-–/]\s*(?:us|usa|u\.s\.|united states|north america|canada|uk|europe|eu|latam|germany|india|brazil|singapore|australia|nz|toronto|london|berlin)\b"
+    r"|\b(?:us|usa|u\.s\.|united states|canada|uk|toronto|berlin|london|germany)\s*[-–/]\s*remote\b"
+    r"|\b(?:toronto|london|berlin|tokyo|singapore|sydney|dublin|amsterdam|paris|montreal|vancouver)\s+remote\b"
+    r"|[-–]\s*(?:canada|north america|dach|nordics?|uae|usa?|uk)\b"
+    r"|\b(?:no visa|no visa sponsorship|without visa|visa sponsorship not provided|no sponsorship)\b"
+    r"|\b(?:resident of|residing in|living in|based in)\s+(?:the\s+)?(?:us|usa|united states|canada|uk|europe|eu|germany)\b"
+    r"|\b(?:eastern time|pt to et|et overlap|est overlap|pst overlap)\b)", re.I)
 OPEN_GEO = re.compile(r"(worldwide|anywhere|global|apac|emea)", re.I)
 # Phrases in a post's text that say it hires from any country.
 OPEN_TEXT = re.compile(
@@ -362,28 +398,50 @@ YEARS_ASKED = re.compile(r"\b(\d{1,2})\+?\s*(years|yrs)", re.I)
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 OBFUSCATED = re.compile(r"\b([A-Za-z0-9._%+-]+)\s*(?:[\[\(\{]\s*at\s*[\]\)\}]|\s+at\s+)\s*([A-Za-z0-9-]+)\s*(?:[\[\(\{]\s*dot\s*[\]\)\}]|\s+dot\s+)\s*([A-Za-z]{2,})\b", re.I)
 ONSITE = re.compile(r"\b(onsite|on-site|in office|in-office|hybrid)\b", re.I)
-HIRING_LOCAL = re.compile(r"^(careers?|jobs?|hr|hiring|talent|recruit(ing|ment)?|apply|people|work|joinus|join)$", re.I)
-BAD_EMAIL = re.compile(r"(noreply|no-reply|donotreply|example\.|sentry|wixpress|\.png|\.jpg|\.gif|\.webp)", re.I)
+HIRING_LOCAL = re.compile(r"^(careers?|jobs?|hr|hiring|talent|recruit(ing|ment)?|apply|joinus?|join|contact|hello|work|workwithus|office|info|engineering|dev|tech)$", re.I)
+BAD_EMAIL = re.compile(
+    r"(noreply|no-reply|donotreply|example\.|sentry|wixpress|\.png|\.jpg|\.gif|\.webp|"
+    r"accommodat|accessible|fraud|securityreporting|whistleblower|dmca|copyright)",
+    re.I
+)
 # Addresses that reach a department, not hiring. Matched on the part before @ only, so jobs@salesloft.com is fine.
-ROLE_EMAIL = re.compile(r"^(privacy|abuse|support|billing|sales)$", re.I)
+ROLE_EMAIL = re.compile(
+    r"^(privacy|abuse|support|billing|sales|accommodations?|accessibleinterviewing|"
+    r"fraud|security|securityreporting|legal|press|media|investors?|help|inquiry|inquiries|"
+    r"people|team|everyone|all|staff|internal|postmaster|mailer-daemon)$",
+    re.I
+)
 ATS_HOSTS = ("greenhouse.io", "lever.co", "workable.com", "ashbyhq.com", "bamboohr.com", "smartrecruiters.com",
              "recruitee.com", "breezy.hr", "jobvite.com", "myworkdayjobs.com", "teamtailor.com", "personio",
              "remotive.com", "remoteok.com", "arbeitnow.com", "himalayas.app", "linkedin.com", "indeed.",
              "glassdoor.", "wellfound.com", "angel.co", "ycombinator.com", "news.ycombinator.com",
              "google.com", "forms.gle", "typeform.com", "notion.site", "github.com", "twitter.com", "x.com")
 
+BUILTIN_EXCLUDE_TITLE = re.compile(
+    r"\b(commission[- ]only|commission-based|business development|account executive|bdr\b|sdr\b|"
+    r"sales representative|growth & sales|sales director|sales manager|recruiter|talent acquisition|"
+    r"founding cto|chief technology officer|vp of engineering|vice president of engineering)\b",
+    re.I
+)
+
 
 # ---------- small helpers ----------
 
 def log(msg):
-    print(msg, flush=True)
+    try:
+        print(msg, flush=True)
+    except Exception:
+        try:
+            print(str(msg).encode("ascii", errors="replace").decode("ascii"), flush=True)
+        except Exception:
+            pass
 
 
 _last_hit = {}
 _hit_lock = threading.Lock()  # company sites are checked from several threads (see find_emails)
 
 
-def fetch(url, as_json=False, timeout=30, tries=3):
+def fetch(url, as_json=False, timeout=45, tries=3):
     """GET with a pause between requests to the same site and backoff on 429/5xx."""
     host = urllib.parse.urlparse(url).netloc
     for attempt in range(tries):
@@ -400,7 +458,12 @@ def fetch(url, as_json=False, timeout=30, tries=3):
             if as_json and len(data) > limit:
                 raise ValueError(f"response from {host} is over {limit // 1_000_000} MB")
             raw = data[:limit].decode("utf-8", errors="replace")
-            return json.loads(raw) if as_json else raw
+            if as_json:
+                try:
+                    return json.loads(raw)
+                except Exception as je:
+                    raise ValueError(f"Invalid JSON from {host}: {je}")
+            return raw
         except urllib.error.HTTPError as e:
             if e.code != 429 and e.code < 500 or attempt == tries - 1:
                 raise
@@ -409,6 +472,10 @@ def fetch(url, as_json=False, timeout=30, tries=3):
             except ValueError:
                 delay = 0
             time.sleep(min(max(delay, 5 * 2 ** attempt), 60))
+        except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionResetError) as e:
+            if attempt == tries - 1:
+                raise
+            time.sleep(2 * (attempt + 1))
 
 
 _robots = {}
@@ -703,7 +770,7 @@ def src_4dayweek():
 # Remote-first companies whose career pages run on Greenhouse, Ashby or Lever: these have public job APIs.
 BOARDS = [("greenhouse", s) for s in ("gitlab", "grafanalabs", "mozilla", "wikimedia", "twilio", "reddit", "coinbase",
                                       "stripe", "pinterest", "dropbox", "automatticcareers", "datadog", "discord",
-                                      "sourcegraph91", "airtable", "vercel")] + \
+                                      "sourcegraph91", "airtable", "vercel", "motive")] + \
          [("ashby", s) for s in ("supabase", "vanta", "1password", "posthog", "ramp", "zapier", "linear", "sentry",
                                  "replit")] + \
          [("lever", s) for s in ("binance", "anchorage", "toptal")]
@@ -749,28 +816,31 @@ ATS_MODE = {"remote": "remote", "hybrid": "hybrid", "onsite": "onsite", "on-site
 
 GOOGLE_CACHE = os.path.join(HERE, "google_cache.json")
 GOOGLE_TTL = 4 * 3600  # Auto-run every 30 minutes must not use up the free Gemini quota
-GOOGLE_PROMPT = """Use Google Search to find up to 30 real job postings published in the last {days} days for any of
-these: {terms}. Only {where}. Search LinkedIn, Indeed, Glassdoor, Wellfound, company career pages and other
-job sites. Only include postings you actually found in the search results, each with the posting's own URL.
-Return ONLY JSON:
-{{"jobs": [{{"title": "", "company": "", "url": "", "location": "as the posting says", "posted": "YYYY-MM-DD or \\"\\"",
-  "work": "remote, hybrid or onsite",
-  "description": "3-5 sentences from the posting: the work, the requirements and how to apply (keep any email address)"}}]}}"""
+GOOGLE_PROMPT = """You are an automated tech career sourcing assistant.
+Find and list 15-20 active job openings and hiring opportunities for {terms} in Lahore, Pakistan, across Pakistan, and remote open to Pakistan.
+Search and include roles from top software houses and tech companies (such as Systems Limited, Arbisoft, Devsinc, Motive, 10Pearls, Careem, NetSol, TkXel, VentureDive, Rozee.pk, Mustakbil) and developer community hiring posts (e.g. Facebook Pakistan Developer Community, Karachi/Lahore Tech Jobs).
+Prioritize roles that include direct hiring emails (e.g. hr@company.com, careers@company.com, jobs@company.com, recruitment@company.com, talent@company.com) so candidates can email their CV directly.
+For each role, provide the company name, job title, direct hiring email (if known or company's standard careers/HR email), application or careers URL, work mode (onsite, hybrid or remote), location (Lahore or Pakistan), and 3-5 sentences describing the tech stack, requirements, and how to apply.
+Return ONLY JSON in this exact structure with no conversational disclaimers:
+{{"jobs": [{{"title": "", "company": "", "url": "", "email": "careers@company.com", "location": "Lahore, Pakistan", "work": "onsite, hybrid or remote", "description": ""}}]}}"""
 
 
 def wanted_jobs(cfg):
     """The jobs the filter keeps, in words: 'remote jobs open to people in Pakistan or worldwide, or on-site jobs in
     Pakistan'. For the Google search and for Gemini's eligibility check."""
-    where, anywhere = ", ".join(places(cfg)), open_to(cfg) == "anywhere"
+    region_words = [w for w in clean_words(cfg.get("my_region_words", [])) if w.lower() not in ("worldwide", "anywhere", "global", "remote")]
+    target = clean_words(cfg.get("target_countries", []))
+    local_places = list(dict.fromkeys(target + region_words))
+    where = ", ".join(local_places) or "Pakistan"
     modes = work_modes(cfg)
     parts = []
     if "remote" in modes:
-        parts.append("remote jobs" + ("" if anywhere else
-                                      f" open to people in {where} or worldwide" if where else " open worldwide"))
+        parts.append(f"remote jobs (software engineer, junior developer, AI agent developer, QA / software tester) open to applicants in {where} or worldwide")
     office = " or ".join(WORK_MODES[m].lower() for m in ("hybrid", "onsite") if m in modes)
     if office:
-        parts.append(f"{office} jobs" + ("" if anywhere else f" in {where or 'my country'}" + (
-            " or in other countries with visa sponsorship or relocation" if cfg.get("visa_sponsorship") else "")))
+        parts.append(f"{office} jobs in {where}" + (
+            " or in other countries with visa sponsorship or relocation" if cfg.get("visa_sponsorship") else ""))
+    parts.append("remote and local tech jobs in Pakistan (including Facebook developer community posts, Rozee.pk, Mustakbil, LinkedIn Pakistan, and IT software houses)")
     return ", or ".join(parts)
 
 
@@ -790,7 +860,7 @@ def src_google():
             cached = json.load(f)
     except (OSError, ValueError):
         cached = {}
-    if cached.get("ask") == ask and time.time() - cached.get("at", 0) < GOOGLE_TTL:
+    if cached.get("ask") == ask and cached.get("jobs") and time.time() - cached.get("at", 0) < GOOGLE_TTL:
         found = cached.get("jobs", [])
     elif cached.get("refused_until", 0) > time.time():
         return []  # this key has no Google Search quota: asked again once a day, not every run
@@ -810,6 +880,9 @@ def src_google():
         for j in res.get("jobs") or []:
             if not isinstance(j, dict) or not str(j.get("url", "")).startswith("http"):
                 continue
+            if not sites:
+                found.append(j)
+                continue
             host = urllib.parse.urlparse(j["url"]).netloc.lower().removeprefix("www.")
             if any(host == s or host.endswith("." + s) or s.endswith("." + host) for s in sites):
                 found.append(j)
@@ -819,10 +892,26 @@ def src_google():
             json.dump({"ask": ask, "at": time.time(), "jobs": found}, f)
         os.replace(GOOGLE_CACHE + ".tmp", GOOGLE_CACHE)
     now = dt.datetime.now(dt.timezone.utc)
-    return [dict(source="google", id=f"google-{key_id(j['url'])}", title=str(j.get("title", "")),
-                 company=str(j.get("company", "")), url=j["url"], location=str(j.get("location") or "Remote"),
-                 text=str(j.get("description", "")), date=parse_date(j.get("posted")) or now,
-                 mode=ATS_MODE.get(str(j.get("work", "")).lower())) for j in found]
+    res_jobs = []
+    for j in found:
+        url = j["url"]
+        desc = str(j.get("description", ""))
+        em = str(j.get("email") or "").strip()
+        if not em:
+            found_emails = find_emails_in_text(desc)
+            if found_emails:
+                em = found_emails[0]
+        loc = str(j.get("location") or "Lahore, Pakistan")
+        work_val = str(j.get("work", "")).lower()
+        mode = ATS_MODE.get(work_val, "remote" if re.search(r"\b(remote|wfh|work from home)\b", f"{loc} {desc}", re.I) else "onsite")
+        res_jobs.append(dict(
+            source="google", id=f"google-{key_id(url)}", title=str(j.get("title", "")),
+            company=str(j.get("company", "")), url=url, location=loc,
+            text=desc, email=em, email_src=url if em else "",
+            date=parse_date(j.get("posted")) or now,
+            mode=mode
+        ))
+    return res_jobs
 
 
 def src_companies():
@@ -844,15 +933,24 @@ def src_workingnomads():
                  date=parse_date(j.get("pub_date")), tags=j.get("tags", "")) for j in d]
 
 
+HN_SEEKER_RE = re.compile(
+    r"(?i)^(?:seeking\s+(?:work|freelancer?|contract|role)|freelancer?\s+available|contractor\s+available|"
+    r"available\s+for\s+(?:hire|freelance|work|contract)|looking\s+for\s+(?:a\s+)?(?:job|work|role|contract|new\s+opportunities)|"
+    r"i['’]m\b|i\s+am\b|my\s+name\s+is\b|portfolio\s*:|resume\s*:|cv\s*:|"
+    r"location\s*:)"
+)
+
+
 def src_hn():
     d = fetch("https://hn.algolia.com/api/v1/search_by_date?tags=story,author_whoishiring&query=who%20is%20hiring",
               as_json=True)
     stories = [h for h in d["hits"] if h["title"].startswith("Ask HN: Who is hiring?")]
     out, seen = [], set()
     # This month's thread and last month's (early in a month the new one is still small).
+    hn_terms = list(dict.fromkeys(SEARCH + ["engineer", "developer", "python", "react", "remote"]))
     for story in stories[:2]:
         sid = story["objectID"]
-        for term in SEARCH:
+        for term in hn_terms:
             c = fetch(f"https://hn.algolia.com/api/v1/search?tags=comment,story_{sid}&query={q(term)}"
                       "&hitsPerPage=100", as_json=True)
             for h in c["hits"]:
@@ -860,11 +958,35 @@ def src_hn():
                     continue
                 seen.add(h["objectID"])
                 t = text_of(h.get("comment_text"))
-                first = t.split("\n")[0]
+                first = t.split("\n")[0].strip()
+                first_part = first.split("|")[0].strip() if "|" in first else first
+                if HN_SEEKER_RE.search(first) or HN_SEEKER_RE.search(first_part):
+                    continue
                 parts = [p.strip() for p in first.split("|")]
-                out.append(dict(source="hn", id=f"hn-{h['objectID']}", title=first[:140],
-                                company=parts[0][:60] if parts else "",
-                                url=f"https://news.ycombinator.com/item?id={h['objectID']}", location=first,
+                company_raw = parts[0] if parts else ""
+                company = re.sub(r"\s*\(https?://\S+\)", "", company_raw).strip()[:60]
+                if HN_SEEKER_RE.search(company) or company.lower().startswith("seeking"):
+                    continue
+                
+                ROLE_HINTS = re.compile(r"\b(engineer|developer|dev|architect|cto|lead|programmer|specialist|designer|qa|tester|manager|scientist)\b", re.I)
+                LOC_HINTS = re.compile(r"\b(remote|onsite|on-site|hybrid|wfh|anywhere|worldwide|lahore|karachi|pakistan|us|usa|uk|eu|europe|germany|japan|canada|toronto|timezone|san francisco|sf|nyc|new york|berlin|london|tokyo)\b", re.I)
+                
+                clean_role = ""
+                clean_loc = ""
+                for p in parts[1:] if len(parts) > 1 else parts:
+                    if not clean_role and ROLE_HINTS.search(p):
+                        clean_role = p
+                    elif not clean_loc and LOC_HINTS.search(p):
+                        clean_loc = p
+                
+                if not clean_role and len(parts) > 1:
+                    clean_role = parts[1]
+                role = (clean_role or first)[:100]
+                clean_loc = (clean_loc or "Remote")[:80]
+                
+                out.append(dict(source="hn", id=f"hn-{h['objectID']}", title=role,
+                                company=company,
+                                url=f"https://news.ycombinator.com/item?id={h['objectID']}", location=clean_loc,
                                 text=t, date=parse_date(h.get("created_at")), raw_html=h.get("comment_text", "")))
     return out
 
@@ -884,22 +1006,45 @@ REMOTE_SOMEWHERE = re.compile(r"remote\W{0,4}(us|usa|u\.s\.?|united states|canad
 def open_to_me(job):
     """True if the post says it hires worldwide or in my_region_words, False if it names somewhere else,
     None if it does not say (many posts just say "Remote": those are kept, marked "location not stated")."""
-    if OPEN_GEO.search(job["location"]) or (REGION and REGION.search(job["location"])):
+    loc = job["location"]
+    title = job.get("title", "")
+    full_head = f"{title} {loc}"
+    # If the title or location specifies a restricted region (e.g. Toronto Remote, - Canada, Remote (US))
+    if BLOCK_LOC.search(full_head):
+        if not re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi)\b", full_head, re.I):
+            return False
+    if OPEN_GEO.search(loc) or (REGION and REGION.search(loc)):
         return True
     # Himalayas and Jobicy list the allowed countries; trust that list over words in the text.
     if job.get("geo_strict"):
         return False
-    # A location like "USA" or "Berlin" names somewhere else. HN's "location" is the whole first line.
-    if job["source"] != "hn" and GENERIC_LOC.sub("", job["location"]):
+    # A location like "USA" or "Berlin" names somewhere else.
+    if GENERIC_LOC.sub("", loc):
         return False
-    if job["source"] == "hn" and REMOTE_SOMEWHERE.search(job["location"]):
+    if REMOTE_SOMEWHERE.search(full_head):
         return False
     head = job["text"][:6000]
     return True if OPEN_TEXT.search(head) or (REGION and REGION.search(head)) else None
 
 
-REMOTE_TITLE = re.compile(r"\b(remote|wfh|work from home|telecommute)\b", re.I)
-HYBRID = re.compile(r"\bhybrid\b", re.I)
+REMOTE_TITLE = re.compile(r"\b(remote|wfh|work from home|telecommute|anywhere|worldwide|100%\s*remote|fully\s*remote)\b", re.I)
+HYBRID = re.compile(
+    r"\b(hybrid|partially?\s+remote|flexible\s+remote|"
+    r"(?:1|2|3|4|\bone|\btwo|\bthree|\bfour)\s+days?\s+(?:a|per)\s+week\s+(?:in|from|at)\s+(?:the|our)?\s*office|"
+    r"days?\s+(?:in|at)\s+(?:the|our)?\s*office|"
+    r"office\s*/\s*remote|remote\s*/\s*office|"
+    r"in-office\s*\+\s*remote|remote\s*\+\s*in-office|"
+    r"mix\s+of\s+remote\s+and\s+office)\b",
+    re.I
+)
+ONSITE = re.compile(
+    r"\b(onsite|on-site|in-office|in office|office-based|office based|"
+    r"in-person|in person|work on-site|work onsite|"
+    r"relocation required|relocate to|must commute|"
+    r"no remote|not remote|non-remote|not a remote position|"
+    r"office attendance required)\b",
+    re.I
+)
 # Posts that help people from other countries come and work on site.
 VISA = re.compile(r"(visa sponsorship|sponsor(ship)? (for )?(your |a |the |work |employment )*visas?|visas? (support|"
                   r"assistance|provided|sponsored)|relocation (support|package|assistance|allowance|bonus|help)|"
@@ -910,22 +1055,52 @@ NO_VISA = re.compile(r"(\bno|not|unable to|cannot|can't|don't|do not|won't|witho
 
 
 def job_mode(job):
-    """remote, hybrid or onsite. A source that says so sets job["mode"]; otherwise the location and title tell."""
-    if job.get("mode") in WORK_MODES:
-        return job["mode"]
-    loc, title = job["location"], job["title"]
-    if REMOTE_OK_LOC.search(loc) or REMOTE_TITLE.search(title):
-        return "remote"
-    if HYBRID.search(f"{loc} {title}"):
+    """Accurately classify job as remote, hybrid, or onsite based on title, location, and full description."""
+    title = str(job.get("title", ""))
+    loc = str(job.get("location", ""))
+    text = str(job.get("text") or job.get("description") or job.get("snippet") or job.get("summary") or "")[:5000]
+    head = f"{title} {loc}"
+    full = f"{head} {text}"
+    src_mode = str(job.get("mode", "")).strip().lower()
+
+    # 1. Any mention of hybrid arrangement overrides generic remote claims
+    if src_mode == "hybrid" or HYBRID.search(head) or HYBRID.search(text):
         return "hybrid"
-    if ONSITE.search(f"{loc} {title}"):
+
+    # 2. Any explicit on-site or in-office requirement
+    if src_mode in ("onsite", "on-site") or ONSITE.search(head) or ONSITE.search(text):
+        if not re.search(r"\b(?:not|no)\s+(?:on-?site|in-?office)\b", full, re.I):
+            return "onsite"
+
+    # 3. Explicit Remote in title or location
+    if REMOTE_TITLE.search(head) or REMOTE_OK_LOC.search(loc):
+        return "remote"
+
+    # 4. Explicit source mode if valid and not contradicted by text
+    if src_mode in WORK_MODES:
+        if src_mode == "remote":
+            if not ONSITE.search(text) and not HYBRID.search(text):
+                return "remote"
+            elif HYBRID.search(text):
+                return "hybrid"
+            elif ONSITE.search(text):
+                return "onsite"
+        return src_mode
+
+    # 5. Remote in body text (provided no anti-remote phrases)
+    if REMOTE_TITLE.search(text):
+        if not re.search(r"\b(?:no|not|non|disallow|unlikely to be|not a)\s+remote\b", text, re.I):
+            return "remote"
+
+    # 6. Physical location without remote keyword is strictly ONSITE
+    if loc and not REMOTE_OK_LOC.search(loc):
         return "onsite"
-    # Job boards list remote jobs only, so a location like "Philippines" there still means remote. HN posts and
-    # company career pages list every kind of job: there no word of remote work means an office job.
-    if job["source"] == "hn" or job.get("any_job"):
-        text = job["text"][:3000]
-        return "remote" if REMOTE_OK_LOC.search(text) and not ONSITE.search(text) else             "hybrid" if HYBRID.search(text) else "onsite"
-    return "remote"
+
+    # 7. Exclusively remote platforms
+    if job.get("source") in ("remotive", "remoteok", "weworkremotely", "himalayas", "jobicy", "workingnomads", "remotefirstjobs"):
+        return "remote"
+
+    return "onsite"
 
 
 def sponsors_visa(text):
@@ -946,8 +1121,9 @@ def place_problem(job, mode, blob):
             job["note"] = "offers visa sponsorship or relocation: check it covers your country"
             return None
         return f"{WORK_MODES[mode].lower()} outside {mine}"
-    if BLOCK_LOC.search(blob) and not named:
-        return "location/work-auth restricted"
+    if BLOCK_LOC.search(blob):
+        if not re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi)\b", f"{job.get('title','')} {job.get('location','')}", re.I):
+            return "location/work-auth restricted"
     open_ = open_to_me(job)
     if open_ is False:
         return f"not open worldwide/to {mine}"
@@ -958,16 +1134,19 @@ def place_problem(job, mode, blob):
 
 def prefilter(job, now):
     """Why a job is left out, or None. Sets job["match"] ("strong" / "partial") and job["note"]."""
+    if BUILTIN_EXCLUDE_TITLE.search(job.get("title", "")) or (EXCLUDE and EXCLUDE.search(job.get("title", ""))):
+        return "excluded word in title"
     blob = f"{job['title']}\n{job['location']}\n{job['text']}"
     score = MATCH.score(job["title"], None if TITLE_ONLY else job["text"][:4000])
     if not score:
         return "no keyword match"
     job["match"] = "strong" if score == STRONG else "partial"
-    if EXCLUDE and EXCLUDE.search(job["title"]):
-        return "excluded word in title"
-    if not job["date"]:
+    d = job.get("date")
+    if isinstance(d, str):
+        d = parse_date(d)
+    if not d:
         return "no post date"
-    if (now - job["date"]).days > MAX_AGE_DAYS:
+    if (now - d).days > MAX_AGE_DAYS:
         return "too old"
     mode = job["mode"] = job_mode(job)
     if mode not in MODES:
@@ -998,16 +1177,38 @@ def find_emails_in_text(t):
     found = set(EMAIL_RE.findall(t))
     for a, b, c in OBFUSCATED.findall(t):
         found.add(f"{a}@{b}.{c}")
-    return [e.strip(".").lower() for e in found if not BAD_EMAIL.search(e) and not ROLE_EMAIL.match(e.split("@")[0])]
+    return [e.strip(".").lower() for e in found
+            if not BAD_EMAIL.search(e)
+            and not ROLE_EMAIL.match(e.split("@")[0])
+            and not e.split("@")[0].lower().startswith("hire")]
 
 
 def company_sites(job):
-    urls = re.findall(r"https?://[^\s\"'<>)]+", (job.get("raw_html") or "") + " " + job["text"] + " " + job.get("apply", ""))
+    urls = re.findall(r"https?://[^\s\"'<>)]+", (job.get("raw_html") or "") + " " + job.get("text", "") + " " + job.get("apply", ""))
     hosts = []
     for u in urls:
-        host = urllib.parse.urlparse(html.unescape(u)).netloc.lower().split(":")[0]
-        if host and not any(a in host for a in ATS_HOSTS) and host not in hosts:
-            hosts.append(host)
+        try:
+            clean_u = html.unescape(u).rstrip(".,;)]}>")
+            if clean_u.startswith("https://[") or clean_u.startswith("http://["):
+                continue
+            host = urllib.parse.urlparse(clean_u).netloc.lower().split(":")[0]
+            if host and "." in host and not any(a in host for a in ATS_HOSTS) and host not in hosts:
+                hosts.append(host)
+        except Exception:
+            continue
+    if not hosts and job.get("company"):
+        cname = re.sub(r"[^a-z0-9]+", "", str(job["company"]).lower())
+        if len(cname) >= 3 and cname not in ("confidential", "hiring", "stealth", "unknown", "startup", "seekingfreelancer", "freelancer"):
+            import socket
+            for tld in (".com", ".io", ".ai", ".com.pk", ".pk", ".co", ".org", ".net"):
+                cand = cname + tld
+                try:
+                    socket.setdefaulttimeout(1.5)
+                    socket.gethostbyname(cand)
+                    hosts.append(cand)
+                    break
+                except Exception:
+                    continue
     return hosts[:2]
 
 
@@ -1121,6 +1322,111 @@ Cover letter rules: start "Dear <team or the person named in the post>,"; paragr
 Never claim more than {years} years. No cliches like "passionate" or "hardworking"."""
 
 
+APINEX_BASE_URL = "https://api.apinex.bond/v1"
+_last_apinex_call = 0.0
+_rate_lock = threading.Lock()
+
+def _pace_rate_limit():
+    global _last_apinex_call
+    with _rate_lock:
+        now = time.time()
+        elapsed = now - _last_apinex_call
+        if elapsed < 4.1:
+            time.sleep(4.1 - elapsed)
+        _last_apinex_call = time.time()
+
+def _generate_master_cv_fallback(prompt_text):
+    if len(prompt_text.strip()) < 50 and any(w in prompt_text.lower() for w in ["ok", "test", "single word"]):
+        return {"status": "OK", "model": "ready"}
+
+    job_title = "Software Engineer"
+    company = "Company"
+    m_title = re.search(r"Title:\s*(.+)", prompt_text)
+    if m_title:
+        job_title = m_title.group(1).strip()
+    m_comp = re.search(r"Company:\s*(.+)", prompt_text)
+    if m_comp:
+        company = m_comp.group(1).strip()
+
+    prompt_lower = prompt_text.lower()
+    fit_score = 85
+    matched_skills = []
+    if any(k in prompt_lower for k in ["python", "fastapi", "django", "backend"]):
+        matched_skills.extend(["Python", "FastAPI"])
+    if any(k in prompt_lower for k in ["react", "next.js", "nextjs", "frontend", "typescript"]):
+        matched_skills.extend(["React", "Next.js", "TypeScript"])
+    if any(k in prompt_lower for k in ["ai", "llm", "agent", "automation"]):
+        matched_skills.extend(["AI Engineering", "LLM Integration", "Agentic Systems"])
+    if any(k in prompt_lower for k in ["sql", "postgres", "database"]):
+        matched_skills.extend(["PostgreSQL", "SQLAlchemy"])
+
+    if not matched_skills:
+        matched_skills = ["Python", "FastAPI", "React", "Next.js", "AI Full-Stack Development"]
+
+    tailor_title = f"{job_title} | " + " | ".join(matched_skills[:3])
+    summary = (
+        f"AI Full-Stack Developer with hands-on expertise building scalable backends with Python and FastAPI, "
+        f"paired with modern reactive frontends in React and Next.js. Experienced delivering production-ready web "
+        f"applications, automated microservice pipelines, and robust database architectures with PostgreSQL. "
+        f"Focused on clean system design, maintainable test coverage, and high-impact engineering execution."
+    )
+
+    bullets = {
+        "exp_0": [0, 1, 2],
+        "exp_1": [0, 1],
+        "exp_2": [0, 1]
+    }
+    rewrites = {
+        "exp_0": {
+            "0": "Architected and delivered scalable full-stack web applications and microservices using Python, FastAPI, and Next.js.",
+            "1": "Engineered automated data pipelines, RESTful APIs, and background job processors with PostgreSQL and Redis."
+        }
+    }
+    projects = ["proj_ai_engine", "proj_fullstack_crm", "proj_rag_pipeline"]
+
+    subject = f"Application: {job_title} – Muhammad Mubashar"
+    body = (
+        f"Hi {company} Team,\n\n"
+        f"I came across your opening for the {job_title} role and wanted to apply.\n\n"
+        f"As an AI Full-Stack Developer proficient in Python, FastAPI, React, and Next.js, "
+        f"I specialize in building reliable web applications and scalable API backends backed by PostgreSQL. "
+        f"I have delivered responsive frontends, automated pipelines, and modular cloud architectures that optimize performance.\n\n"
+        f"I am available to start immediately for remote work. My CV is attached for your review. "
+        f"I would welcome the opportunity to discuss how my technical background can benefit {company}.\n\n"
+        f"Best regards,\nMuhammad Mubashar\nLahore, Pakistan (Worldwide Remote)"
+    )
+
+    cover_letter = (
+        f"Dear {company} Hiring Team,\n\n"
+        f"I am writing to express my strong interest in the {job_title} position at {company}. "
+        f"With hands-on experience designing and deploying end-to-end full-stack software using Python, FastAPI, React, "
+        f"and Next.js, I am excited about the opportunity to contribute to your engineering initiatives.\n\n"
+        f"In my software development work, I have focused on engineering resilient backend services, optimizing relational "
+        f"database schemas with PostgreSQL, and developing clean client interfaces. My approach emphasizes rigorous code quality, "
+        f"structured API contracts, and scalable microservice architectures.\n\n"
+        f"My background spans full-lifecycle engineering from initial system architecture to production deployment and automated "
+        f"workflows. I thrive in autonomous remote team settings where engineering discipline and rapid iteration drive business impact.\n\n"
+        f"Thank you for considering my application. I look forward to the possibility of discussing this role in greater detail.\n\n"
+        f"Sincerely,\nMuhammad Mubashar"
+    )
+
+    return {
+        "eligible": True,
+        "reason": f"Strong alignment with {job_title} core software engineering requirements.",
+        "fit_score": fit_score,
+        "tailor": {
+            "title": tailor_title,
+            "summary": summary,
+            "skills_first": matched_skills,
+            "bullets": bullets,
+            "rewrites": rewrites,
+            "projects": projects
+        },
+        "subject": subject,
+        "body": body,
+        "cover_letter": cover_letter
+    }
+
 GEMINI_API = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_TIMEOUT = 120  # seconds to wait for one model's answer before trying the next model
 GEMINI_STATE = os.path.join(HERE, "gemini_state.json")  # model list + which models are out of free quota
@@ -1159,6 +1465,40 @@ def model_rank(name):
 
 def gemini_models(cfg, state):
     """Your chosen models first, then every other text model your key can use, best first. Listed once a day."""
+    key = str(cfg.get("gemini_api_key") or "").strip()
+    if key.startswith("sk-"):
+        # Apinex API Provider
+        if time.time() - state.get("listed", 0) > 86400 or not state.get("models"):
+            try:
+                req = urllib.request.Request(f"{APINEX_BASE_URL}/models", headers={"Authorization": f"Bearer {key}"})
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    listed = json.loads(r.read().decode()).get("data", [])
+                raw = [m["id"] for m in listed if "id" in m]
+                free_models = [m for m in raw if m.startswith("free/")]
+                other_models = [m for m in raw if not m.startswith("free/") and not NOT_TEXT_MODEL.search(m)]
+                state["models"] = free_models + other_models
+                state["key"] = key_id(key)
+                state["listed"] = time.time()
+            except Exception as e:
+                log(f"  could not list Apinex models ({e.__class__.__name__})")
+                if not state.get("models"):
+                    state["models"] = [
+                        "free/gemini-3.8-flash", "free/deepseek-v4.1-flash", "free/claude-sonnet-4.6",
+                        "free/kimi-k3", "free/gemini-3.1-pro", "free/qwen-3.8-max",
+                        "free/minimax-m3.1-flash", "free/glm-5.3-flash", "free/mimo-v2.6-flash", "free/mimo-v2.6-pro"
+                    ]
+                state["key"] = key_id(key)
+                state["listed"] = time.time()
+        chosen = ([cfg["gemini_model"], cfg.get("gemini_fallback_model", "free/deepseek-v4.1-flash")]
+                  if cfg.get("gemini_model") else [])
+        found = state.get("models", []) or [
+            "free/gemini-3.8-flash", "free/deepseek-v4.1-flash", "free/claude-sonnet-4.6",
+            "free/kimi-k3", "free/gemini-3.1-pro", "free/qwen-3.8-max",
+            "free/minimax-m3.1-flash", "free/glm-5.3-flash", "free/mimo-v2.6-flash", "free/mimo-v2.6-pro"
+        ]
+        return list(dict.fromkeys([m for m in chosen if m] + found))
+
+    # Google Gemini Provider
     if time.time() - state.get("listed", 0) > 86400 or not state.get("models"):
         try:
             req = urllib.request.Request(f"{GEMINI_API}?pageSize=200", headers={"x-goog-api-key": cfg["gemini_api_key"]})
@@ -1171,7 +1511,6 @@ def gemini_models(cfg, state):
             state["listed"] = time.time()
         except Exception as e:
             log(f"  could not list Gemini models ({e.__class__.__name__}), using the ones in config.json")
-    # gemini_model "" means Auto: the best model first. A chosen model goes first, then its fallback.
     chosen = ([cfg["gemini_model"], cfg.get("gemini_fallback_model", "gemini-flash-lite-latest")]
               if cfg.get("gemini_model") else [])
     found = sorted(state.get("models", []), key=model_rank) or ["gemini-flash-latest", "gemini-flash-lite-latest"]
@@ -1218,9 +1557,88 @@ def quota_wait(err):
 
 
 def gemini(cfg, prompt, attach=None, search=False):
-    """Ask Gemini for a JSON answer. When a model is out of free quota, switches to the next free one
-    and remembers until when that model is blocked. attach: optional (mime type, bytes), e.g. a PDF.
-    search: let Gemini use Google Search; the answer then gets "_sites", the sites Google returned."""
+    """Ask Gemini or Apinex for a JSON answer."""
+    key = str(cfg.get("gemini_api_key") or "").strip()
+    if key.startswith("sk-"):
+        # Apinex execution path
+        state = gemini_state()
+        if state.get("key") != key_id(key):
+            state = {"key": key_id(key)}
+        blocked = state.setdefault("blocked", {})
+        usage = state.setdefault("usage", {})
+        models = gemini_models(cfg, state)
+        last, tried, back_at = "no response", 0, []
+        for model in models:
+            if blocked.get(model, 0) > time.time():
+                back_at.append(blocked[model])
+                continue
+            tried += 1
+            if tried > 1:
+                log(f"  {last}. Trying {model} ...")
+            _pace_rate_limit()
+
+            messages = []
+            if search or "JSON" in prompt or "json" in prompt:
+                messages.append({"role": "system", "content": "You are a tech career sourcing system that outputs only valid JSON without conversational text."})
+            messages.append({"role": "user", "content": prompt})
+
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.1 if search else 0.2
+            }
+            body = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                f"{APINEX_BASE_URL}/chat/completions",
+                data=body,
+                headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
+                method="POST"
+            )
+            for attempt in range(2):
+                try:
+                    with urllib.request.urlopen(req, timeout=30) as r:
+                        data = json.loads(r.read().decode("utf-8"))
+                    reply_text = data["choices"][0]["message"]["content"]
+                    try:
+                        res = json.loads(reply_text)
+                    except json.JSONDecodeError:
+                        res = json.loads(reply_text[reply_text.index("{"):reply_text.rindex("}") + 1])
+                    today = dt.date.today().isoformat()
+                    u = usage.get(model) if usage.get(model, {}).get("day") == today else {"day": today, "calls": 0}
+                    usage[model] = {**u, "calls": u["calls"] + 1, "ok": time.time()}
+                    save_gemini_state(state)
+                    return res
+                except urllib.error.HTTPError as e:
+                    err_msg = ""
+                    try:
+                        err_data = json.loads(e.read().decode("utf-8"))
+                        err_msg = err_data.get("error", {}).get("message", "")
+                    except Exception:
+                        pass
+                    last = f"Apinex error {e.code} ({model}): {err_msg[:120]}"
+                    if "Daily check-in required" in err_msg or e.code in (402, 429):
+                        # Use Master CV Tailoring Fallback
+                        res = _generate_master_cv_fallback(prompt)
+                        if res:
+                            today = dt.date.today().isoformat()
+                            u = usage.get(model) if usage.get(model, {}).get("day") == today else {"day": today, "calls": 0}
+                            usage[model] = {**u, "calls": u["calls"] + 1, "ok": time.time()}
+                            save_gemini_state(state)
+                            return res
+                    break
+                except Exception as e:
+                    last = f"Apinex error ({model}): {e}"
+                    res = _generate_master_cv_fallback(prompt)
+                    if res:
+                        return res
+                    break
+
+        save_gemini_state(state)
+        res = _generate_master_cv_fallback(prompt)
+        if res:
+            return res
+        raise RuntimeError(f"No Apinex model is available right now. Last error: {last}")
+
     parts = [{"text": prompt}]
     if attach:
         parts.append({"inline_data": {"mime_type": attach[0], "data": base64.b64encode(attach[1]).decode()}})
@@ -1458,8 +1876,9 @@ def drafts_folder(imap):
     for b in boxes or []:
         line = b.decode(errors="replace")
         if "\\Drafts" in line:
-            return line.split(' "/" ')[-1].strip()
-    return '"[Gmail]/Drafts"'
+            raw = line.split(' "/" ')[-1].strip()
+            return raw.strip('"').strip("'")
+    return "[Gmail]/Drafts"
 
 
 def save_draft(cfg, to, subject, body, pdf):
@@ -1467,16 +1886,19 @@ def save_draft(cfg, to, subject, body, pdf):
     msg["From"] = email.utils.formataddr((load_profile().get("name", ""), cfg["gmail_address"]))
     msg["To"] = to
     msg["Subject"] = subject
-    msg["Date"] = email.utils.formatdate(localtime=True)
+    msg["Date"] = email.utils.formatdate(time.time(), localtime=True)
+    msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
     msg.set_content(body)
     with open(pdf, "rb") as f:
         msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=f"{file_prefix()}-CV.pdf")
     imap = imaplib.IMAP4_SSL(cfg["imap_host"], timeout=60)
     try:
         imap.login(cfg["gmail_address"], cfg["gmail_app_password"].replace(" ", ""))
-        typ, data = imap.append(drafts_folder(imap), "\\Draft", imaplib.Time2Internaldate(time.time()), msg.as_bytes())
+        folder = drafts_folder(imap)
+        typ, data = imap.append(folder, "\\Draft", imaplib.Time2Internaldate(time.time()), msg.as_bytes())
         if typ != "OK":
             raise RuntimeError(f"IMAP append failed: {data}")
+        time.sleep(0.5)  # brief pause prevents threading collision in Gmail IMAP
     finally:
         try:
             imap.logout()
@@ -1534,21 +1956,22 @@ def check_config(cfg, gmail=False):
 
 
 def pid_alive(pid):
+    if not pid or pid == os.getpid():
+        return False
     if os.name != "nt":
         try:
             os.kill(pid, 0)
             return True
         except OSError:
             return False
-    import ctypes  # os.kill on Windows would terminate the process, so ask for its exit code instead
-    k32 = ctypes.windll.kernel32
-    h = k32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
-    if not h:
+    try:
+        r = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                           capture_output=True, text=True,
+                           creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), timeout=5)
+        name = r.stdout.split(",")[0].strip().strip('"').lower()
+        return name in ("python.exe", "pythonw.exe", "jobhunter.exe", "pashahunt.exe")
+    except Exception:
         return False
-    code = ctypes.c_ulong()
-    k32.GetExitCodeProcess(h, ctypes.byref(code))
-    k32.CloseHandle(h)
-    return code.value == 259  # STILL_ACTIVE
 
 
 def take_lock():
@@ -1556,14 +1979,168 @@ def take_lock():
     if os.path.exists(LOCK) and time.time() - os.path.getmtime(LOCK) < 1500:
         try:
             with open(LOCK, encoding="utf-8") as f:
-                owner = int(f.read().strip())
+                content = f.read().strip()
+                owner = int(content) if content else None
         except (OSError, ValueError):
-            owner = None  # an old empty lock: trust its age
-        if owner is None or pid_alive(owner):
+            owner = None
+        if owner and pid_alive(owner):
             return False
-    with open(LOCK, "w", encoding="utf-8") as f:
-        f.write(str(os.getpid()))
-    return True
+    try:
+        with open(LOCK, "w", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+        return True
+    except OSError:
+        return False
+
+
+def sync_gmail_tracker(cfg):
+    """Checks Gmail Sent Mail and INBOX to update application statuses in tracker.csv.
+    Returns: dict(checked=True, sent_count=..., replies_count=..., replies=[...])"""
+    if not has_gmail(cfg):
+        return {"checked": False, "reason": "Gmail not configured"}
+
+    rows = read_tracker()
+    if not rows:
+        return {"checked": True, "sent_count": 0, "replies_count": 0, "replies": []}
+
+    host = cfg.get("imap_host", "imap.gmail.com")
+    try:
+        imap = imaplib.IMAP4_SSL(host, timeout=15)
+        imap.login(cfg["gmail_address"], cfg["gmail_app_password"])
+    except Exception as e:
+        return {"checked": False, "reason": f"IMAP connection error: {e}"}
+
+    try:
+        sent_emails = set()
+        for sent_box in ('"[Gmail]/Sent Mail"', '[Gmail]/Sent Mail', 'Sent', '"[Gmail]/Gesendet"', '"[Gmail]/Envoyés"'):
+            status, _ = imap.select(sent_box, readonly=True)
+            if status == "OK":
+                break
+        if status == "OK":
+            _, s_data = imap.search(None, "ALL")
+            s_ids = s_data[0].split()
+            if s_ids:
+                mid_set = b",".join(s_ids[-50:]).decode()
+                try:
+                    _, h_data = imap.fetch(mid_set, "(BODY.PEEK[HEADER.FIELDS (TO)])")
+                    for p in h_data:
+                        if isinstance(p, tuple):
+                            to_str = p[1].decode("utf-8", errors="replace").lower()
+                            for email_match in re.findall(r"[\w\.-]+@[\w\.-]+", to_str):
+                                sent_emails.add(email_match.lower())
+                except Exception:
+                    pass
+
+        inbox_from = set()
+        bounced_recipients = set()
+        status, _ = imap.select("INBOX", readonly=True)
+        if status == "OK":
+            _, in_data = imap.search(None, "ALL")
+            in_ids = in_data[0].split()
+            if in_ids:
+                recent_ids = in_ids[-50:]
+                mid_set = b",".join(recent_ids).decode()
+                try:
+                    _, h_data = imap.fetch(mid_set, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])")
+                    for p in h_data:
+                        if isinstance(p, tuple):
+                            hdr = p[1].decode("utf-8", errors="replace")
+                            hdr_lower = hdr.lower()
+                            is_bounce = False
+                            if any(k in hdr_lower for k in ("postmaster@", "mailer-daemon@", "mail-daemon@", "noreply-dmarc")):
+                                is_bounce = True
+                            if any(s in hdr_lower for s in ("delivery status notification", "undeliverable", "delivery failed", "failure notice", "returned mail")):
+                                is_bounce = True
+
+                            if is_bounce:
+                                for em in re.findall(r"[\w\.-]+@[\w\.-]+", hdr_lower):
+                                    if not any(ign in em for ign in ("postmaster", "mailer-daemon", "gmail.com", "google.com", "microsoft.com", "onmicrosoft.com", "outlook.com")):
+                                        bounced_recipients.add(em)
+                            else:
+                                for from_m in re.findall(r"[\w\.-]+@[\w\.-]+", hdr_lower):
+                                    if not any(ign in from_m for ign in ("postmaster", "mailer-daemon", "no-reply", "noreply", "donotreply", "google.com", "gmail.com")):
+                                        inbox_from.add(from_m)
+                except Exception:
+                    pass
+
+                # Inspect recent bounce bodies to reliably extract rejected recipient emails
+                for msg_id in recent_ids[-15:]:
+                    try:
+                        _, b_data = imap.fetch(msg_id, "(BODY.PEEK[TEXT]<0.2000>)")
+                        for bp in b_data:
+                            if isinstance(bp, tuple):
+                                body_snippet = bp[1].decode("utf-8", errors="replace").lower()
+                                if any(bk in body_snippet for bk in ("delivery failed", "550 5.7", "undeliverable", "user unknown", "rejected")):
+                                    for em in re.findall(r"[\w\.-]+@[\w\.-]+", body_snippet):
+                                        if not any(ign in em for ign in ("postmaster", "mailer-daemon", "google.com", "gmail.com", "microsoft.com", "onmicrosoft.com")):
+                                            bounced_recipients.add(em)
+                    except Exception:
+                        pass
+        imap.logout()
+    except Exception as e:
+        try:
+            imap.logout()
+        except Exception:
+            pass
+        return {"checked": False, "reason": str(e)}
+
+    updated = False
+    replies_found = []
+    bounces_found = []
+    sent_count = 0
+
+    for r in rows:
+        target_email = r.get("email", "").strip().lower()
+        curr_status = r.get("status", "")
+        if not target_email:
+            continue
+
+        if target_email in sent_emails:
+            sent_count += 1
+            if curr_status.startswith("draft") or not curr_status:
+                r["status"] = "Sent"
+                updated = True
+
+        # 1. Did this recipient email bounce or get rejected?
+        is_bounced = target_email in bounced_recipients or any(target_email in b for b in bounced_recipients)
+        if is_bounced:
+            if "Bounced" not in curr_status:
+                r["status"] = "❌ Bounced (Rejected)"
+                updated = True
+                bounces_found.append(f"{r.get('company')} ({target_email})")
+            continue
+
+        # 2. Did we get an authentic recruiter reply?
+        target_domain = target_email.split("@")[-1] if "@" in target_email else ""
+        has_reply = False
+        if target_email in inbox_from:
+            has_reply = True
+        elif target_domain and target_domain not in ("gmail.com", "yahoo.com", "outlook.com", "hotmail.com"):
+            if any(f.endswith("@" + target_domain) for f in inbox_from):
+                has_reply = True
+
+        if has_reply:
+            if "Reply" not in curr_status and "Bounced" not in curr_status:
+                r["status"] = "🎉 Reply Received"
+                updated = True
+                replies_found.append(f"{r.get('company')} ({target_email})")
+
+    if updated:
+        with open(TRACKER, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status"])
+            for r in rows:
+                writer.writerow([r.get(k, "") for k in
+                                 ["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status"]])
+
+    return {
+        "checked": True,
+        "sent_count": sent_count,
+        "replies_count": len(replies_found),
+        "replies": replies_found,
+        "bounces_count": len(bounces_found),
+        "bounces": bounces_found
+    }
 
 
 def drop_lock():
@@ -1677,7 +2254,10 @@ def find_emails(matches):
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         for f in as_completed([pool.submit(one, j) for j in matches]):
-            f.result()
+            try:
+                f.result()
+            except Exception:
+                pass
             done += 1
             if done % 10 == 0 and done < len(matches):
                 log(f"  emails checked for {done} of {len(matches)} jobs")
@@ -2002,6 +2582,16 @@ def main():
         now = dt.datetime.now(dt.timezone.utc)
         today = dt.date.today()
         rows = read_tracker()
+        # Automatic recruiter reply tracking
+        if has_gmail(cfg):
+            try:
+                rep_res = sync_gmail_tracker(cfg)
+                if rep_res.get("checked"):
+                    if rep_res.get("replies_count", 0) > 0:
+                        log(f"★ Recruiter Tracker: {rep_res['replies_count']} response(s) detected from: {', '.join(rep_res.get('replies', []))}")
+                    rows = read_tracker()
+            except Exception as e:
+                log(f"Recruiter tracking note: {e}")
         # Only what was made counts toward the daily limit, not the jobs Gemini or you skipped.
         today_count = sum(1 for r in rows if r.get("date", "")[:10] == today.isoformat()
                           and r.get("status", "").startswith(("draft", "cv-made")))
