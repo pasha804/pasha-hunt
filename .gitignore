@@ -2,6 +2,7 @@
 config.json
 profile.json
 profile.backup-*.json
+*.pdf
 
 # Generated files and run state
 cvs/
@@ -14,6 +15,7 @@ remotive_cache.json
 google_cache.json
 *.tmp
 *.log
+runs.log
 
 # Old personal notes
 INSTRUCTIONS.md
@@ -21,14 +23,20 @@ INSTRUCTIONS.md
 # Python
 __pycache__/
 *.pyc
+*.pyd
 .env
 .venv/
 venv/
+
+# Build and binary outputs
+build/
+dist/
+*.orig
+*.tmp
+*.log
+runs.log
 
 # Just in case: credentials from other tools
 credentials*.json
 token*.json
 client_secret*.json
-
-# Installer build output (installer/build.ps1)
-build/

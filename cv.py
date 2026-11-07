@@ -22,6 +22,7 @@ import html
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -125,15 +126,25 @@ def print_pdf(html_file, out_pdf):
     """Print the page to PDF with the first browser that manages it. Returns the error when none does."""
     error = "Microsoft Edge not found. Install it from https://www.microsoft.com/edge"
     for exe in BROWSERS:
-        with tempfile.TemporaryDirectory() as profile_dir:  # its own profile: an open browser window cannot interfere
+        if not os.path.exists(exe):
+            continue
+        profile_dir = tempfile.mkdtemp(prefix="pashahunt_pdf_")
+        try:
+            r = subprocess.run([
+                exe, "--headless", "--disable-gpu", "--no-pdf-header-footer",
+                "--disable-crash-reporter", "--no-first-run", "--no-default-browser-check",
+                "--disable-background-networking", "--disable-sync", "--disable-extensions",
+                f"--user-data-dir={profile_dir}", f"--print-to-pdf={out_pdf}",
+                pathlib.Path(html_file).as_uri()
+            ], timeout=120, capture_output=True)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            error = f"{os.path.basename(exe)} could not make the PDF ({e.__class__.__name__})"
+            continue
+        finally:
             try:
-                r = subprocess.run([exe, "--headless", "--disable-gpu", "--no-pdf-header-footer",
-                                    f"--user-data-dir={profile_dir}", f"--print-to-pdf={out_pdf}",
-                                    pathlib.Path(html_file).as_uri()],  # as_uri: folder names with spaces or accents
-                                   timeout=120, capture_output=True)
-            except (OSError, subprocess.TimeoutExpired) as e:
-                error = f"{os.path.basename(exe)} could not make the PDF ({e.__class__.__name__})"
-                continue
+                shutil.rmtree(profile_dir, ignore_errors=True)
+            except Exception:
+                pass
         if os.path.exists(out_pdf):
             return None
         error = (f"{os.path.basename(exe)} made no PDF (exit code {r.returncode}). Restart Windows to finish any "
@@ -157,7 +168,10 @@ def main():
     try:
         error = print_pdf(tmp, out_pdf)
     finally:
-        os.remove(tmp)
+        try:
+            os.remove(tmp)
+        except Exception:
+            pass
     if error:
         sys.exit(error)
     print(out_pdf)
