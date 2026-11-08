@@ -1850,7 +1850,7 @@ class App(tk.Tk):
     def find_jobs(self):
         if self.save_filter():
             self.search.set("")
-            self.run_bot(["--dry-run"], "Searching 16 job sources (takes about a minute)")
+            self.run_bot(["--dry-run"], f"Searching {len(bot.SOURCES)} job sources (Pakistan tech, Facebook communities & global remote)")
 
     def ready_for(self, gmail=False):
         """True when the keys and profile a Gemini action needs are there; otherwise opens what is missing.

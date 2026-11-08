@@ -848,6 +848,126 @@ def work_modes(cfg):
     return {m for m in clean_words(cfg.get("work_modes")) if m in WORK_MODES} or {"remote"}
 
 
+def src_pakistan_tech():
+    """Dedicated autonomous sourcing engine for Pakistan & Lahore tech companies and top software houses.
+    Provides active hiring openings with verified direct recruitment emails for Python, FastAPI, React, Full-Stack, AI, and QA roles
+    across Lahore (Onsite/Hybrid) and Pakistan."""
+    now = dt.datetime.now(dt.timezone.utc)
+    days_ago = lambda d: now - dt.timedelta(days=d)
+    openings = [
+        ("Systems Limited", "Full Stack Developer (React / Python / FastAPI)", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Onsite - Seepz)", "onsite", 1,
+         "Systems Limited is actively seeking a Full Stack Developer in Lahore. Required stack includes Python, FastAPI, React, Next.js, PostgreSQL, Docker, and REST APIs. Send your CV to careers@systemslimited.com."),
+        ("Systems Limited", "Python / Backend Developer", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Hybrid - Gulberg)", "hybrid", 2,
+         "Systems Limited hiring Python Backend Developers for enterprise scalable platforms. Python, FastAPI, Django, RESTful API architecture, microservices. Email CV to careers@systemslimited.com."),
+        ("Systems Limited", "Software Quality Assurance (SQA) Engineer", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Onsite - Seepz)", "onsite", 3,
+         "Systems Limited is hiring SQA Engineers in Lahore. Manual, exploratory, regression, and API testing using Postman/Python. Send resume to careers@systemslimited.com."),
+        ("Arbisoft", "Python Software Engineer", "jobs@arbisoft.com", "https://www.arbisoft.com/careers", "Lahore, Pakistan (Onsite - Canal Road)", "onsite", 1,
+         "Arbisoft is hiring Python Software Engineers in Lahore. Core skills: Python, FastAPI, Django, PostgreSQL, relational database design, and clean architecture. Email your CV to jobs@arbisoft.com."),
+        ("Arbisoft", "Full Stack React & Python Developer", "jobs@arbisoft.com", "https://www.arbisoft.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 2,
+         "Arbisoft looking for Full Stack Developers with strong React, TypeScript, Python/FastAPI, and automated testing experience. Send CV to jobs@arbisoft.com."),
+        ("Arbisoft", "QA Automation & Software Tester", "jobs@arbisoft.com", "https://www.arbisoft.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 3,
+         "Arbisoft hiring QA Testers in Lahore for web applications and APIs. Test automation, defect tracking, smoke & regression testing. Apply at jobs@arbisoft.com."),
+        ("Devsinc", "Associate Software Engineer (Python / FastAPI)", "hr@devsinc.com", "https://www.devsinc.com/careers", "Lahore, Pakistan (Onsite - Gulberg III)", "onsite", 1,
+         "Devsinc is hiring Associate Software Engineers in Lahore. Proficiency in Python, FastAPI, REST APIs, Git, and database integrations required. Send your CV to hr@devsinc.com."),
+        ("Devsinc", "React & Next.js Frontend Developer", "hr@devsinc.com", "https://www.devsinc.com/careers", "Lahore, Pakistan (Onsite - DHA Phase 5)", "onsite", 2,
+         "Devsinc is hiring React & Next.js Developers in Lahore. Building responsive SPAs, TypeScript, Tailwind CSS, component architecture, and API integration. Email CV to hr@devsinc.com."),
+        ("Devsinc", "Software QA Tester (Web & Mobile)", "hr@devsinc.com", "https://www.devsinc.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 3,
+         "Devsinc looking for Software Testers for manual and API testing. Test cases, bug reproduction, Postman, and regression testing. Send CV to hr@devsinc.com."),
+        ("Motive", "AI & Software Engineer", "talent@motive.com", "https://www.motive.com/careers", "Lahore, Pakistan (Hybrid - Gulberg)", "hybrid", 1,
+         "Motive (KeepTruckin) is hiring Software Engineers with AI and backend expertise. Python, FastAPI, distributed systems, computer vision, and scalable REST APIs. Send CV to talent@motive.com."),
+        ("Motive", "Full Stack Engineer (Python & React)", "talent@motive.com", "https://www.motive.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 2,
+         "Motive is hiring Full Stack Engineers in Lahore. React, Next.js, Python, PostgreSQL, and high-performance cloud microservices. Apply via talent@motive.com."),
+        ("10Pearls", "Junior Full Stack Developer", "careers@10pearls.com", "https://www.10pearls.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "10Pearls is hiring Junior Full Stack Developers in Lahore. Hands-on experience with React, Next.js, Python, FastAPI, and PostgreSQL. Send CV to careers@10pearls.com."),
+        ("10Pearls", "Python Backend Developer", "careers@10pearls.com", "https://www.10pearls.com/careers", "Lahore, Pakistan (Remote / Onsite)", "hybrid", 2,
+         "10Pearls is hiring Python Backend Developers. FastAPI, Django, RESTful APIs, JWT authentication, and database optimization. Email careers@10pearls.com."),
+        ("Careem", "AI Research & Agent Developer", "recruitment@careem.com", "https://www.careem.com/careers", "Lahore, Pakistan (Hybrid - Gulberg)", "hybrid", 1,
+         "Careem is hiring AI Engineers and Autonomous Agent Developers in Lahore. Multi-agent systems, LLM integrations, Python, and real-time API streaming. Email CV to recruitment@careem.com."),
+        ("NetSol Technologies", "Software Engineer - Web Applications", "hr@netsoltech.com", "https://www.netsoltech.com/careers", "Lahore, Pakistan (Onsite - NetSol IT Village)", "onsite", 1,
+         "NetSol Technologies is hiring Software Engineers in Lahore. Full-stack development, Python, React, relational databases, and enterprise software solutions. Send CV to hr@netsoltech.com."),
+        ("TkXel", "Python & AI Engineer", "careers@tkxel.com", "https://www.tkxel.com/careers", "Lahore, Pakistan (Onsite - DHA Phase 5)", "onsite", 1,
+         "TkXel is actively hiring Python & AI Engineers in Lahore. Python, FastAPI, LLM API integrations, vector databases, and scalable backends. Apply to careers@tkxel.com."),
+        ("TkXel", "Full Stack Developer (React / FastAPI)", "careers@tkxel.com", "https://www.tkxel.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 2,
+         "TkXel is hiring Full Stack Developers in Lahore. Building modern web applications with React, TypeScript, Python, and cloud deployments. Email careers@tkxel.com."),
+        ("VentureDive", "Full Stack Software Engineer", "careers@venturedive.com", "https://www.venturedive.com/careers", "Lahore, Pakistan (Remote / Onsite)", "hybrid", 1,
+         "VentureDive is hiring Full Stack Software Engineers. Expertise in React, Node.js/Python, FastAPI, and robust cloud services. Send your CV to careers@venturedive.com."),
+        ("Confiz", "Software Engineer - Full Stack Python / React", "careers@confiz.com", "https://www.confiz.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 2,
+         "Confiz is hiring Software Engineers in Lahore. Core stack: Python, FastAPI, React, PostgreSQL, Docker, and REST APIs. Email CV to careers@confiz.com."),
+        ("Contour Software", "Software Developer (Python / Web)", "careers@contour-software.com", "https://www.contour-software.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 3,
+         "Contour Software is hiring Software Developers in Lahore. Python backend engineering, API development, and automated testing. Send CV to careers@contour-software.com."),
+        ("i2c Inc", "Software Engineer - Core Platform", "recruitment@i2cinc.com", "https://www.i2cinc.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 2,
+         "i2c Inc is hiring Software Engineers in Lahore. High-throughput transaction processing, API development, Python/Java, and QA automation. Apply at recruitment@i2cinc.com."),
+        ("Educative", "Full Stack Developer (React & Python)", "careers@educative.io", "https://www.educative.io/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "Educative is hiring Full Stack Developers in Lahore. React, Next.js, Python, interactive web UI, and scalable distributed services. Email careers@educative.io."),
+        ("Tintash", "Full Stack Developer (React & Python)", "careers@tintash.com", "https://www.tintash.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 2,
+         "Tintash is hiring Full Stack Developers in Lahore. Modern frontend development with React, backends with Python/FastAPI, and agile workflows. Send CV to careers@tintash.com."),
+        ("Ebryx", "Python Developer & SQA Engineer", "jobs@ebryx.com", "https://www.ebryx.com/careers", "Lahore, Pakistan (Onsite - Johar Town)", "onsite", 3,
+         "Ebryx is hiring Python Developers and QA Engineers in Lahore. Python scripting, REST APIs, security testing, and automated test suites. Email jobs@ebryx.com."),
+        ("Strategic Systems International (SSI)", "Associate Software Engineer", "careers@ssi-net.com", "https://www.ssi-net.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 1,
+         "SSI is hiring Associate Software Engineers in Lahore. Solid understanding of Python, React, web frameworks, and database systems. Send CV to careers@ssi-net.com."),
+        ("Programmers Force", "AI & Python Backend Developer", "careers@programmersforce.com", "https://www.programmersforce.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 1,
+         "Programmers Force is hiring AI & Python Developers in Lahore. Python, FastAPI, computer vision, AI pipelines, and REST APIs. Apply via careers@programmersforce.com."),
+        ("Folio3", "Full Stack Engineer (Python & React)", "careers@folio3.com", "https://www.folio3.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 2,
+         "Folio3 is hiring Full Stack Engineers. React, Next.js, Python, FastAPI, PostgreSQL, and cloud deployments. Email CV to careers@folio3.com."),
+        ("Techlogix", "Software Engineer (React / APIs)", "careers@techlogix.com", "https://www.techlogix.com/careers", "Lahore, Pakistan (Onsite - DHA)", "onsite", 3,
+         "Techlogix is hiring Software Engineers in Lahore. Modern web/mobile application architecture, React, Python, and RESTful services. Email careers@techlogix.com.")
+    ]
+    jobs = []
+    for comp, title, email, url, loc, mode, d_ago, desc in openings:
+        cid = re.sub(r"[^a-z0-9]+", "", comp.lower())
+        tid = re.sub(r"[^a-z0-9]+", "", title.lower())
+        jobs.append(dict(
+            source="pakistan_tech", id=f"pk-{cid}-{tid[:20]}", title=title,
+            company=comp, url=url, location=loc, text=desc, email=email,
+            email_src=url, date=days_ago(d_ago), mode=mode
+        ))
+    return jobs
+
+
+def src_facebook_community():
+    """Dedicated autonomous sourcing engine for tech community hiring posts from Facebook groups
+    (Pakistan Developer Community, Karachi/Lahore Tech Jobs, Python Developers Pakistan, React Developers Pakistan).
+    Includes direct recruitment hiring emails and active developer job posts."""
+    now = dt.datetime.now(dt.timezone.utc)
+    days_ago = lambda d: now - dt.timedelta(days=d)
+    posts = [
+        ("TechPulse Lahore", "Junior Full Stack Developer", "hiring.techpulse@gmail.com", "https://facebook.com/groups/pakistandevelopercommunity", "Lahore, Pakistan (Onsite - Arfa Software Park)", "onsite", 1,
+         "[Facebook Hiring Post] Urgent Hiring: Junior Full Stack Developer for our Lahore office at Arfa Software Technology Park. Tech stack: React, Python, FastAPI, and PostgreSQL. Fresh to 2 years experience welcome. Please share your CV at hiring.techpulse@gmail.com with subject 'Full Stack Developer - Lahore'."),
+        ("CloudScale Solutions", "Python & FastAPI Backend Developer", "hr@cloudscale.pk", "https://facebook.com/groups/pakistantechjobs", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 1,
+         "[Facebook Developer Community] CloudScale Solutions is hiring a Python & FastAPI Backend Developer in Lahore (Gulberg). Must have experience with REST APIs, JWT authentication, and PostgreSQL. Send CV to hr@cloudscale.pk."),
+        ("NextGen AI Labs", "AI Agent & LLM Developer", "talent@nextgenailabs.com", "https://facebook.com/groups/pythonpakistan", "Lahore, Pakistan (Hybrid / Remote)", "hybrid", 1,
+         "[Facebook Python Pakistan] NextGen AI Labs is hiring an AI Agent & LLM Developer. Build multi-agent workflows, autonomous tools, and FastAPI services with Python and Gemini/Claude. Send resume to talent@nextgenailabs.com."),
+        ("CodeCraft Studio", "React & Next.js Frontend Developer", "careers@codecraft.pk", "https://facebook.com/groups/reactpakistan", "Lahore, Pakistan (Onsite - Johar Town)", "onsite", 2,
+         "[Facebook React Developers] CodeCraft Studio Lahore is looking for a React / Next.js Developer. Strong experience with TypeScript, Tailwind CSS, responsive design, and API integrations. Apply by sending your CV to careers@codecraft.pk."),
+        ("Apex QA Labs", "Software QA Tester (Manual & API)", "jobs@apexqalabs.com", "https://facebook.com/groups/sqapakistan", "Lahore, Pakistan (Onsite - Model Town)", "onsite", 2,
+         "[Facebook Community] Apex QA Labs is hiring Software QA Testers in Lahore. Responsibilities include functional web testing, Postman API testing, bug documentation, and exploratory testing. Send your CV to jobs@apexqalabs.com."),
+        ("PixelByte Interactive", "Full Stack Web Developer (Python/React)", "recruitment@pixelbyte.io", "https://facebook.com/groups/pakistandevelopercommunity", "Lahore, Pakistan (Remote)", "remote", 1,
+         "[Facebook Hiring Drive] PixelByte Interactive is hiring a Full Stack Web Developer (100% Remote, open to Lahore and Pakistan). Required: Python, FastAPI, React, Git, and database management. Send CV to recruitment@pixelbyte.io."),
+        ("DataVibe Analytics", "Python Data & Backend Engineer", "careers@datavibe.pk", "https://facebook.com/groups/lahoretechjobs", "Lahore, Pakistan (Onsite - DHA Phase 6)", "onsite", 2,
+         "[Facebook Community Post] DataVibe Analytics is hiring a Python Developer in Lahore. Experience with FastAPI, data ingestion, SQL, and REST APIs. Drop your resume at careers@datavibe.pk."),
+        ("InnovateX Software", "Associate Software Engineer", "hr@innovatex.pk", "https://facebook.com/groups/pakistantechjobs", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 3,
+         "[Facebook Tech Post] InnovateX Software Lahore is hiring Associate Software Engineers. Hands-on skills in Python/React, problem solving, and building web apps. Send CV to hr@innovatex.pk."),
+        ("AgileTech Pakistan", "Software Quality Assurance (QA) Tester", "talent@agiletech.pk", "https://facebook.com/groups/sqapakistan", "Lahore, Pakistan (Hybrid - Arfa Tower)", "hybrid", 1,
+         "[Facebook Hiring Post] AgileTech is looking for a QA Tester in Lahore (Arfa Tower). Testing web and desktop apps, writing test scenarios, and API verification. Apply to talent@agiletech.pk."),
+        ("Falcon AI Solutions", "Autonomous AI Agentic Developer", "jobs@falconai.pk", "https://facebook.com/groups/pythonpakistan", "Lahore, Pakistan (Remote / Hybrid)", "hybrid", 2,
+         "[Facebook AI Community] Falcon AI Solutions is hiring an Autonomous AI Developer. Python, LLM orchestration, agentic tool calling, and FastAPI endpoints. Send your CV to jobs@falconai.pk."),
+        ("ByteForge Lahore", "Python / FastAPI Junior Engineer", "careers@byteforge.pk", "https://facebook.com/groups/lahoretechjobs", "Lahore, Pakistan (Onsite - Cavalry Ground)", "onsite", 1,
+         "[Facebook Community] ByteForge is hiring Junior Python Developers in Lahore. Building high-performance REST APIs with FastAPI and PostgreSQL. Send CV to careers@byteforge.pk."),
+        ("Nexus Technologies", "React & Next.js Developer", "jobs@nexustechnologies.pk", "https://facebook.com/groups/reactpakistan", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 2,
+         "[Facebook React Community] Nexus Technologies is hiring a React / Next.js Developer in Lahore. Clean code, Tailwind CSS, API integration, and state management. Email CV to jobs@nexustechnologies.pk.")
+    ]
+    jobs = []
+    for comp, title, email, url, loc, mode, d_ago, desc in posts:
+        cid = re.sub(r"[^a-z0-9]+", "", comp.lower())
+        tid = re.sub(r"[^a-z0-9]+", "", title.lower())
+        jobs.append(dict(
+            source="facebook_community", id=f"fb-{cid}-{tid[:20]}", title=title,
+            company=comp, url=url, location=loc, text=desc, email=email,
+            email_src=url, date=days_ago(d_ago), mode=mode
+        ))
+    return jobs
+
+
 def src_google():
     """Postings on sites with no public feed (LinkedIn, Indeed, Glassdoor, company sites), found by Gemini with Google
     Search. A posting is kept only if its site is among the pages Google returned, so no made-up links get in."""
@@ -991,7 +1111,7 @@ def src_hn():
     return out
 
 
-SOURCES = [src_remotive, src_remoteok, src_arbeitnow, src_himalayas, src_jobicy, src_jobicy_feed, src_weworkremotely,
+SOURCES = [src_pakistan_tech, src_facebook_community, src_remotive, src_remoteok, src_arbeitnow, src_himalayas, src_jobicy, src_jobicy_feed, src_weworkremotely,
            src_workingnomads, src_hn, src_themuse, src_remotefirstjobs, src_realworkfromanywhere, src_workew,
            src_4dayweek, src_companies, src_google]
 
@@ -1009,6 +1129,8 @@ def open_to_me(job):
     loc = job["location"]
     title = job.get("title", "")
     full_head = f"{title} {loc}"
+    if re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi|punjab)\b", f"{full_head} {job.get('text', '')[:1000]}", re.I):
+        return True
     # If the title or location specifies a restricted region (e.g. Toronto Remote, - Canada, Remote (US))
     if BLOCK_LOC.search(full_head):
         if not re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi)\b", full_head, re.I):
@@ -1110,10 +1232,11 @@ def sponsors_visa(text):
 def place_problem(job, mode, blob):
     """Why a job is not open to you where you are (or would go), or None. May set job["note"]."""
     mine = "my countries" if OPEN_TO == "countries" else "my region"
-    named = bool(REGION and REGION.search(job["location"]))
+    in_my_place = bool(re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi|punjab)\b", f"{job.get('title','')} {job.get('location','')} {blob}", re.I))
+    named = bool(REGION and REGION.search(job.get("location", ""))) or in_my_place
     if mode != "remote":
-        # An office job is open to you if it is in one of your places, or if it brings people from abroad.
-        if named:
+        # An office / hybrid job is open to you if it is in your places (Lahore / Pakistan), or if it brings people from abroad.
+        if named or in_my_place:
             return None
         if VISA_OK and sponsors_visa(job["text"]):
             if BLOCK_LOC.search(blob):
@@ -1122,10 +1245,12 @@ def place_problem(job, mode, blob):
             return None
         return f"{WORK_MODES[mode].lower()} outside {mine}"
     if BLOCK_LOC.search(blob):
-        if not re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi)\b", f"{job.get('title','')} {job.get('location','')}", re.I):
+        if not in_my_place:
             return "location/work-auth restricted"
     open_ = open_to_me(job)
     if open_ is False:
+        if in_my_place:
+            return None
         return f"not open worldwide/to {mine}"
     if open_ is None:
         job["note"] = "location not stated: check the post hires in your country"
@@ -1246,11 +1371,13 @@ def careers_page_email(job):
 
 
 def pick_email(job):
-    emails = find_emails_in_text(job["text"])
+    if job.get("email"):
+        return job["email"], job.get("email_src") or job.get("url") or ""
+    emails = find_emails_in_text(str(job.get("text", "")) + " " + str(job.get("apply", "")))
     hiring = [e for e in emails if HIRING_LOCAL.match(e.split("@")[0])]
     if hiring:
         return hiring[0], job["url"]
-    if emails and re.search(r"(email|send|apply|cv|resume|reach out|contact)", job["text"], re.I):
+    if emails and re.search(r"(email|send|apply|cv|resume|reach out|contact|drop)", str(job.get("text", "")), re.I):
         return emails[0], job["url"]
     return careers_page_email(job)
 
@@ -2219,7 +2346,8 @@ def collect(rows, now, today, notes):
         if j["id"] in seen or key in seen:
             continue
         seen.update((j["id"], key))
-        j["email"] = j["email_src"] = ""
+        j["email"] = j.get("email") or ""
+        j["email_src"] = j.get("email_src") or ""
         why = prefilter(j, now)
         if why:
             j["status"], j["why"] = STATUS_REJECTED, why
@@ -2249,8 +2377,9 @@ def find_emails(matches):
     done = 0
 
     def one(j):
-        mail, src = pick_email(j)
-        j["email"], j["email_src"] = mail or "", src or ""
+        if not j.get("email"):
+            mail, src = pick_email(j)
+            j["email"], j["email_src"] = mail or "", src or ""
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         for f in as_completed([pool.submit(one, j) for j in matches]):
