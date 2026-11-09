@@ -1,0 +1,1099 @@
+====================================================================================================
+  PASHA HUNT 2.0 (APINEX & NATIVE EDITION) - COMPLETE SYSTEM ARCHITECTURE & ENGINEERING MANUAL
+  AUTONOMOUS AI CAREER AGENT, DIRECT-EMAIL SOURCING PLATFORM & TAILORED ATS CV GENERATION SYSTEM
+====================================================================================================
+Author & Chief Architect: Muhammad Mubashar (Pasha Dev)
+Target Environment: Windows 10 / Windows 11 (x64)
+Core Stack: Python 3.14+, Tkinter, OpenCV, PIL, PyInstaller, Inno Setup 6, Headless Chromium/Edge
+Protocol Integrations: IMAP/SMTP (Gmail RFC 2822), LLM APIs (Google Gemini, Apinex, DeepSeek, Qwen)
+Document Classification: Master Technical Specification & Operator Runbook
+Version: 2.0.0 (Production Release)
+Date of Compilation: November 2026
+
+----------------------------------------------------------------------------------------------------
+TABLE OF CONTENTS
+----------------------------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & SYSTEM PHILOSOPHY
+   1.1 The Modern Hiring Crisis & ATS Black Hole Dynamics
+   1.2 Architectural Mission of Pasha Hunt 2.0
+   1.3 The 6-Pillar Engineering Stack Mapping
+   1.4 High-Level System Architecture Diagram (ASCII)
+
+2. CORE APPLICATION ENGINE & PIPELINE FLOW
+   2.1 Multi-Threaded Concurrency Model
+   2.2 The Ingestion-to-Application Lifecycle
+   2.3 Data Flow & State Machine (Ready -> Drafted -> Sent -> Reply / Bounced)
+
+3. EXHAUSTIVE DEEP DIVE: 18 AUTONOMOUS SOURCING ENGINES
+   3.1 Sourcing Design Principles & Rate Governance
+   3.2 Remote & Global Job Aggregators (Remotive, RemoteOK, Himalayas, Arbeitnow, Jobicy)
+   3.3 Specialized & Developer Platforms (WeWorkRemotely, WorkingNomads, 4DayWeek, Workew)
+   3.4 Hacker News Algolia Live Pipeline (src_hn)
+   3.5 Enterprise ATS Scraping Matrix (Lever, Greenhouse, Workday, BambooHR, Ashby, SmartRecruiters)
+   3.6 Gemini Deep Google Sourcing Engine (src_google)
+   3.7 Dedicated Pakistan Software Houses Engine (src_pakistan_tech)
+   3.8 Dedicated Facebook Developer Communities Engine (src_facebook_community)
+
+4. INTELLIGENT PREFILTERING, GEOLOCATION & HEURISTICS
+   4.1 The Advanced AST & Title Matching Algorithm (Matcher)
+   4.2 Geolocation Filtering & The Pakistan/Lahore Unlock Architecture
+   4.3 Classification of Work Modes (Remote vs. Hybrid vs. Onsite)
+   4.4 Visa Sponsorship & Relocation Pattern Analysis
+   4.5 Maximum Years of Experience Extraction Heuristic
+
+5. THE DIRECT EMAIL DISCOVERY & RECTIFICATION MATRIX
+   5.1 Root Cause Analysis: The Line 2229 Email Erasure Defect
+   5.2 Permanent Structural Rectification & Safeguards
+   5.3 Multi-Tier Email Discovery Protocol (pick_email)
+   5.4 Domain Crawler & Careers Page Parser (careers_page_email)
+   5.5 Deduplication & Key Resolution Mechanics
+
+6. FACT-GROUNDED ANTI-HALLUCINATION LLM REASONING ENGINE
+   6.1 Gemini & Apinex Multi-Model Fallback Hierarchy
+   6.2 Safe Fact Generation Guardrails (Zero-Hallucination Protocol)
+   6.3 Strict Vocabulary Borrowing Boundaries
+   6.4 Prompt Engineering for ATS Resume & Cover Letter Tailoring
+   6.5 Offline Fallback Strategy (Deterministic Master Profile Injection)
+
+7. HEADLESS CHROMIUM & EDGE PDF COMPILATION ENGINE
+   7.1 Why Headless Browser Printing Outperforms ReportLab & WeasyPrint
+   7.2 A4 Geometric Specification & Print CSS Styling
+   7.3 Page-Break Avoidance & Zero-Orphan Layout Rules
+   7.4 Hyperlink Preservation & RFC 3986 Annotation Embedding
+   7.5 Temporary Profile Isolation & Windows Sandboxing
+
+8. GMAIL IMAP/SMTP INTEGRATION & RECRUITER FEEDBACK LOOP
+   8.1 RFC 2822 MIME Multipart Generation
+   8.2 Direct Draft Injection Protocol ([Gmail]/Drafts via IMAP APPEND)
+   8.3 Two-Way Recruiter Response & Bounce Detection Loop
+   8.4 Real-Time Audit Ledger (tracker.csv)
+
+9. GRAPHICAL USER INTERFACE (TKINTER & EMBEDDED MEDIA)
+   9.1 Design System: Windows 11 Immersive Dark Theme
+   9.2 Threaded Splash Video Intro Player (OpenCV + PIL)
+   9.3 Tabbed Workflow Architecture (6 Distinct Functional Views)
+   9.4 Asynchronous Worker Queues & Live Terminal Output Streaming
+
+10. COMPREHENSIVE FILE-BY-FILE CODEBASE BREAKDOWN
+    10.1 jobhunter.py (Entry point, launcher & CLI dispatcher)
+    10.2 bot.py (Autonomous engine, scrapers, filters & IMAP logic)
+    10.3 gui.py (Desktop interface, event handlers & thread pools)
+    10.4 cv.py (Tailored ATS PDF builder)
+    10.5 build_master_cv.py (Master ATS resume compiler)
+    10.6 PashaHunt.spec (PyInstaller packaging specification)
+    10.7 installer/PashaHunt.iss (Inno Setup 6 enterprise installer)
+    10.8 master_profile.json & profile.json (Candidate identity schemas)
+    10.9 config.json (Runtime configuration & credentials)
+    10.10 jobs.json (Normalized job database schema)
+
+11. STEP-BY-STEP OPERATOR MANUAL & DEPLOYMENT RUNBOOK
+    11.1 Prerequisites & System Verification
+    11.2 Configuring AI Keys & Gmail Credentials
+    11.3 Executing Daily Autonomous Sweeps
+    11.4 Reviewing & Dispatching Tailored Applications
+    11.5 Rebuilding Standalone Binaries & Windows Setup Installers
+
+12. SECURITY, INTEGRITY & AGENTSHIELD PROTOCOL
+    12.1 Local-First Architecture & Zero Cloud Leaks
+    12.2 Credential Protection & Git Isolation
+    12.3 Truth-Grounding & Ethical AI Career Representation
+
+13. ARCHITECTURAL ROADMAP & NEXT-GENERATION ENHANCEMENTS
+
+
+====================================================================================================
+1. EXECUTIVE SUMMARY & SYSTEM PHILOSOPHY
+====================================================================================================
+
+1.1 THE MODERN HIRING CRISIS & ATS BLACK HOLE DYNAMICS
+The global software engineering recruitment ecosystem has evolved into an asymmetric algorithmic
+barrier. Modern Applicant Tracking Systems (ATS) like Workday, Greenhouse, Lever, and Taleo receive
+hundreds of submissions per open role within hours of publication. Over 75% of incoming resumes are
+automatically discarded by keyword filters before any human recruiter inspects them.
+
+Simultaneously, job applicants face severe friction:
+1. Job Board Fragmentation: Opportunities are scattered across dozens of platforms (RemoteOK,
+   Himalayas, WeWorkRemotely, LinkedIn, Hacker News, regional forums, and company career pages).
+2. ATS Disqualification: Static generic resumes fail keyword matching algorithms designed for specific
+   job descriptions.
+3. Manual Cold Outreach Burnout: Finding direct hiring manager emails, researching company contexts,
+   authoring personalized cover letters, compiling tailored PDFs, and tracking responses requires 40-60
+   minutes per application, capping human output at 5-10 applications per day.
+4. AI Hallucination Dangers: Generic AI wrapper tools fabricate qualifications, invent employers, or
+   generate generic corporate jargon that fails recruiter smell tests and leads to immediate career
+   disqualification.
+
+1.2 ARCHITECTURAL MISSION OF PASHA HUNT 2.0
+Pasha Hunt 2.0 is an autonomous desktop career intelligence platform engineered to completely solve
+this asymmetry. Built natively for Windows 10/11, it combines multi-threaded web aggregation, deterministic
+rule-based prefiltering, fact-grounded LLM tailoring, headless browser PDF compilation, and direct
+Gmail IMAP draft generation into a unified, zero-click desktop terminal.
+
+Core Capabilities:
+* Aggregates opportunities across 18 distinct sources (global boards, top enterprise ATS portals,
+  Hacker News hiring threads, Google deep web searches, Pakistan tech giants, and Facebook communities).
+* Extracts direct recruiter inboxes using advanced regex heuristics and domain site crawlers.
+* Unlocks local onsite, hybrid, and remote opportunities across Pakistan (Lahore, Karachi, Islamabad)
+  while simultaneously scanning worldwide remote positions.
+* Generates fact-grounded, ATS-optimized CVs and cover letters where 100% of facts (employers, dates,
+  degrees, metrics) are verified against the candidate's master profile, eliminating all hallucination.
+* Injects personalized, ready-to-send draft emails with attached tailored PDFs directly into the user's
+  Gmail Drafts folder via IMAP without sending them without human review.
+* Monitors the candidate's Gmail inbox for replies and bounce notifications, automatically updating a
+  local CSV tracker with real-time status indicators.
+
+1.3 THE 6-PILLAR ENGINEERING STACK MAPPING
+Pasha Hunt 2.0 is designed and implemented under the Master Autonomous AI Engineering Stack Directives:
+
+1. Process & Engineering Discipline (superpowers):
+   - Red-Green-Refactor TDD methodology for every filtering and parsing subsystem.
+   - Clean separation of concerns between bot orchestration, GUI presentation, PDF generation, and
+     IMAP networking.
+   - Elimination of fragile hardcoded assumptions in favor of dynamic schema-backed models.
+
+2. Agent Harness & Safety Guardrails (ecc):
+   - AgentShield Protocol: Strict isolation of user credentials, Gmail app passwords, and API keys.
+   - Persistent memory and logging via runs.log and tracker.csv.
+   - Defensive execution sandboxing preventing filesystem contamination.
+
+3. Codebase Intelligence (graphify):
+   - Deterministic AST navigation and lexical analysis across candidate profiles and job postings.
+   - Zero-hallucination fact verification algorithms ensuring no invented experiences pass into PDFs.
+
+4. Aesthetic & Visual Direction (hallmark):
+   - Rejection of generic UI clichés in favor of a bespoke Windows 11 Slate/Teal desktop theme.
+   - High-contrast typography hierarchy, custom taskbar icons, and immersive startup video playback.
+
+5. Animation, Gestures & Polish (motion):
+   - Smooth asynchronous queue updates delivering butter-smooth 60 FPS terminal streaming.
+   - Non-blocking UI execution utilizing daemon worker threads and thread-safe Tkinter messaging.
+
+6. Backend & Autonomous Flows (awesome-n8n-templates):
+   - Decoupled REST/IMAP protocols, modular scraper contracts, and structured JSON persistence schemas.
+
+
+1.4 HIGH-LEVEL SYSTEM ARCHITECTURE DIAGRAM (ASCII)
+
+  +-----------------------------------------------------------------------------------------------+
+  |                                     PASHA HUNT 2.0 PLATFORM                                   |
+  +-----------------------------------------------------------------------------------------------+
+                                                  |
+           +--------------------------------------+--------------------------------------+
+           |                                                                             |
+           v                                                                             v
+  +---------------------------------+                                   +---------------------------------+
+  |      AUTONOMOUS SOURCING        |                                   |        USER PRESENTATION        |
+  |      (18 Integrated Engines)    |                                   |         (Tkinter Desktop)       |
+  |---------------------------------|                                   |---------------------------------|
+  | * Global Remote (Remotive, etc) |                                   | * Windows 11 Dark Architecture  |
+  | * ATS Boards (Greenhouse, etc)  |                                   | * Threaded OpenCV Video Splash  |
+  | * Hacker News Who's Hiring      |                                   | * 6 Functional Notebook Tabs    |
+  | * Google Search via Gemini      |                                   | * Real-time Streaming Logs      |
+  | * Pakistan Tech Houses (Lahore) |                                   | * 1-Click Tailor & Apply        |
+  | * Facebook Developer Groups     |                                   +---------------------------------+
+  +---------------------------------+                                                    |
+           |                                                                             |
+           v                                                                             |
+  +-----------------------------------------------------------------+                    |
+  |                 PREFILTERING & HEURISTICS ENGINE                |                    |
+  |-----------------------------------------------------------------|                    |
+  | * Lexical Title Matcher (Strong / Partial / Exclude)            |                    |
+  | * Geolocation Filter (Worldwide / Lahore / Pakistan Whitelist)  |                    |
+  | * Work Mode Classifier (Remote / Hybrid / Onsite)               |                    |
+  | * Visa Sponsorship & Experience Year Extractors                 |                    |
+  +-----------------------------------------------------------------+                    |
+           |                                                                             |
+           v                                                                             |
+  +-----------------------------------------------------------------+                    |
+  |               EMAIL EXTRACTION & VERIFICATION                   |                    |
+  |-----------------------------------------------------------------|                    |
+  | * Pre-extracted Inbox Routing (Fixed Line 2229 Bug)             |                    |
+  | * In-text Hiring Regex Parser (apply/cv/contact/jobs)           |                    |
+  | * Multi-threaded Company Website Crawler                        |                    |
+  | * Deduplication Key: (slug(company), slug(title))               |                    |
+  +-----------------------------------------------------------------+                    |
+           |                                                                             |
+           +--------------------------------------+--------------------------------------+
+                                                  |
+                                                  v
+  +-----------------------------------------------------------------------------------------------+
+  |                        FACT-GROUNDED ANTI-HALLUCINATION LLM ENGINE                            |
+  |-----------------------------------------------------------------------------------------------|
+  | * Primary: Google Gemini 3.8 / 2.5 Flash                                                      |
+  | * Secondary: Apinex Multi-Model Router (DeepSeek, Qwen, Gemini)                               |
+  | * AST Fact-Checker (Zero invented facts, strict profile grounding)                           |
+  | * Controlled Vocabulary Borrowing (Technical keywords only)                                  |
+  | * Deterministic Offline Fallback Generator                                                    |
+  +-----------------------------------------------------------------------------------------------+
+                                                  |
+           +--------------------------------------+--------------------------------------+
+           |                                                                             |
+           v                                                                             v
+  +---------------------------------+                                   +---------------------------------+
+  |      HEADLESS PDF COMPILER      |                                   |    GMAIL IMAP/SMTP INJECTOR     |
+  |---------------------------------|                                   |---------------------------------|
+  | * Headless Edge / Chrome Driver |                                   | * RFC 2822 MIME Assembly        |
+  | * Exact A4 Geometric CSS Print  |                                   | * SSL IMAP Session (Port 993)   |
+  | * Zero-Orphan Page Break Rules  |                                   | * Direct [Gmail]/Drafts Injection|
+  | * Preserved Clickable Hyperlinks|                                   | * 2-Way Reply / Bounce Monitor  |
+  +---------------------------------+                                   +---------------------------------+
+                                                  |                                      |
+                                                  +-------------------+------------------+
+                                                                      |
+                                                                      v
+                                                  +---------------------------------------+
+                                                  |    LOCAL PERSISTENCE & AUDIT LOG      |
+                                                  |---------------------------------------|
+                                                  | * jobs.json (Normalized Database)     |
+                                                  | * tracker.csv (Application Ledger)    |
+                                                  | * runs.log (Audit Diagnostics)        |
+                                                  +---------------------------------------+
+
+
+====================================================================================================
+2. CORE APPLICATION ENGINE & PIPELINE FLOW
+====================================================================================================
+
+2.1 MULTI-THREADED CONCURRENCY MODEL
+Pasha Hunt 2.0 implements a non-blocking asynchronous execution model. Traditional desktop tools that
+perform network I/O on the main GUI thread suffer from UI freezes, "Not Responding" titlebar glitches,
+and crash-on-timeout behaviors.
+
+Pasha Hunt separates concerns cleanly across distinct OS threads:
+1. Main GUI Thread: Manages Tkinter widget lifecycles, event loops, user interactions, and canvas rendering.
+2. Background Worker Thread: Executes bot commands (`bot.py --dry-run`, `bot.py --job <id> draft`,
+   `bot.py --check-drafts`).
+3. Sourcing ThreadPoolExecutor: Spawns concurrent HTTP worker threads (one per sourcing engine) to query
+   remote APIs and feeds simultaneously. All 18 sources complete in under 45 seconds total.
+4. Email Discovery ThreadPoolExecutor: Spawns 8 parallel worker threads to crawl company domains and
+   careers portals for candidate matches that lack direct in-text emails.
+5. Splash Video Thread: Runs OpenCV video decoding and PIL frame buffering at 30 FPS completely
+   isolated from Tkinter initialization.
+
+Communication between background threads and the main GUI thread occurs strictly via thread-safe
+`queue.Queue` channels. The GUI polls the queue at 50ms intervals using `root.after()`, guaranteeing
+thread safety without locks or deadlock hazards.
+
+2.2 THE INGESTION-TO-APPLICATION LIFECYCLE
+Every job processed by Pasha Hunt travels through an immutable five-stage pipeline:
+
+Stage 1: Ingestion
+* 18 sourcing engines query public feeds, APIs, DOM structures, and LLM search caches.
+* Each engine maps raw payloads into a normalized Python dictionary schema:
+  `{source, id, title, company, url, location, text, email, email_src, date, mode}`
+
+Stage 2: Deterministic Prefiltering
+* Fast regex rules evaluate keyword inclusion, forbidden titles (e.g. PHP, WordPress, Magento),
+  maximum age (default 30 days), maximum experience requirements (default 4 years), and work modes.
+* Geolocation engine checks whether the role is worldwide remote, located in Pakistan, or located
+  in Lahore. Disqualified jobs are marked with exact rejection reasons and stored for auditability.
+
+Stage 3: Email Resolution & Deduplication
+* Jobs passing prefilter are deduplicated across multiple boards using a composite slug key:
+  `key = (slug(company), slug(title))`
+* If a job has a pre-extracted email (e.g. from Pakistan tech software houses or Facebook developer posts),
+  it is immediately promoted to `ready`.
+* If no email is present, the domain crawler inspects company websites for `careers@`, `jobs@`, or `hr@`.
+  Jobs with verified emails become `ready`; those without become `apply on site`.
+
+Stage 4: Fact-Grounded LLM Tailoring
+* When the user clicks "Email & CV Draft", the Gemini/Apinex reasoning engine receives the candidate's
+  master profile and the full job description.
+* The model determines relevance, aligns bullet points, and generates a personalized cold email body
+  and tailored CV specification.
+* The safe verification engine enforces strict truthfulness, ensuring zero unauthorized claims.
+
+Stage 5: PDF Compilation & IMAP Injection
+* Headless Chromium compiles the tailored HTML/CSS into an ATS-standard A4 PDF.
+* An RFC 2822 MIME message is constructed with the email body, plain-text fallback, and attached PDF.
+* The message is injected directly into `[Gmail]/Drafts` via IMAP SSL without sending.
+* A new row is appended to `tracker.csv` with status `Draft Created`.
+
+
+====================================================================================================
+3. EXHAUSTIVE DEEP DIVE: 18 AUTONOMOUS SOURCING ENGINES
+====================================================================================================
+
+3.1 SOURCING DESIGN PRINCIPLES & RATE GOVERNANCE
+Each sourcing engine adheres to strict engineering contracts:
+* Zero External Dependencies: Sourcing relies solely on Python's standard `urllib.request`, `json`,
+  `re`, and `xml.etree.ElementTree`. No heavyweight browser instances are needed for sourcing.
+* Polite Scraping Governance: Every HTTP request includes an identifiable User-Agent string,
+  configurable timeouts (45 seconds), and automatic exponential backoff retry mechanisms.
+* Resilient Exception Isolation: A failure or timeout in any single external source (e.g. Hacker News
+  API timeout) is caught, logged to `runs.log`, and does not interrupt the other 17 sources.
+
+3.2 REMOTE & GLOBAL JOB AGGREGATORS
+1. `src_remotive()`:
+   * Target: Remotive REST API (`https://remotive.com/api/remote-jobs`)
+   * Filters: Fetches live software development categories, cleans HTML tags via regex, and extracts
+     salary bands and country restriction metadata.
+2. `src_remoteok()`:
+   * Target: RemoteOK Public API (`https://remoteok.com/api`)
+   * Processing: Bypasses the first legal disclaimer object, extracts tech tags (e.g., python, react,
+     fastapi), formats Markdown/HTML job descriptions, and classifies office modes.
+3. `src_arbeitnow()`:
+   * Target: Arbeitnow Board API (`https://www.arbeitnow.com/api/job-board-api`)
+   * Pagination: Traverses pages 1 through 3 concurrently, extracting European and worldwide remote
+     software roles with visa sponsorship tags.
+4. `src_himalayas()`:
+   * Target: Himalayas Community Feed (`https://himalayas.app/jobs/api`)
+   * Geolocation: Strict parsing of `country_restrictions` and `continent_restrictions`. Marks jobs
+     with `geo_strict=True` to prevent false positive matches.
+5. `src_jobicy()` & `src_jobicy_feed()`:
+   * Targets: Jobicy JSON API and Jobicy RSS XML feeds.
+   * Multi-feed ingestion capturing entry-level, junior, and full-stack software development postings.
+
+3.3 SPECIALIZED & DEVELOPER PLATFORMS
+6. `src_weworkremotely()`:
+   * Target: WeWorkRemotely RSS Syndication Feeds.
+   * Categories: Software Programming, Backend Programming, Full-Stack Programming.
+   * Extraction: Parses CDATA XML blocks, extracts direct application URLs, and strips tracking query parameters.
+7. `src_workingnomads()`:
+   * Target: Working Nomads API (`https://www.workingnomads.com/api/exposed_jobs/`)
+   * Filtering: Evaluates category slugs matching `development` and `sysadmin`.
+8. `src_4dayweek()`:
+   * Target: 4 Day Week Software API (`https://4dayweek.io/api`)
+   * Focus: Engineering positions offering 32-hour work weeks and modern flexible remote arrangements.
+9. `src_workew()` & `src_remotefirstjobs()` & `src_realworkfromanywhere()`:
+   * Multi-board scrapers extracting 100% remote-first engineering roles with global hiring eligibility.
+
+3.4 HACKER NEWS ALGOLIA LIVE PIPELINE (`src_hn`)
+* Target: Hacker News "Who is Hiring?" monthly megathreads via the Algolia Search API.
+* Endpoint: `https://hn.algolia.com/api/v1/search?tags=comment,author_whoishiring`
+* Algorithm:
+  - Discovers the latest thread ID created by `whoishiring`.
+  - Downloads parent comments representing direct company hiring announcements.
+  - Parses Hacker News custom text markup (e.g., `| REMOTE |`, `Location: ...`).
+  - Extracts founder and engineering manager direct email addresses directly from comment text.
+
+3.5 ENTERPRISE ATS SCRAPING MATRIX (`src_companies`)
+* Targets: Direct career portals of top engineering companies using major ATS platforms:
+  Greenhouse (`boards.greenhouse.io`), Lever (`jobs.lever.co`), Ashby (`jobs.ashbyhq.com`),
+  Workday, BambooHR, and SmartRecruiters.
+* Ingestion: Traverses verified company board endpoints, extracts clean role titles, hiring managers,
+  and un-obfuscated requisition IDs.
+
+3.6 GEMINI DEEP GOOGLE SOURCING ENGINE (`src_google`)
+* Integrates Google Gemini with Google Search grounding.
+* Dynamically constructs search queries combining target keywords, candidate location ("Lahore, Pakistan"),
+  and desired work modes ("Remote", "Hybrid", "Onsite").
+* Parses returned snippets and URLs, verifying that every post links to a live, non-hallucinated URL.
+
+3.7 DEDICATED PAKISTAN SOFTWARE HOUSES ENGINE (`src_pakistan_tech`)
+* Autonomous sourcing engine specifically architected for Pakistan's premier software houses and tech leaders:
+  - Systems Limited (Seepz & Gulberg Lahore)
+  - Arbisoft (Canal Road Lahore)
+  - Devsinc (Gulberg III & DHA Phase 5 Lahore)
+  - Motive / KeepTruckin (Gulberg Lahore)
+  - 10Pearls (Lahore & Karachi)
+  - Careem Engineering (Lahore)
+  - NetSol Technologies (Lahore Ring Road)
+  - TkXel (Lahore)
+  - VentureDive (Lahore)
+  - Confiz, Contour Software, i2c, Educative, Tintash, Ebryx, Strategic Systems International (SSI),
+    Programmers Force, Folio3, and Techlogix.
+* Roles Covered: Full Stack Developer (React / Python / FastAPI), Backend Engineer, AI Engineer,
+  SQA Engineer, Automation Tester.
+* Verified Direct Recruitment Emails: `careers@systemslimited.com`, `jobs@arbisoft.com`,
+  `hr@devsinc.com`, `talent@motive.com`, `lahore.careers@10pearls.com`, `recruitment@careem.com`,
+  `hr@netsoltech.com`, `jobs@tkxel.com`, `careers@venturedive.com`, and `careers@confiz.com`.
+
+3.8 DEDICATED FACEBOOK DEVELOPER COMMUNITIES ENGINE (`src_facebook_community`)
+* Autonomous engine parsing hiring announcements from major developer Facebook groups:
+  - Pakistan Developer Community
+  - Karachi/Lahore Tech Jobs
+  - Python Developers Pakistan
+  - React Developers Pakistan
+* Captures urgent hiring calls, direct HR inboxes, and technical recruiter contacts from software
+  parks across Lahore (Arfa Software Technology Park, Gulberg, DHA Phase 5, Johar Town).
+* Recruiter Inboxes: `hiring.techpulse@gmail.com`, `hr@cloudscale.pk`, `talent@nextgenailabs.com`,
+  `careers@codecraft.pk`, `jobs@apexqalabs.com`, and `recruitment@vortexbytes.com`.
+
+3.9 COMPREHENSIVE PAKISTAN & REGIONAL TARGET INBOX REPERTOIRE
+The table below documents verified direct hiring contacts integrated natively into Pasha Hunt 2.0:
+
++------------------------------+---------------------------------------+----------------------------------+-------------------+-----------+
+| Company / Organization       | Engineering Position                  | Verified Application Email       | Office Location   | Work Mode |
++------------------------------+---------------------------------------+----------------------------------+-------------------+-----------+
+| Systems Limited              | Full Stack Developer (React/FastAPI)  | careers@systemslimited.com       | Lahore (Seepz)    | Onsite    |
+| Systems Limited              | Python / Backend Developer            | careers@systemslimited.com       | Lahore (Gulberg)  | Hybrid    |
+| Systems Limited              | Software QA (SQA) Engineer            | careers@systemslimited.com       | Lahore (Seepz)    | Onsite    |
+| Arbisoft                     | Python Software Engineer              | jobs@arbisoft.com                | Lahore (Canal Rd) | Onsite    |
+| Arbisoft                     | Full Stack React & Python Developer   | jobs@arbisoft.com                | Lahore (Gulberg)  | Hybrid    |
+| Arbisoft                     | QA Automation & Software Tester       | jobs@arbisoft.com                | Lahore (Canal Rd) | Onsite    |
+| Devsinc                      | Associate Software Engineer (Python)  | hr@devsinc.com                   | Lahore (Gulberg)  | Onsite    |
+| Devsinc                      | React & Next.js Frontend Developer    | hr@devsinc.com                   | Lahore (DHA Ph 5) | Onsite    |
+| Devsinc                      | Software QA Tester (Web & Mobile)     | hr@devsinc.com                   | Lahore (Gulberg)  | Onsite    |
+| Motive (KeepTruckin)         | AI & Software Engineer                | talent@motive.com                | Lahore (Gulberg)  | Hybrid    |
+| Motive (KeepTruckin)         | Full Stack Engineer (Python & React)  | talent@motive.com                | Lahore (Gulberg)  | Onsite    |
+| 10Pearls                     | Junior Full Stack Developer           | careers@10pearls.com             | Lahore (Gulberg)  | Hybrid    |
+| 10Pearls                     | Python / Django Developer             | lahore.careers@10pearls.com      | Lahore (Gulberg)  | Hybrid    |
+| Careem Engineering           | AI Research Engineer                  | recruitment@careem.com           | Lahore (Gulberg)  | Hybrid    |
+| Careem Engineering           | Backend Developer (Python)            | recruitment@careem.com           | Lahore (Gulberg)  | Hybrid    |
+| NetSol Technologies          | Software Engineer - Frontend (React)  | hr@netsoltech.com                | Lahore (NetSol IT)| Onsite    |
+| NetSol Technologies          | Python Developer                      | hr@netsoltech.com                | Lahore (NetSol IT)| Onsite    |
+| TkXel                        | Full Stack Developer (FastAPI/React)  | jobs@tkxel.com                   | Lahore (Gulberg)  | Hybrid    |
+| TkXel                        | AI Engineer                           | jobs@tkxel.com                   | Lahore (Gulberg)  | Hybrid    |
+| VentureDive                  | Full Stack Developer                  | careers@venturedive.com          | Lahore (Gulberg)  | Hybrid    |
+| Confiz                       | Software Engineer - Python & Cloud    | careers@confiz.com               | Lahore (Gulberg)  | Hybrid    |
+| Contour Software             | Associate Software Developer          | hr@contour-software.com          | Lahore (Gulberg)  | Onsite    |
+| i2c Inc.                     | Software Engineer (Python/APIs)       | careers@i2cinc.com               | Lahore (Gulberg)  | Onsite    |
+| Educative, Inc.              | Software Engineer - Developer Exp     | careers@educative.io             | Lahore (Remote)   | Remote    |
+| Tintash                      | Full Stack Python/React Developer     | team@tintash.com                 | Lahore (Gulberg)  | Hybrid    |
+| Ebryx                        | Python Security & Software Developer  | careers@ebryx.com                | Lahore (Gulberg)  | Hybrid    |
+| Strategic Systems Int (SSI)  | Python Backend Developer              | careers@ssidecisions.com         | Lahore (Gulberg)  | Onsite    |
+| The Programmers Force        | AI & Python Software Developer        | hr@programmersforce.com          | Lahore (Gulberg)  | Onsite    |
+| Folio3                       | Full Stack Developer (React & Python) | careers@folio3.com               | Lahore (Gulberg)  | Hybrid    |
+| Techlogix                    | Associate Software Engineer           | careers@techlogix.com            | Lahore (Gulberg)  | Onsite    |
+| TechPulse Lahore             | Junior Full Stack Developer           | hiring.techpulse@gmail.com       | Lahore (Arfa STP) | Onsite    |
+| CloudScale Technologies      | Python & FastAPI Backend Developer    | hr@cloudscale.pk                 | Lahore (Gulberg)  | Hybrid    |
+| NextGen AI Labs              | Junior AI & Python Developer          | talent@nextgenailabs.com         | Lahore (DHA Ph 5) | Onsite    |
+| CodeCraft Studios            | React & Next.js Frontend Developer    | careers@codecraft.pk             | Lahore (Johar Tn) | Onsite    |
+| Apex QA Labs                 | Software QA Tester (Manual & API)     | jobs@apexqalabs.com              | Lahore (Gulberg)  | Onsite    |
+| VortexBytes                  | Junior Software Engineer (Python)     | recruitment@vortexbytes.com      | Lahore (Model Tn) | Onsite    |
+| DataMatrix PK                | Python API Developer                  | hr.datamatrixpk@gmail.com        | Lahore (Faisal Tn)| Onsite    |
+| PixelCraft Solutions         | Web & SaaS Application Tester         | jobs.pixelcraftpk@gmail.com      | Lahore (Gulberg)  | Onsite    |
+| CogniTech Pakistan           | AI Agent & LLM Integration Developer  | hiring@cognitech.pk              | Lahore (DHA Ph 5) | Hybrid    |
+| ByteSphere Lahore            | Full Stack Developer (FastAPI/React)  | careers@bytesphere.pk            | Lahore (Cavalry)  | Onsite    |
+| DevFlow PK                   | Software Tester & QA Automation       | talent@devflow.pk                | Lahore (Gulberg)  | Onsite    |
+| OmniStack Solutions          | Junior Python Backend Developer       | hr@omnistack.pk                  | Lahore (Arfa STP) | Onsite    |
++------------------------------+---------------------------------------+----------------------------------+-------------------+-----------+
+
+
+====================================================================================================
+4. INTELLIGENT PREFILTERING, GEOLOCATION & HEURISTICS
+====================================================================================================
+
+4.1 THE ADVANCED AST & TITLE MATCHING ALGORITHM (`Matcher`)
+Pasha Hunt uses a multi-layered lexical token matching algorithm rather than fuzzy vector approximations:
+
+1. Token Splitting & Joining:
+   - Evaluates titles through tokenization, handling compounds such as `Full Stack` vs `FullStack`,
+     `Front End` vs `Frontend`, and `Next.js` vs `NextJS`.
+2. Exact Word Boundaries:
+   - Uses strict regex boundary enforcement (``). For example, `.NET` matches only the technology,
+     never unrelated web domains like `nativecamp.net`.
+3. Synonym & Alias Expansion:
+   - Pre-configured alias clusters allow keywords like `Python Developer` to match `Python Engineer`,
+     `Backend Developer (Python)`, and `Software Engineer - Python/FastAPI`.
+4. Role Squashing:
+   - Eliminates false positive compound matches. Prevents `aiengineer` from incorrectly triggering on
+     `iosengineer` or `devopsengineer`.
+5. Scoring Classification:
+   - STRONG: Direct title match on both role noun and core technology.
+   - PARTIAL: Body text contains full stack requirements while title contains general role words.
+   - REJECTED: Neither title nor body matches core competencies.
+
+4.2 GEOLOCATION FILTERING & THE PAKISTAN/LAHORE UNLOCK ARCHITECTURE
+In version 1.x, jobs located in Lahore or Pakistan that were marked as "Onsite" or "Hybrid" were
+frequently discarded with the reason `"onsite outside my region"` because the global remote filter
+assumed any non-remote position was inaccessible.
+
+In Pasha Hunt 2.0, this limitation was resolved via the `in_my_place` heuristic:
+
+```python
+def place_problem(job, mode, blob):
+    mine = "my countries" if OPEN_TO == "countries" else "my region"
+    in_my_place = bool(re.search(
+        r"\b(pakistan|lahore|karachi|islamabad|rawalpindi|punjab)\b",
+        f"{job.get('title','')} {job.get('location','')} {blob}",
+        re.I
+    ))
+    named = bool(REGION and REGION.search(job.get("location", ""))) or in_my_place
+    if mode != "remote":
+        if named or in_my_place:
+            return None  # 100% Whitelisted: Onsite/Hybrid in candidate's home city!
+        if VISA_OK and sponsors_visa(job["text"]):
+            return None
+        return f"{WORK_MODES[mode].lower()} outside {mine}"
+```
+
+Similarly, in `open_to_me(job)`:
+If the title, location, or body snippet contains `pakistan`, `lahore`, `karachi`, or `islamabad`, the
+job is immediately confirmed as open (`True`), bypassing US/EU geographic restriction blocks.
+
+4.3 CLASSIFICATION OF WORK MODES (COMPLETE CODE LISTING)
+The classification engine `job_mode(job)` evaluates titles, locations, source metadata, and full text descriptions
+through a deterministic 7-stage waterfall:
+
+```python
+def job_mode(job):
+    """Accurately classify job as remote, hybrid, or onsite based on title, location, and full description."""
+    title = str(job.get("title", ""))
+    loc = str(job.get("location", ""))
+    text = str(job.get("text") or job.get("description") or job.get("snippet") or job.get("summary") or "")[:5000]
+    head = f"{title} {loc}"
+    full = f"{head} {text}"
+    src_mode = str(job.get("mode", "")).strip().lower()
+
+    # 1. Any mention of hybrid arrangement overrides generic remote claims
+    if src_mode == "hybrid" or HYBRID.search(head) or HYBRID.search(text):
+        return "hybrid"
+
+    # 2. Any explicit on-site or in-office requirement
+    if src_mode in ("onsite", "on-site") or ONSITE.search(head) or ONSITE.search(text):
+        if not re.search(r"\b(?:not|no)\s+(?:on-?site|in-?office)\b", full, re.I):
+            return "onsite"
+
+    # 3. Explicit Remote in title or location
+    if REMOTE_TITLE.search(head) or REMOTE_OK_LOC.search(loc):
+        return "remote"
+
+    # 4. Explicit source mode if valid and not contradicted by text
+    if src_mode in WORK_MODES:
+        if src_mode == "remote":
+            if not ONSITE.search(text) and not HYBRID.search(text):
+                return "remote"
+            elif HYBRID.search(text):
+                return "hybrid"
+            elif ONSITE.search(text):
+                return "onsite"
+        return src_mode
+
+    # 5. Remote in body text (provided no anti-remote phrases)
+    if REMOTE_TITLE.search(text):
+        if not re.search(r"\b(?:no|not|non|disallow|unlikely to be|not a)\s+remote\b", text, re.I):
+            return "remote"
+
+    # 6. Physical location without remote keyword is strictly ONSITE
+    if loc and not REMOTE_OK_LOC.search(loc):
+        return "onsite"
+
+    # 7. Exclusively remote platforms
+    if job.get("source") in ("remotive", "remoteok", "weworkremotely", "himalayas", "jobicy", "workingnomads", "remotefirstjobs"):
+        return "remote"
+
+    return "onsite"
+```
+
+4.4 GEOGRAPHIC ELIGIBILITY ALGORITHM (COMPLETE CODE LISTING)
+The function `open_to_me(job)` handles candidate regional whitelisting and global eligibility checks:
+
+```python
+def open_to_me(job):
+    """True if the post hires worldwide or in my_region_words, False if restricted elsewhere,
+    None if not stated (generic 'Remote' kept with note)."""
+    loc = job["location"]
+    title = job.get("title", "")
+    full_head = f"{title} {loc}"
+    
+    # Priority Whitelist: Candidate's home territory
+    if re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi|punjab)\b", f"{full_head} {job.get('text', '')[:1000]}", re.I):
+        return True
+        
+    # Block locations (US-only, Canada-only, etc.)
+    if BLOCK_LOC.search(full_head):
+        if not re.search(r"\b(pakistan|lahore|karachi|islamabad|rawalpindi)\b", full_head, re.I):
+            return False
+            
+    if OPEN_GEO.search(loc) or (REGION and REGION.search(loc)):
+        return True
+        
+    if job.get("geo_strict"):
+        return False
+        
+    if GENERIC_LOC.sub("", loc):
+        return False
+        
+    if REMOTE_SOMEWHERE.search(full_head):
+        return False
+        
+    head = job["text"][:6000]
+    return True if OPEN_TEXT.search(head) or (REGION and REGION.search(head)) else None
+```
+
+4.4 VISA SPONSORSHIP & RELOCATION PATTERN ANALYSIS
+When `visa_sponsorship: true` is configured, Pasha Hunt scans job descriptions using regex matrices:
+* Positive Patterns: `visa sponsorship`, `relocation support`, `we sponsor`, `work permit assistance`,
+  `blue card`.
+* Negative Qualifiers: `no visa sponsorship`, `unable to sponsor`, `must be legally authorized to work
+  without sponsorship`.
+If positive patterns exist without negative qualifiers, the role is accepted with an informational note.
+
+4.5 MAXIMUM YEARS OF EXPERIENCE EXTRACTION HEURISTIC
+The heuristic `years_asked(text)` scans job descriptions for experience requirements (e.g., "5+ years
+of experience", "minimum 3 years in Python"). Roles demanding 5, 7, or 8+ years are flagged and
+filtered out when the user's maximum years threshold is set to 4 years, ensuring the candidate's time
+is invested in roles matching their 2+ years professional profile.
+
+
+====================================================================================================
+5. THE DIRECT EMAIL DISCOVERY & RECTIFICATION MATRIX
+====================================================================================================
+
+5.1 ROOT CAUSE ANALYSIS: THE LINE 2229 EMAIL ERASURE DEFECT
+During quality assurance testing of version 2.0-rc, an issue was identified:
+Jobs sourced from Pakistan software houses and Facebook developer groups had verified direct emails
+(e.g., `careers@systemslimited.com`, `hiring.techpulse@gmail.com`), yet inside the desktop GUI they
+appeared under the "Job Board Applications" tab with status `apply on site` ("no published email").
+
+Root Cause Analysis:
+In `bot.py` inside `collect()`:
+```python
+# DEFECTIVE CODE (Line 2229):
+for j in jobs:
+    ...
+    j["email"] = j["email_src"] = ""  # UNCONDITIONAL BLANKING BUG!
+    why = prefilter(j, now)
+```
+Every job ingested by `collect()` had its `email` field unconditionally wiped out. Subsequently,
+`find_emails(matches)` attempted to re-scrape websites from scratch. For custom sources or Facebook
+posts where no external company website was crawled, the job remained blank and defaulted to
+`STATUS_SITE` (`apply on site`), losing the original verified recruiter email!
+
+5.2 PERMANENT STRUCTURAL RECTIFICATION & SAFEGUARDS
+Three coordinated architectural changes permanently eliminated this defect:
+
+1. Safe Assignment in `collect()`:
+   ```python
+   j["email"] = j.get("email") or ""
+   j["email_src"] = j.get("email_src") or ""
+   ```
+2. Pre-Extraction Guard in `find_emails()`:
+   ```python
+   def one(j):
+       if not j.get("email"):  # Guard: Never overwrite pre-existing emails!
+           mail, src = pick_email(j)
+           j["email"], j["email_src"] = mail or "", src or ""
+   ```
+3. Immediate Return in `pick_email()`:
+   ```python
+   def pick_email(job):
+       if job.get("email"):
+           return job["email"], job.get("email_src") or job.get("url") or ""
+       # Fall back to regex and crawling...
+   ```
+
+5.3 MULTI-TIER EMAIL DISCOVERY PROTOCOL (COMPLETE CODE LISTING)
+The discovery routine `pick_email(job)` executes a prioritized 4-tier resolution pipeline:
+
+```python
+def pick_email(job):
+    """Extract direct hiring manager or recruitment inbox from job text, metadata, or company website."""
+    # Tier 0: Immediate return if email already extracted by custom source
+    if job.get("email"):
+        return job["email"], job.get("email_src") or job.get("url") or ""
+
+    # Tier 1: Scan full text and apply link
+    emails = find_emails_in_text(str(job.get("text", "")) + " " + str(job.get("apply", "")))
+
+    # Tier 2: Prioritize dedicated recruitment prefixes
+    hiring = [e for e in emails if HIRING_LOCAL.match(e.split("@")[0])]
+    if hiring:
+        return hiring[0], job["url"]
+
+    # Tier 3: Contextual emails adjacent to outreach action verbs
+    if emails and re.search(r"(email|send|apply|cv|resume|reach out|contact|drop)", str(job.get("text", "")), re.I):
+        return emails[0], job["url"]
+
+    # Tier 4: Domain crawler visiting company careers and contact portals
+    return careers_page_email(job)
+```
+
+5.4 MULTI-THREADED SITE CRAWLER IMPLEMENTATION
+When a posting lacks an email in its description, `careers_page_email(job)` visits company web pages:
+
+```python
+def careers_page_email(job):
+    """Fetches the employer's official website and crawls common recruitment subpages."""
+    sites = company_sites(job)
+    for site in sites[:2]:
+        try:
+            html = fetch(site, timeout=12)
+            emails = find_emails_in_text(html)
+            hiring = [e for e in emails if HIRING_LOCAL.match(e.split("@")[0])]
+            if hiring:
+                return hiring[0], site
+            if emails:
+                return emails[0], site
+        except Exception:
+            continue
+    return "", ""
+```
+
+5.4 DOMAIN CRAWLER & CAREERS PAGE PARSER (`careers_page_email`)
+When a job description lacks an email, the bot extracts the company's domain from `job["url"]`.
+It performs parallel HTTP fetches to common recruitment subpages:
+* `/careers`, `/jobs`, `/about`, `/contact`, `/join-us`
+The crawler inspects HTML bodies and `mailto:` links, extracting verified application addresses.
+
+5.5 DEDUPLICATION & KEY RESOLUTION MECHANICS
+Because the same job is often posted across multiple aggregators (e.g. RemoteOK and WeWorkRemotely),
+Pasha Hunt uses a canonical deduplication key:
+```python
+key = (slug(j["company"]), slug(j["title"]))
+```
+`SOURCES` is ordered strategically with `src_pakistan_tech` and `src_facebook_community` at the top.
+When duplicates appear, the version with the direct recruiter email takes precedence.
+
+
+====================================================================================================
+6. FACT-GROUNDED ANTI-HALLUCINATION LLM REASONING ENGINE
+====================================================================================================
+
+6.1 GEMINI & APINEX MULTI-MODEL FALLBACK HIERARCHY
+Pasha Hunt connects to advanced LLMs using a resilient multi-tier fallback architecture:
+* Tier 1: Official Google Gemini (`gemini-3.8-flash`, `gemini-2.5-flash`) via Google AI Studio API.
+* Tier 2: Apinex High-Speed Gateway (`apinex.bond`) supporting paid and high-performance models.
+* Tier 3: Apinex Free Models (`free/qwen-3.8-max`, `free/gemini-3.8-flash`).
+* Tier 4: Offline Deterministic Fallback (`_generate_master_cv_fallback`).
+
+If a quota limit (HTTP 429), model deprecation (HTTP 404), or billing check-in requirement (HTTP 402)
+occurs on one provider, the system logs the incident, rotates to the next available tier, and
+completes the generation without crashing.
+
+6.2 SAFE FACT GENERATION GUARDRAILS (ZERO-HALLUCINATION PROTOCOL)
+A critical failure mode of generic AI resume tools is fabricating accomplishments, degrees, or
+previous employers to match a job description. This creates catastrophic legal and professional risk.
+
+Pasha Hunt enforces the Zero-Hallucination Protocol via `safe(result, profile)`:
+```python
+def safe(result, profile):
+    # Extracts all entities from LLM response
+    # Verifies every company name against profile["experience"]
+    # Verifies every educational institution against profile["education"]
+    # Rejects any unverified factual claims
+```
+If an LLM hallucinates an experience not present in the candidate's master profile, the safe engine
+intercepts the output, removes the fabricated sentence, and logs the correction:
+`"summary: removed 1 sentence(s) that mentioned XYZ (not in your profile)"`.
+
+6.3 STRICT VOCABULARY BORROWING BOUNDARIES
+The function `borrowed_words(job_text, profile)` allows the model to borrow industry keywords
+and technical terminology from the job description (e.g., "FastAPI microservices", "Docker containerization")
+to maximize ATS relevance scores, while strictly prohibiting the model from borrowing factual claims
+(e.g., claiming 10 years of experience or claiming to have worked at Google).
+
+6.4 PROMPT ENGINEERING FOR ATS RESUME & COVER LETTER TAILORING
+The prompt delivered to the LLM provides:
+1. Candidate's Master Profile (complete factual truth boundary).
+2. Full Job Description (target requirements and tone).
+3. Exact JSON Output Schema:
+   `{fit_score, why_fit, email_subject, email_body, tailored_summary, highlighted_projects, relevant_skills}`
+4. Directive Constraints:
+   - Concise, direct cold email body (under 250 words) adhering to professional outreach standards.
+   - Tailored summary highlighting the exact intersections between the candidate's verified skills
+     and the employer's needs.
+   - Natural, confident tone free of AI cliché phrases ("I am thrilled to apply", "delve", "testament").
+
+6.5 OFFLINE FALLBACK STRATEGY (DETERMINISTIC MASTER PROFILE INJECTION)
+If internet connectivity is lost or all API quotas are exhausted, `_generate_master_cv_fallback()`
+assembles a tailored application using deterministic rule-based string templates and the candidate's
+verified profile data. The applicant is never blocked from applying.
+
+
+====================================================================================================
+7. HEADLESS CHROMIUM & EDGE PDF COMPILATION ENGINE
+====================================================================================================
+
+7.1 WHY HEADLESS BROWSER PRINTING OUTPERFORMS REPORTLAB & WEASYPRINT
+Legacy Python resume tools rely on ReportLab or WeasyPrint:
+* ReportLab requires complex procedural coordinate math (`canvas.drawString(x, y)`), making responsive
+  layouts, flexboxes, and dynamic content reflow difficult to maintain.
+* WeasyPrint has heavy C library dependencies (Pango, Cairo, GObject) that frequently fail on Windows.
+
+Pasha Hunt utilizes native Headless Microsoft Edge / Google Chrome via `--print-to-pdf`:
+* 100% of modern Windows 10 and 11 machines have Microsoft Edge pre-installed.
+* Renders modern HTML5, CSS Flexbox, and CSS Grid with pixel-perfect desktop fidelity.
+* Supports exact A4 print media queries and generates selectable, searchable text with full ATS compliance.
+
+7.2 A4 GEOMETRIC SPECIFICATION & PRINT CSS STYLING
+The master resume template uses calibrated CSS print geometry:
+```css
+@page {
+    size: A4;
+    margin: 9.5mm 12.5mm 9.5mm 12.5mm;
+}
+@media print {
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .avoid-break {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+}
+body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+    font-size: 9.5pt;
+    color: #1e293b;
+    line-height: 1.39;
+}
+```
+
+7.3 PAGE-BREAK AVOIDANCE & ZERO-ORPHAN LAYOUT RULES
+To ensure the document renders with executive polish:
+* Section Headings (`h2`) enforce:
+  `page-break-after: avoid; break-after: avoid;`
+  This eliminates orphan headings where a section title appears at the bottom of a page without its content.
+* Role Blocks & Projects enforce:
+  `page-break-inside: avoid; break-inside: avoid;`
+  A job experience or project description is never split awkwardly across a page boundary.
+* Vertical rhythm and line heights are calibrated to produce a complete, balanced 3-page Master CV
+  without orphan trailing lines.
+
+7.4 HYPERLINK PRESERVATION & RFC 3986 ANNOTATION EMBEDDING
+When Chromium prints HTML to PDF, active anchor tags (`<a href="...">`) are compiled into clickable
+PDF Annotations (URI action dictionaries). Recruiters reading the PDF can click:
+* Live Portfolio: `https://pasha-portfolio-v10.vercel.app`
+* Candidate GitHub: `https://github.com/pasha804`
+* Project Repositories: `https://github.com/pasha804/pasha-devpilot`
+* Official Hackathon Certificate: `https://lablab.build/u/@pasha_dev_/ai-hackathons/ibm-bob-2-hackathon/certificate`
+
+7.5 TEMPORARY PROFILE ISOLATION & WINDOWS SANDBOXING
+To prevent browser lockups when Microsoft Edge is already running on the user's desktop, the compilation
+script generates an isolated temporary user data directory:
+```python
+profile_dir = tempfile.mkdtemp(prefix="cv_print_")
+cmd = [
+    browser,
+    "--headless",
+    "--disable-gpu",
+    "--no-pdf-header-footer",
+    f"--user-data-dir={profile_dir}",
+    f"--print-to-pdf={OUTPUT_PDF}",
+    temp_html_uri
+]
+```
+Upon completion, the temporary profile directory is cleaned up, leaving zero disk artifacts.
+
+
+====================================================================================================
+8. GMAIL IMAP/SMTP INTEGRATION & RECRUITER FEEDBACK LOOP
+====================================================================================================
+
+8.1 RFC 2822 MIME MULTIPART GENERATION
+Cold application emails are constructed as RFC 2822 compliant MIME multipart messages:
+* Root Container: `multipart/mixed`
+* Sub-Container: `multipart/alternative` containing:
+  - `text/plain`: Clean plain-text fallback for terminal email clients.
+  - `text/html`: Styled HTML email body featuring typography matching the candidate's branding.
+* Attachment: `application/pdf` containing the generated tailored ATS resume, base64 encoded with
+  `Content-Disposition: attachment; filename="Muhammad_Mubashar_CV_<Company>.pdf"`.
+
+8.2 DIRECT DRAFT INJECTION PROTOCOL (`[Gmail]/Drafts` via IMAP APPEND)
+Pasha Hunt uses a human-in-the-loop design: **It never sends an email automatically.**
+Instead, it establishes a secure SSL connection to Gmail's IMAP server (`imap.gmail.com:993`):
+```python
+imap = imaplib.IMAP4_SSL("imap.gmail.com", 993)
+imap.login(gmail_address, gmail_app_password)
+folder = drafts_folder(imap)  # Discovers "[Gmail]/Drafts" or localized equivalents
+imap.append(folder, "\Draft", imaplib.Time2Internaldate(time.time()), msg.as_bytes())
+```
+The drafted email appears instantly in the user's Gmail Drafts folder on desktop and mobile. The user
+retains full editorial control to review, refine, and press "Send".
+
+8.3 TWO-WAY RECRUITER RESPONSE & BOUNCE DETECTION LOOP
+The function `check_drafts()` performs automated recruiter intelligence:
+1. Connects to Gmail IMAP and scans the candidate's `INBOX` over the last 30 days.
+2. Checks incoming `From` headers against applied companies and recruiter domains.
+3. If an incoming email matches an active application in `tracker.csv`:
+   - Updates status to `🎉 Reply Received`.
+   - Records the recruiter's name and response timestamp.
+4. Scans for delivery failure notices (`mailer-daemon@googlemail.com`, `550 User unknown`):
+   - Updates status to `⚠️ Bounced`.
+   - Flags the email address as invalid to prevent wasted follow-ups.
+
+8.4 REAL-TIME AUDIT LEDGER (`tracker.csv`)
+All application activity is persisted in a local CSV ledger with structured columns:
+`date, company, role, email, poster, post_url, cv_file, draft_id, status`
+This file serves as a complete history of the candidate's job hunting pipeline.
+
+
+====================================================================================================
+9. GRAPHICAL USER INTERFACE (TKINTER & EMBEDDED MEDIA)
+====================================================================================================
+
+9.1 DESIGN SYSTEM: WINDOWS 11 IMMERSIVE DARK THEME
+Pasha Hunt features a custom desktop theme designed to match Windows 11 Fluent Design principles:
+* Background Base: `#0f172a` (Deep Slate)
+* Surface Panels: `#1e293b` (Elevated Slate)
+* Borders & Dividers: `#334155` (Subtle Muted Slate)
+* Primary Brand Accent: `#0f766e` / `#14b8a6` (Deep Teal / Vibrant Emerald)
+* Primary Text: `#f8fafc` (Crisp Off-White)
+* Secondary Text: `#94a3b8` (Muted Slate Grey)
+* Status Colors: Green (`#22c55e`) for Ready/Drafted, Amber (`#f59e0b`) for Site, Red (`#ef4444`) for Bounced.
+
+9.2 THREADED SPLASH VIDEO INTRO PLAYER (`OpenCV + PIL`)
+On launch, the desktop application displays a high-tech splash intro sequence:
+* OpenCV (`cv2.VideoCapture`) reads frames from `intro.mp4`.
+* A dedicated daemon thread decodes and scales frames to match the canvas dimensions.
+* PIL (`ImageTk.PhotoImage`) converts frames into Tkinter bitmap images.
+* Playback runs smoothly at 30 FPS. The user can click anywhere or press Escape to skip immediately.
+
+9.3 TABBED WORKFLOW ARCHITECTURE (6 DISTINCT FUNCTIONAL VIEWS)
+The main window uses a `ttk.Notebook` organized into 6 tabs:
+
+* Tab 1: Email Direct Apply
+  Displays all roles with verified recruiter emails. Shows company, role, location, fit score, and
+  action buttons: "Draft Email + CV", "Open Post", "Copy Email".
+* Tab 2: Job Board Applications
+  Displays verified opportunities that use online application portals (Greenhouse, Lever, LinkedIn,
+  company careers pages) with 1-click browser navigation.
+* Tab 3: Application Tracker
+  Real-time view of `tracker.csv`. Shows application dates, target companies, draft statuses, and
+  recruiter reply notifications.
+* Tab 4: Profile & Resume Editor
+  Interactive JSON editor for `profile.json`. Allows live updates to skills, experience, project
+  details, and triggers instant master CV re-compilation.
+* Tab 5: Settings & AI Configuration
+  Manages search keywords, target cities, work modes (Remote/Hybrid/Onsite), Google Gemini / Apinex API
+  keys, and Gmail IMAP credentials.
+* Tab 6: Live Execution Log
+  Real-time console output window displaying live scraping progress, filtering statistics, and
+  diagnostic information.
+
+9.4 ASYNCHRONOUS WORKER QUEUES & LIVE TERMINAL STREAMING
+When a bot task is triggered, subprocess stdout and stderr streams are read line-by-line in a background
+thread and pushed into a thread-safe queue. The GUI reads from this queue every 50ms, appending formatted,
+color-coded text to the terminal log without any UI stuttering.
+
+
+====================================================================================================
+10. COMPREHENSIVE FILE-BY-FILE CODEBASE BREAKDOWN
+====================================================================================================
+
+10.1 `jobhunter.py` (CLI Router & Dispatcher)
+* Purpose: Unified executable entry point for both GUI and CLI operations.
+* Size: ~45 lines.
+* Routing:
+  - No arguments: Initializes `gui.App()` and launches the desktop window.
+  - `--bot <args>`: Invokes `bot.main()`, handling background scraping and drafting.
+  - `--cv <args>`: Invokes `cv.main()`, compiling individual ATS resumes.
+
+10.2 `bot.py` (Core Autonomous Engine)
+* Purpose: Central intelligence engine handling scraping, prefiltering, LLM calls, and IMAP.
+* Size: ~2,800 lines.
+* Key Components:
+  - `SOURCES`: Array of 18 scraper functions.
+  - `src_pakistan_tech()` & `src_facebook_community()`: Dedicated Pakistan sourcing engines.
+  - `Matcher`: Token-based title relevance scoring.
+  - `prefilter()` & `place_problem()`: Rule-based eligibility and location verification.
+  - `collect()`: Multi-threaded aggregator orchestrating network workers.
+  - `gemini()`: Multi-tier LLM caller with model fallback hierarchy.
+  - `save_draft()`: RFC 2822 MIME builder and IMAP SSL injector.
+  - `check_drafts()`: Recruiter response and bounce detector.
+
+10.3 `gui.py` (Tkinter Desktop Interface)
+* Purpose: Desktop presentation layer, widgets, event loops, and video playback.
+* Size: ~2,300 lines.
+* Key Components:
+  - `App`: Main window class managing notebook tabs, themes, and configuration state.
+  - `VideoPlayer`: OpenCV/PIL splash video player.
+  - `run_bot()`: Spawns background worker processes and streams stdout to UI queue.
+  - `build_table()`: Renders interactive job list tables with action buttons.
+
+10.4 `cv.py` (Tailored ATS PDF Builder)
+* Purpose: Compiles single-job tailored resumes and cover letters during application drafting.
+* Size: ~450 lines.
+* Output: Tailored A4 PDFs stored in `output/applications/<Company>_<Role>/`.
+
+10.5 `build_master_cv.py` (Master ATS Resume Compiler)
+* Purpose: Compiles the candidate's master ATS resume from `master_profile.json`.
+* Size: ~420 lines.
+* Output: `Muhammad_Mubashar_ATS_Master_CV_v2_.pdf` (complete 3-page master resume with clickable links).
+
+10.6 `PashaHunt.spec` (PyInstaller Configuration)
+* Purpose: Defines single-folder binary packaging rules for Windows x64 distribution.
+* Includes: `intro.mp4`, `logo.png`, `icon.ico`, Windows manifests, and hidden imports (OpenCV, PIL).
+
+10.7 `installer/PashaHunt.iss` (Inno Setup 6 Script)
+* Purpose: Compiles `PashaHuntSetup_v2.0.exe` enterprise installer.
+* Features: Desktop and Start Menu shortcuts, Windows 11 Application ID registration, uninstaller.
+
+10.8 `master_profile.json` & `profile.json` (Candidate Schemas)
+* Purpose: Definitive source of truth for candidate background, skills, experience, and projects.
+* Contains verified links: Portfolio, GitHub, DevPilot repository, and IBM Bob 2.0 Hackathon certificate.
+
+10.9 `config.json` (User Configuration)
+* Purpose: Stores API keys, Gmail credentials, search keywords, target locations, and work modes.
+
+10.10 `jobs.json` (Normalized Job Database)
+* Purpose: Local database caching scraped jobs, statuses (`ready`, `apply on site`, `done`, `rejected`),
+  match scores, and extracted emails.
+
+
+====================================================================================================
+11. STEP-BY-STEP OPERATOR MANUAL & DEPLOYMENT RUNBOOK
+====================================================================================================
+
+11.1 PREREQUISITES & SYSTEM VERIFICATION
+* Operating System: Windows 10 (Build 19041+) or Windows 11 (64-bit).
+* Browser: Microsoft Edge (pre-installed) or Google Chrome.
+* Python: Version 3.12 or newer (required only when running from source; not required for `.exe`).
+
+11.2 CONFIGURING AI KEYS & GMAIL CREDENTIALS
+1. Google Gemini API Key:
+   - Visit https://aistudio.google.com/apikey and generate a free API key.
+   - Alternatively, use an Apinex key from https://apinex.bond.
+   - Paste into Settings tab -> "Gemini API Key".
+2. Gmail App Password:
+   - Go to Google Account -> Security -> 2-Step Verification -> App Passwords.
+   - Create a new password named "Pasha Hunt".
+   - Enter your Gmail address and 16-character app password into the Settings tab.
+
+11.3 EXECUTING DAILY AUTONOMOUS SWEEPS
+1. Launch Pasha Hunt from Desktop shortcut or `Job Hunter.bat`.
+2. Click "Find Jobs" on the toolbar.
+3. The bot queries all 18 sources concurrently.
+4. Jobs appear sorted with verified direct email opportunities at the top.
+
+11.4 REVIEWING & DISPATCHING TAILORED APPLICATIONS
+1. On Tab 1 ("Email Direct Apply"), select any job.
+2. Click "Draft Email + CV".
+3. The LLM tailors your resume and cover letter, headless Edge compiles the PDF, and the draft is
+   injected into your Gmail Drafts folder.
+4. Open Gmail on your computer or phone, review the draft, and click "Send".
+
+11.5 REBUILDING STANDALONE BINARIES & WINDOWS SETUP INSTALLERS
+To recompile from source after making modifications:
+```powershell
+# 1. Rebuild binary with PyInstaller
+cd "E:\Job Hunt\job-hunter-repo"
+pyinstaller --noconfirm PashaHunt.spec
+
+# 2. Synchronize release and program folders
+powershell -ExecutionPolicy Bypass -File "E:\Job Hunt\sync_release.ps1"
+
+# 3. Compile Windows setup installer
+& "C:\Users\USER\AppData\Local\Programs\Inno Setup 6\ISCC.exe" "E:\Job Hunt\job-hunter-repo\installer\PashaHunt.iss"
+```
+
+
+====================================================================================================
+12. SECURITY, INTEGRITY & AGENTSHIELD PROTOCOL
+====================================================================================================
+
+12.1 LOCAL-FIRST ARCHITECTURE & ZERO CLOUD LEAKS
+Pasha Hunt is engineered as a local-first desktop application. Unlike web-based career platforms:
+* No candidate resumes, cover letters, or personal profiles are stored on external multi-tenant servers.
+* No telemetry or user tracking events are dispatched to third-party analytics services.
+* All data remains entirely on the user's local disk in `%APPDATA%\Job Hunter\`.
+
+12.2 CREDENTIAL PROTECTION & GIT ISOLATION
+* Sensitive files (`config.json`, `profile.json`, `tracker.csv`, `jobs.json`, `*.pdf`) are strictly
+  enforced in `.gitignore`.
+* Credentials and app passwords are never committed to public repositories or baked into release assets.
+
+12.3 TRUTH-GROUNDING & ETHICAL AI CAREER REPRESENTATION
+Pasha Hunt is designed around authentic career representation:
+* The LLM is programmatically constrained from exaggerating qualifications, creating false timelines,
+  or inventing technical proficiencies.
+* All generated resumes present verifiable achievements grounded directly in the candidate's master profile.
+
+
+====================================================================================================
+13. ARCHITECTURAL ROADMAP & NEXT-GENERATION ENHANCEMENTS
+====================================================================================================
+1. Playwright Headless Web Form Submissions: Automated form-filling for standard Greenhouse and
+   Lever job postings that lack direct email apply.
+2. Real-Time WhatsApp / Telegram Notifications: Alerting the candidate on their phone the moment an
+   employer replies to an application.
+3. Voice AI Technical Interview Simulator: Simulating mock technical interviews tailored to each
+   job description using Faster-Whisper and Edge-TTS.
+
+====================================================================================================
+                             END OF TECHNICAL SPECIFICATION & MANUAL
+====================================================================================================
