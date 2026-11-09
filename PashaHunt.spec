@@ -11,7 +11,7 @@ a = Analysis(
         ('logo.png', '.'),
         ('intro.mp4', '.')
     ],
-    hiddenimports=['cv2', 'PIL', 'PIL.Image', 'PIL.ImageTk'],
+    hiddenimports=['cv2', 'PIL', 'PIL.Image', 'PIL.ImageTk', 'pypdf'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

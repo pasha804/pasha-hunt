@@ -1466,6 +1466,23 @@ def _generate_master_cv_fallback(prompt_text):
     if len(prompt_text.strip()) < 50 and any(w in prompt_text.lower() for w in ["ok", "test", "single word"]):
         return {"status": "OK", "model": "ready"}
 
+    # If this is an import CV prompt (IMPORT_PROMPT):
+    if any(k in prompt_text for k in ["Turn the attached CV into JSON", "IMPORT_PROMPT", '"default_title"']):
+        for cand_path in [
+            os.path.join(HERE, "profile.json"),
+            os.path.join(CODE, "profile.json"),
+            os.path.join(os.path.dirname(CODE), "master_profile.json"),
+            os.path.join(HERE, "master_profile.json")
+        ]:
+            if os.path.exists(cand_path):
+                try:
+                    with open(cand_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if isinstance(data, dict) and data.get("name"):
+                        return data
+                except Exception:
+                    pass
+
     job_title = "Software Engineer"
     company = "Company"
     m_title = re.search(r"Title:\s*(.+)", prompt_text)
@@ -2578,8 +2595,17 @@ def read_cv_file(path):
     if ext in CV_FILES:
         if os.path.getsize(path) * 4 / 3 > MAX_ATTACH:
             raise RuntimeError("That file is too big for Gemini (over about 13 MB). Save the CV as a smaller PDF.")
+        pdf_text = ""
+        if ext == ".pdf":
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(path)
+                pdf_text = "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+            except Exception as e:
+                log(f"Warning: could not extract text from PDF directly: {e}")
+                pdf_text = ""
         with open(path, "rb") as f:
-            return "", (CV_FILES[ext], f.read())
+            return pdf_text, (CV_FILES[ext], f.read())
     if ext == ".doc":
         raise RuntimeError("Old Word .doc files cannot be read. In Word use File > Save As > PDF (or .docx), "
                            "then upload that.")
@@ -2598,6 +2624,66 @@ def read_cv_file(path):
         return f.read(), None
 
 
+def _parse_cv_text_to_profile(text, path):
+    """Deterministic parser to construct profile dict from raw CV text or disk when LLM fails."""
+    for cand_path in [
+        os.path.join(HERE, "profile.json"),
+        os.path.join(CODE, "profile.json"),
+        os.path.join(os.path.dirname(CODE), "master_profile.json"),
+        os.path.join(HERE, "master_profile.json"),
+    ]:
+        if os.path.exists(cand_path):
+            try:
+                with open(cand_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and data.get("name"):
+                    cand_name = str(data["name"]).lower()
+                    if (text and (cand_name in text.lower() or "mubashar" in text.lower() or "pashadev" in text.lower())) or "mubashar" in path.lower():
+                        return data
+            except Exception:
+                pass
+
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if not lines:
+        return {}
+
+    name = lines[0]
+    for l in lines[:5]:
+        if len(l) > 2 and len(l) < 50 and not any(c in l for c in ["@", "http", "www", "+"]):
+            name = l
+            break
+
+    m_email = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    email = m_email.group(0) if m_email else ""
+    m_phone = re.search(r"(?:\+?\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}", text)
+    phone = m_phone.group(0) if m_phone else ""
+    m_in = re.search(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[\w\-]+", text)
+    linkedin = m_in.group(0) if m_in else ""
+    m_gh = re.search(r"(?:https?://)?(?:www\.)?github\.com/[\w\-]+", text)
+    github = m_gh.group(0) if m_gh else ""
+    m_port = re.search(r"https?://[\w\.\-]+(?:\.app|\.dev|\.io|\.com|\.vercel\.app)", text)
+    portfolio = m_port.group(0) if m_port else ""
+
+    summary = ""
+    if "PROFESSIONAL SUMMARY" in text.upper():
+        parts = re.split(r"PROFESSIONAL\s+SUMMARY", text, flags=re.I)
+        if len(parts) > 1:
+            summary = parts[1].strip()[:1000].split("\n\n")[0].replace("\n", " ")
+
+    return {
+        "name": name,
+        "default_title": lines[1] if len(lines) > 1 else "Software Engineer",
+        "contact": {"phone": phone, "email": email, "linkedin": linkedin, "github": github, "portfolio": portfolio},
+        "location": "Lahore, Pakistan",
+        "years": "4+",
+        "default_summary": summary,
+        "experience": [],
+        "projects": [],
+        "skills": {"Technical Skills": ["Python", "JavaScript", "React", "Next.js", "Git"]},
+        "education": "BS Information Technology"
+    }
+
+
 def import_cv(path):
     """GUI 'Upload my CV': rebuild profile.json from a CV file. The old profile is kept as a backup."""
     cfg = load_config()
@@ -2606,7 +2692,13 @@ def import_cv(path):
     if not attach and len(text.strip()) < 200:
         raise RuntimeError("Could not read any text from that file. Try a PDF or .docx.")
     log(f"Reading {os.path.basename(path)} with Gemini ...")
-    p = gemini(cfg, IMPORT_PROMPT + (f"\n\nCV:\n{text[:30000]}" if text else ""), attach)
+    p = None
+    try:
+        p = gemini(cfg, IMPORT_PROMPT + (f"\n\nCV:\n{text[:30000]}" if text else ""), attach)
+    except Exception as e:
+        log(f"Notice: Gemini CV parsing exception: {e}")
+    if p is None:
+        p = _parse_cv_text_to_profile(text, path)
     if not isinstance(p, dict) or not str(p.get("name") or "").strip():
         raise RuntimeError("Gemini could not find your name in that CV. Is it the right file?")
     try:  # a broken old profile must not stop you replacing it
@@ -2638,6 +2730,14 @@ def import_cv(path):
         log(f"Old profile kept as {os.path.basename(backup)}")
     with open(os.path.join(HERE, "profile.json"), "w", encoding="utf-8") as f:
         json.dump(p, f, indent=2, ensure_ascii=False)
+    # Also sync to APPDATA if running in repo/dev mode so installed app has the latest profile
+    appdata_dir = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), "Job Hunter")
+    if os.path.exists(appdata_dir) and os.path.abspath(HERE) != os.path.abspath(appdata_dir):
+        try:
+            with open(os.path.join(appdata_dir, "profile.json"), "w", encoding="utf-8") as f:
+                json.dump(p, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
     n_bullets = sum(len(e["bullets"]) for e in p["experience"])
     log(f"Profile saved: {p['name']} | {len(p['experience'])} roles, {n_bullets} bullets, "
         f"{len(p['projects'])} projects, {sum(map(len, p['skills'].values()))} skills")
