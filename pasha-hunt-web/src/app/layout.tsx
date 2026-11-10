@@ -15,11 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark scroll-smooth">
+    <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#080E19" />
       </head>
-      <body className="min-h-screen flex flex-col bg-[#080E19] text-[#F3F7FC] selection:bg-[#168BFF]/30 selection:text-[#00D6C9]">
+      <body
+        suppressHydrationWarning
+        className="min-h-screen flex flex-col bg-[#080E19] text-[#F3F7FC] selection:bg-[#168BFF]/30 selection:text-[#00D6C9]"
+      >
         {children}
       </body>
     </html>
