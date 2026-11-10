@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #080e19;
+    --bg-secondary: #0c1524;
+    --bg-surface: #111d2f;
+    --bg-elevated: #17253a;
+    --border-color: #223149;
+    --primary-blue: #168bff;
+    --electric-blue: #278eff;
+    --teal-accent: #00d6c9;
+    --success-green: #18c78a;
+    --warning-amber: #ffb547;
+    --danger-red: #ff5571;
+    --text-primary: #f3f7fc;
+    --text-secondary: #a2b1c6;
+    --text-muted: #718198;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #080e19;
+}
+::-webkit-scrollbar-thumb {
+  background: #223149;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2e4363;
+}
+
+/* Print styling for clean 1-page/2-page ATS Resume */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .resume-print-card {
+    border: none !important;
+    background: transparent !important;
+    color: #111111 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .resume-print-card * {
+    color: #111111 !important;
+  }
+}
