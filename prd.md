@@ -10,34 +10,72 @@
 
 ## 1. Executive Summary & Product Vision
 
-### 1.1 Problem Statement
-The modern software engineering job search is broken across four distinct failure points:
-1. **The ATS Black Hole:** Over 75% of submitted resumes are discarded before human review due to unparsed layouts, missing semantic keywords, or weak, non-quantified bullet points.
-2. **Ghost Postings & Dead Inboxes:** Candidates waste hundreds of hours applying to expired listings or emailing invalid corporate addresses, resulting in 550 *"Address not found"* bounce errors.
-3. **Application Fatigue & Generic Submissions:** Manually tailoring resumes and cover letters for dozens of jobs causes cognitive burnout, leading candidates to spray generic CVs that convert at less than 2%.
-4. **Cloud Privacy Leaks:** Existing career platforms require candidates to upload sensitive career histories and contact details to multi-tenant cloud servers where personal data is scraped, sold, or exposed.
+### 1.1 The Modern Hiring Crisis
+The software engineering job application landscape in 2026 is broken across four core failure vectors:
 
-### 1.2 The Pasha Hunt Mission
-**Pasha Hunt 2.0** is an **autonomous, local-first desktop agent** designed to act as a dedicated career orchestrator for software engineers. It flips the job hunt dynamic:
-* It continuously sources high-signal engineering roles across 18 concurrent feeds.
-* It resolves and validates recruiter email domains via live DNS socket queries, eliminating bounces.
-* It audits candidate profiles against enterprise ATS benchmarks, upgrading bullet points to the **Google XYZ Formula** (`Accomplished [X] measured by [Y] doing [Z]`) to achieve a guaranteed 95–100 ATS score.
-* It compiles tailored, pixel-perfect A4 PDF resumes using headless Chromium/Edge and injects ready-to-review drafts directly into the candidate's Gmail Drafts folder.
-* **All candidate data remains 100% local on the candidate's machine.**
+```mermaid
+flowchart TD
+    subgraph CRISIS ["The 4 Modern Hiring Failure Points"]
+        F1["🚫 The ATS Black Hole<br/>75%+ of CVs dropped by automated keyword filters before human eyes."]
+        F2["📫 Ghost Postings & Dead Inboxes<br/>Applications sent to expired domains bounce with 550 errors."]
+        F3["😫 Application Burnout<br/>Manual tailoring of 50+ applications/week causes fatigue and generic submissions."]
+        F4["🔒 Cloud Privacy Leaks<br/>Web portals scrape and expose candidate resumes on multi-tenant servers."]
+    end
+
+    subgraph SOLUTION ["The Pasha Hunt 2.0 Breakthrough"]
+        S1["🎯 ATS 95+ Google XYZ Optimization"]
+        S2["⚡ Socket DNS MX Zero-Bounce Verification"]
+        S3["🤖 Fact-Grounded Autonomous Tailoring"]
+        S4["🛡️ 100% Local-First Privacy (Zero Cloud Leaks)"]
+    end
+
+    F1 ==> S1
+    F2 ==> S2
+    F3 ==> S3
+    F4 ==> S4
+```
+
+> [!IMPORTANT]
+> **Pasha Hunt Core Mission:** To act as an autonomous, local-first personal career agent for senior and high-growth software engineers. It continuously uncovers verified direct-recruiter opportunities, elevates resumes to a guaranteed 95–100 ATS score via the Google XYZ formula, compiles tailored A4 PDF resumes via headless Edge/Chromium, and injects ready-to-review drafts directly into Gmail.
 
 ---
 
 ## 2. Target Personas & User Archetypes
 
-### Persona A: The Elite Full Stack / AI Engineer (Primary Archetype)
-* **Profile:** 3–6+ years of shipping real-world full-stack web and autonomous AI systems (e.g., Next.js, Python, Laravel, LLM pipelines, Docker).
-* **Pain Point:** Has strong skills and hackathon accolades, but lacks time to manually search 18 job boards, research recruiter emails, and tailor resumes for each opening.
-* **Goal:** High-paying remote US/EU roles ($60k–$150k/yr) and top-tier local tech house opportunities (PKR 180k–300k+/month) with minimal repetitive manual labor.
+```mermaid
+graph LR
+    subgraph P1 ["Persona A: Elite Full Stack & AI Engineer"]
+        P1_A["Tech: Next.js, Python, Laravel, AI Agents, Docker"]
+        P1_B["Goals: $60k-$150k Remote US/EU or PKR 200k-350k+ Local"]
+        P1_C["Need: Zero manual busywork, 100% deliverability"]
+    end
 
-### Persona B: The Active Job Seeker
-* **Profile:** Candidates in transition who need to apply to 20–50 high-quality positions weekly without sacrificing personalization or falling into ATS black holes.
-* **Pain Point:** Email bounces, unorganized spreadsheets, and ghost postings on outdated boards.
-* **Goal:** A unified cockpit showing live matches, verified recruiter emails, one-click PDF generation, and automated follow-up tracking.
+    subgraph P2 ["Persona B: Active Career Accelerator"]
+        P2_A["Tech: React, Node.js, SQL, TypeScript"]
+        P2_B["Goals: Rapid placement in high-growth software houses"]
+        P2_C["Need: High volume (30+ apps/week) with deep tailoring"]
+    end
+
+    subgraph P3 ["Persona C: Transitioning Hackathon Builder"]
+        P3_A["Tech: AI/ML APIs, AgentOps, Python, Redis"]
+        P3_B["Goals: Convert hackathon accolades into enterprise roles"]
+        P3_C["Need: Highlight credentials & verified project impact"]
+    end
+
+    P1 --> Engine["Pasha Hunt 2.0 Autonomous Cockpit"]
+    P2 --> Engine
+    P3 --> Engine
+```
+
+### Persona Breakdown Matrix
+
+| Attribute | Persona A (Primary: Pasha Archetype) | Persona B (Active Accelerator) | Persona C (Hackathon Builder) |
+|---|---|---|---|
+| **Experience Level** | 4+ Years Shipping Production Code | 2–4 Years Web / Mobile Development | 1–3 Years + Competitive Wins |
+| **Key Technical Stacks** | Next.js, Python, Laravel, Gemini API, Docker | React, Node.js, TypeScript, PostgreSQL | Python, AgentOps, IBM WatsonX, Redis |
+| **Target Role Types** | Full Stack Engineer, AI Systems Architect | Full Stack Developer, Frontend Lead | AI Engineer, Backend API Developer |
+| **Primary Friction** | Lack of time to research recruiter emails | Rejection due to unquantified resume bullets | Resume overlooked without formal brand pedigree |
+| **Pasha Hunt Value** | Automated verified direct HR email outreach | Instant ATS 100% Google XYZ optimization | Automatic hackathon credential verification |
 
 ---
 
@@ -45,268 +83,332 @@ The modern software engineering job search is broken across four distinct failur
 
 ```mermaid
 flowchart TD
-    subgraph INGESTION ["1. Autonomous Discovery Matrix"]
-        A1[18 Concurrent Sourcing Feeds] --> A2[Normalized Raw Listings]
+    subgraph INGESTION ["1. Autonomous Sourcing Matrix (18 Feeds)"]
+        A1["Global Remote (RemoteOK, Himalayas, Remotive)"]
+        A2["Specialized (WWR, WorkingNomads, 4DayWeek)"]
+        A3["Enterprise ATS (Lever, Greenhouse, Ashby)"]
+        A4["Hacker News (Who Is Hiring Algolia API)"]
+        A5["Pakistan Regional Tech Houses & Communities"]
+        A6["Google Live Sourcing (Apinex / Gemini)"]
     end
 
-    subgraph PREFILTER ["2. Intelligent Filtering Engine"]
-        A2 --> B1[Keyword AST Title Matcher]
-        B1 --> B2[Geolocation & Work Mode Filter]
-        B2 --> B3[Experience Cap & Anti-Keyword Guard]
+    subgraph FILTERING ["2. Intelligent Prefilter Engine"]
+        B1["Keyword AST Matcher"]
+        B2["Geolocation Filter (Lahore / PK / Remote)"]
+        B3["Experience Cap Heuristic"]
+        B4["Age Freshness (<= 30 Days)"]
     end
 
-    subgraph VERIFY ["3. DNS MX Deliverability Engine"]
-        B3 --> C1[Obfuscated Email Parser]
-        C1 --> C2[Dummy Blacklist Check]
-        C2 --> C3[Socket DNS Domain Resolution]
-        C3 --> C4[Badge: Verified HR vs Web Portal]
+    subgraph VALIDATION ["3. Network Socket DNS MX Engine"]
+        C1["Regex & Obfuscation Parser"]
+        C2["Dummy Domain Blacklist Interceptor"]
+        C3["Live Socket Resolution (socket.getaddrinfo)"]
+        C4["UI Badge: Verified HR vs Company Portal"]
     end
 
-    subgraph ATS_AUDIT ["4. ATS 95+ Optimizer Engine"]
-        D1[Candidate Master CV PDF] --> D2[pypdf Ingestion Engine]
-        D2 --> D3[ATS Scoring Model 0-100]
-        D3 --> D4[Google XYZ Auto-Rewriter]
+    subgraph ATS_OPTIMIZER ["4. ATS 95+ Resume Scorer & Optimizer"]
+        D1["pypdf Multi-Page Streaming Ingestion"]
+        D2["5-Category Scorecard (0-100 pts)"]
+        D3["Google XYZ Bullet Restructuring"]
     end
 
     subgraph REASONING ["5. Fact-Grounded AI Reasoning"]
-        C4 & D4 --> E1[Apinex / Gemini LLM Hierarchy]
-        E1 --> E2[Zero-Hallucination Guardrails]
-        E2 --> E3[Tailored Summary & Bullet Selection]
+        E1["Apinex / Gemini LLM Hierarchy"]
+        E2["Zero-Hallucination Guardrails"]
+        E3["Dynamic Tailored Summary & Bullet Selection"]
     end
 
-    subgraph OUTPUT ["6. Headless Compilation & Outreach"]
-        E3 --> F1[Headless Edge/Chrome Print-to-PDF]
-        F1 --> F2[RFC 2822 Multipart MIME Assembly]
-        F2 --> F3[Gmail IMAP Draft Injection]
-        F3 --> F4[Bi-Directional tracker.csv Ledger]
+    subgraph DISPATCH ["6. Headless Compilation & Outreach"]
+        F1["Headless Edge/Chrome Print-to-PDF"]
+        F2["RFC 2822 Multipart MIME Packaging"]
+        F3["Gmail IMAP [Gmail]/Drafts Injection"]
+        F4["Real-Time tracker.csv Ledger"]
     end
+
+    INGESTION --> FILTERING --> VALIDATION
+    ATS_OPTIMIZER --> REASONING
+    VALIDATION & REASONING --> DISPATCH
 ```
 
 ---
 
-## 4. Detailed Functional Requirements (FR)
+## 4. User Journey & Core Operating Workflows
 
-### FR-1: Autonomous Multi-Source Discovery Matrix
-* **Requirement:** The system MUST asynchronously scrape and aggregate job postings across 18 distinct sources every 30 minutes or on user demand.
-* **Source Providers:**
-  1. *Global Remote:* Remotive, RemoteOK, Himalayas, Arbeitnow, Jobicy, WeWorkRemotely, WorkingNomads, 4DayWeek, Workew.
-  2. *Enterprise ATS Platforms:* Greenhouse, Lever, Workday, BambooHR, Ashby, SmartRecruiters.
-  3. *Community & High-Signal Boards:* Hacker News ("Who Is Hiring" via Algolia Search API).
-  4. *AI-Powered Live Web Sourcing:* Gemini / Apinex Google Search Sourcing (`src_google`).
-  5. *Pakistan Regional Tech Hub:* Curated Pakistani software houses (Systems Ltd, InvoZone, CureMD, Rolustech, Emumba, Conrad Labs, Confiz, Educative, Tintash, Programmers Force, Folio3, VentureDive).
-  6. *Developer Communities:* Facebook & LinkedIn recruiter posting pipelines (`src_facebook_community`).
-* **Performance:** Sweeps across all 18 sources MUST complete in under 20 seconds using thread pool concurrency (`ThreadPoolExecutor`).
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Software Engineer (User)
+    participant UI as Pasha Hunt Dashboard
+    participant Disc as 18-Source Radar
+    participant Net as DNS MX Verifier
+    participant ATS as ATS 95+ Engine
+    participant AI as Fact-Grounded LLM
+    participant Chrome as Headless Edge/Chrome
+    participant Mail as Gmail IMAP Server
+    actor HR as Recruiter / Hiring Manager
+
+    Dev->>UI: Launch App & Upload Master CV PDF
+    UI->>ATS: Ingest & Compute Baseline Score
+    ATS-->>UI: Baseline Score (e.g., 73/100 Qualified)
+    Dev->>UI: Click [Optimize All Bullets (Google XYZ)]
+    ATS-->>UI: Score Elevated to 100/100 Elite Tier!
+    
+    Dev->>UI: Click [Scan for Jobs Now]
+    UI->>Disc: Sweep 18 Feeds Concurrently
+    Disc-->>Net: Raw Opportunities with Extracted Emails
+    Net->>Net: Socket DNS MX Resolution (verify_email_domain)
+    Net-->>UI: Display Jobs with [✔ Verified Recruiter Domain] Badges
+    
+    Dev->>UI: Select Verified Job & Click [Draft Email + CV]
+    UI->>AI: Reason over Job Description + Master Profile
+    AI-->>UI: Tailored Summary & Impact Bullets
+    UI->>Chrome: Compile Clean A4 HTML to PDF
+    Chrome-->>UI: Tailored_CV.pdf Generated (<1.5s)
+    UI->>Mail: Append RFC 2822 Message to [Gmail]/Drafts
+    Mail-->>UI: Draft Created Successfully!
+    
+    Dev->>Mail: Review Draft in Gmail Mobile/Desktop & Click Send
+    Mail->>HR: Delivered Directly to Recruiter Inbox (0% Bounce)
+```
+
+---
+
+## 5. Detailed Functional Requirements (FR)
+
+### FR-1: Autonomous 18-Source Sourcing Matrix
+* **Requirement:** Asynchronously ingest, normalize, and parse job opportunities from 18 distinct sources.
+* **Architecture:** Executed using Python `ThreadPoolExecutor` with per-domain rate limiting to prevent IP throttling.
+* **Sources Covered:**
+  * Remotive, RemoteOK, Himalayas, Arbeitnow, Jobicy, WeWorkRemotely, WorkingNomads, 4DayWeek, Workew.
+  * Enterprise ATS Portals: Greenhouse, Lever, Workday, BambooHR, Ashby, SmartRecruiters.
+  * Hacker News Algolia Search API (`src_hn`).
+  * Dedicated Pakistan Tech Houses (`src_pakistan_tech`): InvoZone, Systems Ltd, Rolustech, CureMD, Emumba, Conrad Labs, Confiz, Educative, Tintash, Programmers Force, Folio3, VentureDive.
+  * Developer Community Channels (`src_facebook_community`).
+  * Live Google Sourcing (`src_google`) powered by Apinex / Gemini.
 
 ### FR-2: Intelligent Prefiltering & Geolocation Governance
-* **Requirement:** Ingested postings MUST be rigorously filtered to eliminate irrelevant roles, over-senior positions, and geographic disqualifiers.
-* **Specifications:**
-  * **Role AST Matching:** Exact and fuzzy token matching against target roles (`Full Stack Developer`, `Python Engineer`, `AI Engineer`, `Next.js Developer`).
-  * **Exclusion Filtering:** Reject postings containing disqualifying keywords (`Senior Director`, `VP of Engineering`, `Staff Architect`, `10+ years`, `PhD Required`).
-  * **Work Mode Governance:**
-    * Global remote roles open to worldwide/contract candidates.
-    * Regional Pakistan roles (Lahore onsite/hybrid, Islamabad onsite/hybrid, Pakistan-wide remote).
-  * **Posting Freshness:** Auto-drop listings older than 30 calendar days.
+* **Requirement:** Filter postings using deterministic AST token rules to guarantee relevancy before presentation.
+* **Filtering Rules:**
+  * Match target roles (`Full Stack Developer`, `Python Engineer`, `AI Engineer`, `Next.js Developer`).
+  * Disqualify senior leadership filters (`VP`, `Director`, `Staff Architect`, `10+ years`, `PhD`).
+  * Geolocation unlocking: Accept Global Worldwide Remote, Pakistan Remote, and Lahore/Islamabad Hybrid/Onsite.
+  * Age restriction: Reject listings published over 30 calendar days ago.
 
 ### FR-3: Socket DNS MX Email Deliverability Engine
-* **Requirement:** Every extracted recruiter email MUST be pre-validated at the network layer before presenting it to the user or injecting drafts, guaranteeing zero 550 bounces.
-* **Specifications:**
-  * **Blacklist Interceptor:** Automatically reject dummy/template domains (`company.com`, `example.com`, `yourcompany.com`, `email.com`, `domain.com`).
-  * **DNS Socket Resolution:** For every target domain (e.g. `invozone.com`), perform live socket address resolution (`socket.getaddrinfo(domain, 80)`).
-  * **In-Memory Caching:** Resolved domains MUST be cached in `_domain_cache` to minimize DNS overhead during large batch runs.
-  * **UI Badge Classification:**
-    * Validated Domain: Display `✔ Verified Recruiter Domain (Deliverable)` with prominent green visual badge.
-    * Failed or Missing Domain: Blank out email, set `email_verified = False`, and mark role as `Apply on company portal link`.
+* **Requirement:** Guarantee zero 550 *"Address not found"* email bounces by verifying domains at the network socket layer.
+
+```mermaid
+flowchart TD
+    Start["Extracted Email (e.g., hr@domain.com)"] --> RegexCheck{"Valid RFC 5322 Format?"}
+    RegexCheck -- No --> Reject["Drop Email / Mark Portal Apply"]
+    RegexCheck -- Yes --> BlacklistCheck{"In DUMMY_DOMAINS?<br/>(company.com, example.com, etc.)"}
+    BlacklistCheck -- Yes --> Reject
+    BlacklistCheck -- No --> CacheCheck{"Domain in _domain_cache?"}
+    CacheCheck -- Yes --> UseCached["Return Cached Verdict in O(1)"]
+    CacheCheck -- No --> SocketCall["socket.getaddrinfo(domain, 80)"]
+    SocketCall -- Success (A/MX Resolved) --> MarkVerified["email_verified = True<br/>Cache True"]
+    SocketCall -- gaierror / Timeout --> MarkInvalid["email = ''<br/>email_verified = False<br/>Cache False"]
+    MarkVerified --> GreenBadge["UI Badge: ✔ Verified Recruiter Domain (Deliverable)"]
+    MarkInvalid --> AmberBadge["UI Badge: Apply on company portal link"]
+```
 
 ### FR-4: ATS 95+ Resume Scorer & Google XYZ Bullet Optimization Engine
-* **Requirement:** The platform MUST evaluate the candidate's active CV against enterprise ATS parsing standards and provide automated bullet point restructuring.
-* **Scoring Rubric (0–100 Total Points):**
-  1. **Contact & Professional Links (15 pts):** Name, valid phone, email, LinkedIn, and GitHub URL presence.
-  2. **Professional Summary (15 pts):** 40+ words with target role positioning and core competencies.
-  3. **Experience Impact & Metrics (35 pts):**
-     * Presence of work history entries (10 pts).
-     * Action-verb driven bullets (10 pts).
-     * Quantifiable impact metrics (percentages, dollar amounts, performance numbers, scale) (15 pts).
-  4. **Categorized Skills Taxonomy (20 pts):** Structured separation of Languages, Frameworks, AI/ML Tools, Databases, and DevOps.
-  5. **Education & Certifications (15 pts):** Degree title, institution, graduation date, and verified hackathon/industry certificates.
-* **Google XYZ Formula Engine:**
-  * The engine MUST inspect all bullet points and restructure them into:
-    `[Action Verb] + [Specific Technical Scope/X] + [Quantified Business Metric/Y] + [Using Tools & Methodologies/Z]`
-  * Elevates candidate profiles from baseline (60–75) to elite tier (95–100 ATS Ready).
-* **Interactive ATS Dialog:** A dedicated UI modal featuring real-time score calculation, visual category bars, audit recommendations, and a one-click *"Optimize All Bullets (Google XYZ)"* button.
+* **Requirement:** Evaluate candidate profiles across 5 categories (100-point rubric) and provide one-click restructuring into the Google XYZ formula:
+  $$\text{Accomplished } [X] \text{ measured by } [Y] \text{ doing } [Z]$$
+
+```mermaid
+flowchart LR
+    subgraph RUBRIC ["100-Point ATS Rubric"]
+        C1["Contact & Links<br/>15 Pts"]
+        C2["Summary Depth<br/>15 Pts"]
+        C3["Experience & Metrics<br/>35 Pts"]
+        C4["Skills Taxonomy<br/>20 Pts"]
+        C5["Education & Certs<br/>15 Pts"]
+    end
+
+    subgraph BANDS ["Score Tiers"]
+        T1["95 - 100: Elite (Top 2% ATS Ready)"]
+        T2["85 - 94: Competitive (Top 10%)"]
+        T3["70 - 84: Qualified (Average)"]
+        T4["0 - 69: Sub-Optimal (Rejection Risk)"]
+    end
+
+    C1 & C2 & C3 & C4 & C5 --> Calculate["calculate_ats_score()"]
+    Calculate --> BANDS
+```
+
+#### Google XYZ Formula Transformation Samples
+
+> [!TIP]
+> **Before (Baseline Score: 73):**
+> *"Built full stack web applications with Next.js and Laravel."*  
+> **After Google XYZ Optimization (Elite Score: 100):**
+> *"Architected and deployed 15+ production full-stack web applications using Next.js, Laravel, and PostgreSQL, maintaining 99.9% uptime for 50,000+ monthly active users."*
+
+> [!TIP]
+> **Before (Baseline Score: 73):**
+> *"Worked with Gemini AI to build tools."*  
+> **After Google XYZ Optimization (Elite Score: 100):**
+> *"Engineered autonomous AI agent workflows leveraging Gemini API and AgentOps, slashing repetitive business data-processing times by 65%."*
 
 ### FR-5: Robust Multi-Page PDF CV Ingestion
-* **Requirement:** Candidates MUST be able to import their existing PDF resume directly into the application with zero dependency on proprietary third-party libraries.
-* **Specifications:**
-  * Migration from legacy PyMuPDF (`fitz`) to standard, cross-platform `pypdf`.
-  * Multi-page streaming text extraction with whitespace normalization.
-  * Robust fallback parser (`_parse_cv_text_to_profile`) that reconstructs structured JSON from raw text if the AI structuring API is temporarily unavailable.
+* **Requirement:** Ingest user resumes from standard PDF files using pure-Python `pypdf`, eliminating legacy `fitz` (PyMuPDF) DLL collisions on Windows 10/11.
+* **Extraction:** Iterates across all pages, normalizes whitespace, and parses contact info, skills, experience, and education via structured AI structuring or deterministic token fallback.
 
-### FR-6: Fact-Grounded AI Reasoning & Document Tailoring
-* **Requirement:** Every tailored resume and cover letter MUST be strictly grounded in verified facts from `profile.json`.
-* **Zero-Hallucination Guardrails:**
-  * The LLM is strictly prohibited from inventing employer names, dates of employment, degrees, or unverified skills.
-  * The LLM's operational scope is strictly confined to:
-    1. Selecting the top 3–4 most relevant projects for the target job description.
-    2. Re-ordering and prioritizing bullet points based on JD technology overlap.
-    3. Crafting a high-impact, professional summary aligned with the company's domain.
-* **Multi-Model Hierarchy:**
-  * Tier 1: Apinex / Gemini 3.8 Flash (`free/gemini-3.8-flash`).
-  * Tier 2: DeepSeek V4.1 Flash (`free/deepseek-v4.1-flash`).
-  * Tier 3: Native Google Gemini 2.5 Flash API.
-  * Tier 4: Fully offline deterministic master profile assembly.
+### FR-6: Fact-Grounded AI Reasoning & Tailoring Engine
+* **Requirement:** Re-prioritize bullet points and write tailored company introductions while strictly prohibiting the invention of false facts.
+* **Model Hierarchy:**
+  1. *Tier 1:* Apinex / Gemini 3.8 Flash (`free/gemini-3.8-flash`).
+  2. *Tier 2:* DeepSeek V4.1 Flash (`free/deepseek-v4.1-flash`).
+  3. *Tier 3:* Native Google Gemini 2.5 Flash API.
+  4. *Tier 4:* Deterministic offline master profile injection (100% offline capability).
 
 ### FR-7: Headless Chromium / Edge PDF Compilation
-* **Requirement:** Resumes MUST compile to publication-grade, ATS-parsable A4 PDFs using native operating system components without external print services.
-* **Specifications:**
-  * HTML5/CSS3 template with standard A4 page geometry (210mm × 297mm, 15mm margins).
-  * Strict typography: Inter, Roboto, Arial, or system sans-serif with proper line heights.
-  * CSS print directives: `break-inside: avoid;` on job blocks to prevent orphaned headers or split bullets.
-  * Headless execution: Launches `msedge.exe` or `chrome.exe` with `--headless=new --print-to-pdf=<dest> --no-pdf-header-footer`.
-  * Generates clean PDF files under 200 KB in under 1.5 seconds.
+* **Requirement:** Render publication-grade, ATS-parsable A4 PDFs using native Windows Microsoft Edge (`msedge.exe`) or Google Chrome.
+* **Print Specification:**
+  * Page Size: A4 (`210mm × 297mm`), `15mm` margins.
+  * Layout Engine: `--headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf=<dest>`.
+  * CSS Rules: `break-inside: avoid;` on all work experience blocks to prevent orphaned headers.
 
 ### FR-8: Gmail IMAP Draft Injection & Outreach Hub
-* **Requirement:** Applications MUST be staged in the candidate's Gmail Drafts folder for final review, avoiding accidental spamming while saving 95% of manual drafting time.
-* **Specifications:**
-  * RFC 2822 MIME multipart message construction.
-  * Direct TLS connection to `imap.gmail.com:993`.
-  * Draft injection via `IMAP4_SSL.append()` with `\Draft` flag.
-  * Attaches the tailored PDF resume automatically.
-  * Logs application to `tracker.csv` with timestamp, company, role, recruiter email, and draft ID.
+* **Requirement:** Stage applications in `[Gmail]/Drafts` with attached tailored PDFs for one-click candidate review and sending.
+* **Security:** Connects via TLS to `imap.gmail.com:993` using candidate's local Gmail App Password; zero credentials transmitted to cloud servers.
 
-### FR-9: Modern Dark Dashboard UI (Obsidian Void Theme)
-* **Requirement:** A responsive, modern desktop UI styled with an Obsidian Dark aesthetic and native Windows 11 DWM integration.
-* **Visual Specifications:**
-  * Palette: Obsidian Void (`#0B0F19`), Midnight Slate (`#111827`), Dark Slate Border (`#1E293B`), Cyber Azure (`#38BDF8`), Neon Emerald (`#10B981`).
-  * Immersive Dark Titlebar via `ctypes.windll.dwmapi.DwmSetWindowAttribute`.
-  * Hero Metrics Banner displaying live KPI cards:
-    * 📊 **ATS Health:** `100% Elite`
-    * 🎯 **Matches:** Total active jobs
-    * ✉️ **Verified HR:** Real deliverable emails
-    * 🚀 **Ready to Apply:** Drafted applications
+### FR-9: Modern Dark Dashboard UI (Obsidian Void Design System)
+* **Requirement:** Modern desktop UI featuring native Windows 11 DWM dark titlebar interop, real-time Hero KPI metrics, and dedicated modal dialogs.
 
----
+```mermaid
+graph TD
+    subgraph UI_MOCKUP ["Pasha Hunt 2.0 Desktop Dashboard"]
+        TOP["Toolbar: [📤 Upload CV]  [🎯 ATS 95+ Optimizer]  [👤 My Profile]  [AI Model Selector ▾]"]
+        HERO["Hero KPI Banner: 📊 ATS Score: 100% (Elite) | 🎯 Matches: 24 | ✉️ Verified HR: 18 | 🚀 Ready: 12"]
+        TABLE["Job Stream Grid: Status | Fit | Company | Role | Deliverable Email"]
+        DETAIL["Action Pane: Verified Recruiter Domain Badge | [✉ Draft Email + CV]  [📄 Make PDF]  [🌐 Open URL]"]
+        LOG["Real-Time Execution Log Console"]
+    end
 
-## 5. Non-Functional Requirements (NFR)
-
-### NFR-1: Performance & Responsiveness
-* Desktop UI startup time MUST be under 1.8 seconds on standard Windows 10/11 machines.
-* All network I/O (scraping, DNS queries, LLM calls, IMAP operations) MUST execute in background daemon threads; the UI thread MUST never freeze or display *"Not Responding"*.
-* PDF generation from tailored HTML MUST complete in under 2.0 seconds.
-
-### NFR-2: Offline Resilience & Fault Tolerance
-* In the event of internet disconnection or API rate limits (HTTP 429), the application MUST degrade gracefully by using cached job listings and generating deterministic master CVs.
-* No partial file corruption: Configuration and profile writes MUST use atomic write-then-rename patterns.
-
-### NFR-3: Security, Privacy & AgentShield Protocol
-* Zero cloud telemetry: No user metrics, resume contents, or email addresses are ever sent to remote analytics servers.
-* Gmail app passwords and API keys are stored solely in the local `%APPDATA%\Job Hunter\config.json` file.
-* Git repository isolation: All credential files, candidate profiles, and database files are enforced in `.gitignore`.
-
-### NFR-4: Deployment & Portability
-* The application MUST package into a single standalone Windows executable (`PashaHunt.exe`) via PyInstaller.
-* The installer MUST be compiled with Inno Setup 6 (`PashaHuntSetup_v2.0.exe`) creating desktop shortcuts, start menu items, and clean uninstaller support.
-* Zero Python runtime installation required on the end-user's operating system.
-
----
-
-## 6. Data Architecture & Schemas
-
-### 6.1 `profile.json` (Candidate Master Profile)
-```json
-{
-  "name": "Muhammad Mubashar",
-  "title": "Full Stack Web Developer — Data Driven, AI First",
-  "email": "mubasharpasha555@gmail.com",
-  "phone": "+92 300 1234567",
-  "location": "Lahore, Pakistan (Open to Onsite/Hybrid/Remote)",
-  "links": {
-    "portfolio": "https://pasha-portfolio-v10.vercel.app",
-    "github": "https://github.com/pasha804",
-    "linkedin": "https://linkedin.com/in/pasha-dev"
-  },
-  "summary": "Full Stack Software Engineer with 4+ years of hands-on experience building, scaling, and shipping resilient web applications and autonomous AI agents...",
-  "skills": {
-    "languages": ["Python", "JavaScript", "TypeScript", "PHP", "SQL"],
-    "frameworks": ["Next.js", "React", "Laravel", "Node.js", "FastAPI"],
-    "ai_ml": ["Gemini API", "AgentOps", "Claude/Anthropic", "IBM WatsonX", "LangChain"],
-    "databases": ["PostgreSQL", "Supabase", "MySQL", "Redis"],
-    "devops": ["Docker", "Git/GitHub", "Vercel", "CI/CD"]
-  },
-  "experience": [
-    {
-      "company": "Pasha Dev Solutions",
-      "role": "Lead Full Stack & AI Systems Engineer",
-      "period": "2022 - Present",
-      "bullets": [
-        "Architected and deployed 15+ production full-stack web applications using Next.js, Laravel, and PostgreSQL, maintaining 99.9% uptime for 50,000+ monthly active users.",
-        "Engineered autonomous AI agent workflows leveraging Gemini API and AgentOps, slashing repetitive business data-processing times by 65%."
-      ]
-    }
-  ],
-  "projects": [
-    {
-      "name": "Pasha DevPilot",
-      "repo": "https://github.com/pasha804/pasha-devpilot",
-      "tech": "Next.js, TypeScript, Gemini API, Tailwind CSS",
-      "description": "AI-powered developer acceleration tool automating code generation, documentation parsing, and git commit workflows with real-time streaming output."
-    }
-  ],
-  "certifications": [
-    {
-      "name": "IBM Bob 2.0 Hackathon Winner & Solution Architect",
-      "issuer": "NativelyAI & IBM",
-      "date": "Sep 25-27, 2026",
-      "credential_url": "https://lablab.build/u/@pasha_dev_/ai-hackathons/ibm-bob-2-hackathon/certificate",
-      "tech": "AgentOps, AI/ML API, Antigravity, IBM WatsonX, IBM Granite, Redis"
-    }
-  ],
-  "education": [
-    {
-      "institution": "University of Central Punjab",
-      "degree": "Bachelor of Science in Computer Science (BSCS)",
-      "period": "2020 - 2024"
-    }
-  ]
-}
-```
-
-### 6.2 `tracker.csv` (Application Ledger)
-```csv
-date,company,role,email,poster,post_url,cv_file,draft_id,status
-2026-11-10 21:00:00,InvoZone,Full Stack Engineer,careers@invozone.com,HR Team,https://invozone.com/careers,cvs/InvoZone_Full_Stack_Engineer_CV.pdf,draft_18a5bc9,DRAFTED
-2026-11-10 21:05:00,Systems Limited,Python Backend Developer,careers@systemsltd.com,Talent Acquisition,https://systemsltd.com,cvs/Systems_Limited_Python_CV.pdf,draft_18a5bd2,SENT
+    TOP --> HERO --> TABLE --> DETAIL --> LOG
 ```
 
 ---
 
-## 7. Quality Gates & Acceptance Criteria
+## 6. Entity-Relationship Data Model
 
-| Feature Area | Acceptance Test Criteria | Status |
-|---|---|---|
-| **DNS MX Verification** | Any email domain returning `socket.gaierror` MUST be flagged as non-deliverable with zero 550 email bounces. | ✅ PASSED |
-| **ATS 95+ Scoring** | Candidate profile evaluates across all 5 categories and achieves 95–100 score. | ✅ PASSED |
-| **Google XYZ Transformation** | Bullets without quantifiable metrics are automatically augmented with action verbs and impact metrics. | ✅ PASSED |
-| **PDF Ingestion** | Master PDF CV uploads cleanly via `pypdf` without crashing on complex font structures. | ✅ PASSED |
-| **Modern Dark UI** | Windows 11 DWM dark titlebar activates cleanly; Hero KPIs calculate live counts. | ✅ PASSED |
-| **Compilation & Packaging** | `PashaHunt.exe` builds cleanly; `PashaHuntSetup_v2.0.exe` installs and executes flawlessly. | ✅ PASSED |
+```mermaid
+erDiagram
+    CANDIDATE_PROFILE ||--o{ WORK_EXPERIENCE : contains
+    CANDIDATE_PROFILE ||--o{ PROJECT : builds
+    CANDIDATE_PROFILE ||--o{ CERTIFICATION : holds
+    CANDIDATE_PROFILE ||--o{ EDUCATION : completes
+    JOB_POSTING ||--o{ APPLICATION_DRAFT : generates
+    APPLICATION_DRAFT ||--|| COMPILED_PDF : attaches
+    APPLICATION_DRAFT ||--|| TRACKER_RECORD : records
+
+    CANDIDATE_PROFILE {
+        string name
+        string email
+        string phone
+        string title
+        string location
+        int ats_score
+        string ats_tier
+    }
+
+    WORK_EXPERIENCE {
+        string company
+        string role
+        string period
+        list bullets_xyz
+    }
+
+    JOB_POSTING {
+        string job_id
+        string company
+        string role
+        string email
+        boolean email_verified
+        string source
+        string url
+    }
+
+    APPLICATION_DRAFT {
+        string draft_id
+        string recipient_email
+        string subject
+        string cover_letter
+        datetime timestamp
+    }
+
+    TRACKER_RECORD {
+        datetime date
+        string company
+        string role
+        string email
+        string status
+    }
+```
 
 ---
 
-## 8. Release Roadmap
+## 7. State Machine: Application Lifecycle
 
-* **v1.0.0 (Foundation):** Multi-source scraping, basic regex filtering, reportLab PDF generation.
-* **v2.0.0 (Current Production Release):**
-  * Socket DNS MX email validation engine.
-  * ATS 95+ deep scorer & Google XYZ auto-rewriter.
-  * Headless Chromium A4 PDF compilation.
-  * Modern Obsidian Void dark theme with native Windows 11 DWM titlebar.
-  * Cross-platform `pypdf` resume ingestion.
-  * Unified Windows setup installer.
-* **v2.1.0 (Next Milestone):**
-  * Real-time Telegram/WhatsApp alerts when recruiters reply to sent applications.
-  * Automated follow-up email scheduler (e.g. 5 days after initial outreach).
-* **v3.0.0 (Autonomous Web Application):**
-  * Headless Playwright form autofill for Greenhouse, Lever, and Workday external portals.
+```mermaid
+stateDiagram-v2
+    [*] --> Ingested: Scraped from 18 Sources
+    
+    Ingested --> Prefiltered: Passed AST Role & Geo Filter
+    Ingested --> Discarded: Failed Keywords / Too Old
+    
+    Prefiltered --> DNS_Resolving: Extract Email
+    DNS_Resolving --> Verified_HR: Domain Resolves via Socket
+    DNS_Resolving --> Portal_Apply: Domain Fails / Blacklisted
+    
+    Verified_HR --> AI_Reasoning: Candidate Requests Application
+    Portal_Apply --> Manual_Apply: Candidate Opens Portal Link
+    
+    AI_Reasoning --> PDF_Compiled: Headless Edge Generates A4 CV
+    PDF_Compiled --> Drafted_Gmail: IMAP Appends to [Gmail]/Drafts
+    
+    Drafted_Gmail --> Sent: Candidate Clicks Send in Gmail
+    Sent --> Recruiter_Replied: IMAP Tracker Detects Interview
+    Sent --> Archived: No Reply after 30 Days
+```
 
 ---
-*End of Product Requirements Document (PRD)*
+
+## 8. Non-Functional Requirements (NFR)
+
+```mermaid
+graph LR
+    subgraph NFR ["Core Non-Functional Pillars"]
+        N1["⚡ Performance<br/>Startup <1.8s<br/>PDF Gen <1.5s<br/>18 Feeds <20s"]
+        N2["🛡️ Security<br/>Zero Cloud Storage<br/>Local %APPDATA%<br/>Strict .gitignore"]
+        N3["🔌 Portability<br/>Standalone .exe<br/>Inno Setup Installer<br/>Zero Python Prerequisite"]
+        N4["🔄 Resilience<br/>Socket DNS Cache<br/>Deterministic Fallback<br/>Clean Process Exit"]
+    end
+```
+
+* **NFR-1 (Performance):** UI thread remains 100% responsive during background sweeps; PDF compilation generates publication-grade documents under 1.5 seconds.
+* **NFR-2 (Privacy & Security):** Zero cloud telemetry. All API keys and email credentials remain in local `%APPDATA%\Job Hunter\config.json`.
+* **NFR-3 (Portability):** Packages into a standalone Windows binary via PyInstaller and an enterprise Windows setup wizard via Inno Setup 6.
+* **NFR-4 (Fault Tolerance):** If LLM APIs are offline or rate-limited (HTTP 429), the application seamlessly generates deterministic applications using the candidate's master profile without crashing.
+
+---
+
+## 9. Release Milestones & Strategic Roadmap
+
+```mermaid
+flowchart LR
+    v1["v1.0 Foundation<br/>- Multi-source scraper<br/>- Regex filters<br/>- Basic ReportLab CV"]
+    
+    v2["v2.0 Production (Current)<br/>- Socket DNS MX Engine<br/>- ATS 95+ Google XYZ Rewriter<br/>- Headless Chromium A4 PDF<br/>- Obsidian Dark DWM Theme<br/>- pypdf Streaming Ingestion"]
+    
+    v2_1["v2.1 Alert Intel (Next)<br/>- Real-time WhatsApp/Telegram Recruiter Alerts<br/>- 5-Day Automated Follow-Up Drafter"]
+    
+    v3["v3.0 Autonomous Agent<br/>- Playwright Web Form Autofill (Greenhouse/Lever)<br/>- Voice AI Mock Interview Simulator"]
+
+    v1 --> v2 --> v2_1 --> v3
+```
+
+---
+*End of Product Requirements Document (PRD) — Pasha Hunt 2.0*
