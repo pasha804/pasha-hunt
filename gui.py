@@ -169,26 +169,32 @@ ROW = "  {:<12}{:<15}{:<28}{:<54}{}\n"
 ROW_HEAD = ROW.format("STATUS", "SOURCE", "COMPANY", "ROLE", "EMAIL / LINK")
 REASON_INDENT = 2 + 12 + 15  # reasons line up under the Company column
 
-# ---------- 5-Color Luxury Theme (User Selected Palette) ----------
-# 1. Indigo: #540D6E (Deep Royal Violet)
-# 2. Watermelon: #EE4266 (Vibrant Coral Red)
-# 3. Golden Pollen: #FFD23F (Warm Vivid Gold)
-# 4. Turquoise: #3BCEAC (Electric Mint Aqua)
-# 5. Jungle Green: #0EAD69 (Cyber Emerald)
-INDIGO = "#540D6E"
-WATERMELON = "#EE4266"
-GOLD = "#FFD23F"
-TURQUOISE = "#3BCEAC"
-JUNGLE = "#0EAD69"
+# ---------- Modern Dark Dashboard Palette (Linear / Obsidian High-End) ----------
+CYBER_AZURE = "#38BDF8"     # Electric Cyan / Primary Action
+NEON_EMERALD = "#10B981"    # Verified Direct Email / 95+ ATS Elite
+VIVID_AMBER = "#F59E0B"     # Action / Warning
+CORAL_ROSE = "#F43F5E"      # Stop / Alert
+VIOLET_INDIGO = "#6366F1"   # Deep Indigo Accent
+OBSIDIAN_VOID = "#0B0F19"   # Core Canvas Background
+SLATE_SURFACE = "#111827"   # Modern Card Surface
+SLATE_BORDER = "#1E293B"    # Clean Minimal Border
+SLATE_MUTED = "#94A3B8"     # Slate Secondary Muted Text
+PURE_INK = "#F8FAFC"        # Pure High-Contrast White Text
 
-GRADIENT = [(10, 7, 20), (22, 13, 38), (35, 18, 56), (18, 11, 32)]  # Deep obsidian infused with Indigo
+INDIGO = VIOLET_INDIGO
+WATERMELON = CORAL_ROSE
+GOLD = VIVID_AMBER
+TURQUOISE = CYBER_AZURE
+JUNGLE = NEON_EMERALD
+
+GRADIENT = [(11, 15, 25), (15, 23, 42), (20, 30, 50), (13, 20, 36)]  # Deep Space Obsidian Slate
 PERIOD = 2400   # pixels along the diagonal before the colours repeat
 BAND = 6        # width of one colour band
 GAP, PAD, RADIUS = 14, 10, 14  # space between cards, card padding, corner radius
 FROST, SMOKE = 0.15, 0.80       # subtle dark glass tinting
-WHITE, NIGHT = (255, 255, 255), (10, 7, 20)
-INK, MUTED, LIGHT_INK, LIGHT_MUTED = "#F8FAFC", "#A79BBF", "#F8FAFC", "#A79BBF"
-SURFACE, LINE, ACCENT, CONSOLE, DIALOG = "#130D24", "#2E1C4E", TURQUOISE, "#07040D", "#0A0714"
+WHITE, NIGHT = (255, 255, 255), (11, 15, 25)
+INK, MUTED, LIGHT_INK, LIGHT_MUTED = PURE_INK, SLATE_MUTED, PURE_INK, SLATE_MUTED
+SURFACE, LINE, ACCENT, CONSOLE, DIALOG = SLATE_SURFACE, SLATE_BORDER, CYBER_AZURE, "#070A10", OBSIDIAN_VOID
 
 
 def ago(iso):
@@ -533,11 +539,11 @@ class Card(tk.Frame):
 
     def tint(self):
         under = gradient_at(self.centre)
-        face = mix(under, (7, 4, 13), 0.85) if self.dark else mix(under, (20, 13, 36), 0.80)
+        face = mix(under, (9, 13, 22), 0.88) if self.dark else mix(under, (17, 24, 39), 0.82)
         if face == self.face:
             return
         self.face, bg = face, hexcolor(face)
-        outline_col = hexcolor(mix(face, (84, 13, 110), 0.35 if not self.dark else 0.15))
+        outline_col = hexcolor(mix(face, (30, 41, 59), 0.45 if not self.dark else 0.20))
         self.canvas.itemconfigure(self.shape, fill=bg, outline=outline_col)
         todo = [self]
         while todo:
@@ -546,7 +552,7 @@ class Card(tk.Frame):
             if getattr(w, "solid", False):
                 continue
             if isinstance(w, tk.Checkbutton):
-                w.configure(bg=bg, activebackground=bg, fg="#F8FAFC", activeforeground=TURQUOISE, selectcolor="#0A0714")
+                w.configure(bg=bg, activebackground=bg, fg="#F8FAFC", activeforeground=CYBER_AZURE, selectcolor="#0B0F19")
             elif isinstance(w, (tk.Frame, tk.Label)):
                 w.configure(bg=bg)
 
@@ -563,7 +569,7 @@ def enable_dark_title_bar(window):
             hwnd = window.winfo_id()
         dark_mode = ctypes.c_int(1)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(dark_mode), ctypes.sizeof(dark_mode))
-        caption_color = ctypes.c_int(0x00240D13)  # BGR for #130D24 (Deep Indigo Surface)
+        caption_color = ctypes.c_int(0x00190F0B)  # BGR for #0B0F19 (Deep Obsidian Void)
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(caption_color), ctypes.sizeof(caption_color))
         text_color = ctypes.c_int(0x00FCFAF8)  # Crisp Titanium White
         ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 36, ctypes.byref(text_color), ctypes.sizeof(text_color))
@@ -984,6 +990,8 @@ class App(tk.Tk):
                 ("📤  Upload my CV", self.upload_cv, True,
                  "Gemini reads your CV (PDF, Word, text or a photo) once and builds your profile. Every tailored "
                  "CV is made only from facts in it."),
+                ("🎯  ATS 95+ Optimizer", self.ats_optimizer, False,
+                 "Audit your CV, check ATS score (0-100), and 1-click auto-optimize all bullets with Google XYZ formula."),
                 ("👤  My profile", self.open_profile, False, "Check or correct your profile (profile.json) in Notepad."),
                 ("📝  Tailor CV to a job description…", self.paste_job, True,
                  "Paste any job post (LinkedIn, a company site, …) and get a tailored CV + cover letter for it.")]:
@@ -1009,14 +1017,167 @@ class App(tk.Tk):
         self.model_lbl.pack(side="left", padx=(8, 0))
         self.fill_models()
 
+        # Hero Metrics Banner
+        row_metrics = c.row(pady=(8, 2))
+        self.metric_ats = tk.Label(row_metrics, text="📊 ATS Score: …", bg="#162032", fg="#10B981", font=("Segoe UI", 9, "bold"), padx=10, pady=3, relief="solid", bd=1)
+        self.metric_ats.solid = True
+        self.metric_ats.pack(side="left", padx=(0, 8))
+        self.metric_ats.bind("<Button-1>", lambda e: self.ats_optimizer())
+        Tooltip(self.metric_ats, "Click to open ATS 95+ Resume Optimizer & Google XYZ Bullet Enhancer.")
+
+        self.metric_jobs = tk.Label(row_metrics, text="🎯 Matches: 0", bg="#162032", fg="#38BDF8", font=("Segoe UI", 9, "bold"), padx=10, pady=3, relief="solid", bd=1)
+        self.metric_jobs.solid = True
+        self.metric_jobs.pack(side="left", padx=(0, 8))
+
+        self.metric_emails = tk.Label(row_metrics, text="✉️ Verified HR: 0", bg="#162032", fg="#A78BFA", font=("Segoe UI", 9, "bold"), padx=10, pady=3, relief="solid", bd=1)
+        self.metric_emails.solid = True
+        self.metric_emails.pack(side="left", padx=(0, 8))
+
+        self.metric_apps = tk.Label(row_metrics, text="🚀 Ready to Apply: 0", bg="#162032", fg="#F59E0B", font=("Segoe UI", 9, "bold"), padx=10, pady=3, relief="solid", bd=1)
+        self.metric_apps.solid = True
+        self.metric_apps.pack(side="left", padx=(0, 8))
+
     def show_profile(self):
         try:
             with open(PROFILE, encoding="utf-8") as f:
                 p = json.load(f)
-            self.profile_lbl.config(text=f"Using: {p['name']}  ·  {p['default_title'][:60]}  ·  "
-                                         f"{len(p['experience'])} roles  (profile.json)")
+            ats_info = bot.calculate_ats_score(p)
+            self.profile_lbl.config(text=f"Using: {p['name']}  ·  {p['default_title'][:50]}  ·  "
+                                         f"{len(p['experience'])} roles  (ATS: {ats_info['total']}%)")
         except (OSError, ValueError, KeyError):
             self.profile_lbl.config(text="No profile yet. Press Upload my CV.")
+        self.update_metrics()
+
+    def update_metrics(self):
+        try:
+            if hasattr(self, "metric_ats"):
+                try:
+                    with open(PROFILE, encoding="utf-8") as f:
+                        prof = json.load(f)
+                    res = bot.calculate_ats_score(prof)
+                    sc = res["total"]
+                    col = NEON_EMERALD if sc >= 90 else (VIVID_AMBER if sc >= 70 else CORAL_ROSE)
+                    self.metric_ats.config(text=f"📊 ATS Score: {sc}% ({res['rank'].split()[0]})", fg=col)
+                except Exception:
+                    self.metric_ats.config(text="📊 ATS Score: N/A", fg="#94A3B8")
+
+            if hasattr(self, "metric_jobs"):
+                jobs = getattr(self, "jobs", []) or []
+                self.metric_jobs.config(text=f"🎯 Matches: {len(jobs)}")
+                v_emails = sum(1 for j in jobs if bot.verify_email_domain(j.get("email")))
+                self.metric_emails.config(text=f"✉️ Verified HR: {v_emails}")
+                ready_apps = sum(1 for j in jobs if j.get("status") in ("ready", "apply on site"))
+                self.metric_apps.config(text=f"🚀 Ready to Apply: {ready_apps}")
+        except Exception:
+            pass
+
+    def ats_optimizer(self):
+        """Open modern ATS 95+ Resume Optimizer & Google XYZ Bullet Enhancer."""
+        try:
+            with open(PROFILE, encoding="utf-8") as f:
+                prof = json.load(f)
+        except Exception:
+            prof = {}
+        if not prof or not prof.get("name"):
+            messagebox.showinfo("ATS Optimizer", "Please upload your CV first to analyze your ATS score.", parent=self)
+            return
+
+        win = tk.Toplevel(self, background=DIALOG)
+        win.title("Pasha Hunt — ATS 95+ Resume Optimizer & Google XYZ Enhancer")
+        win.transient(self)
+        win.geometry("780x640")
+        enable_dark_title_bar(win)
+
+        frm = tk.Frame(win, bg=DIALOG, padx=16, pady=16)
+        frm.pack(fill="both", expand=True)
+
+        # Header Title
+        tk.Label(frm, text="🎯 ATS 95+ Resume Optimizer", bg=DIALOG, fg=TURQUOISE, font=("Segoe UI", 16, "bold")).pack(anchor="w")
+        tk.Label(frm, text="Audit your CV against top ATS systems (Workday, Greenhouse, Lever) using Google's XYZ Formula.",
+                 bg=DIALOG, fg=MUTED, font=("Segoe UI", 10)).pack(anchor="w", pady=(2, 12))
+
+        # Score Card Frame
+        card_score = tk.Frame(frm, bg=SURFACE, highlightbackground=LINE, highlightthickness=1, padx=16, pady=12)
+        card_score.pack(fill="x", pady=(0, 14))
+
+        lbl_score = tk.Label(card_score, text="", bg=SURFACE, fg=JUNGLE, font=("Segoe UI", 24, "bold"))
+        lbl_score.pack(anchor="w")
+        lbl_breakdown = tk.Label(card_score, text="", bg=SURFACE, fg=INK, font=("Segoe UI", 10))
+        lbl_breakdown.pack(anchor="w", pady=(4, 0))
+
+        # Suggestions box
+        tk.Label(frm, text="Actionable ATS Insights & Suggestions:", bg=DIALOG, fg=INK, font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(6, 4))
+        txt_sugg = tk.Text(frm, bg=CONSOLE, fg=INK, height=5, relief="flat", font=("Segoe UI", 10), padx=8, pady=8)
+        txt_sugg.pack(fill="x", pady=(0, 12))
+
+        # Bullets Audit List
+        tk.Label(frm, text="Experience Bullets (Google XYZ Audit):", bg=DIALOG, fg=INK, font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(4, 4))
+        frame_list = tk.Frame(frm, bg=CONSOLE, relief="flat")
+        frame_list.pack(fill="both", expand=True, pady=(0, 12))
+
+        txt_bullets = tk.Text(frame_list, bg=CONSOLE, fg=INK, relief="flat", font=("Segoe UI", 9), padx=8, pady=8, wrap="word")
+        scroll = ttk.Scrollbar(frame_list, command=txt_bullets.yview)
+        txt_bullets.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y")
+        txt_bullets.pack(side="left", fill="both", expand=True)
+
+        def refresh_view():
+            try:
+                with open(PROFILE, encoding="utf-8") as f:
+                    p_curr = json.load(f)
+            except Exception:
+                p_curr = prof
+            res = bot.calculate_ats_score(p_curr)
+            sc = res["total"]
+            col = JUNGLE if sc >= 90 else (GOLD if sc >= 70 else WATERMELON)
+            lbl_score.config(text=f"Overall ATS Score: {sc} / 100  ·  {res['rank']}", fg=col)
+            lbl_breakdown.config(
+                text=f"📞 Contact: {res['contact']}/15  ·  📝 Summary: {res['summary']}/15  ·  "
+                     f"🚀 Experience Impact: {res['experience']}/35  ·  🛠️ Skills: {res['skills']}/20  ·  🎓 Education: {res['education']}/15\n"
+                     f"Strong Verbs: {res['verb_bullets']}/{res['total_bullets']}  ·  Quantifiable Metrics: {res['metric_bullets']}/{res['total_bullets']}"
+            )
+            txt_sugg.config(state="normal")
+            txt_sugg.delete("1.0", "end")
+            for s in res.get("suggestions", []):
+                txt_sugg.insert("end", f"• {s}\n")
+            txt_sugg.config(state="disabled")
+
+            txt_bullets.config(state="normal")
+            txt_bullets.delete("1.0", "end")
+            for exp in p_curr.get("experience", []):
+                txt_bullets.insert("end", f"\n🏢 {exp.get('company', 'Company')} ({exp.get('title', '')}):\n")
+                for b in exp.get("bullets", []):
+                    has_m = bool(bot.METRIC_RE.search(b))
+                    badge = "[✔ 95+ XYZ Impact] " if has_m else "[⚠️ Needs Metric] "
+                    txt_bullets.insert("end", f"  {badge}{b}\n")
+            txt_bullets.config(state="disabled")
+            self.update_metrics()
+
+        refresh_view()
+
+        # Action Buttons
+        btn_bar = tk.Frame(frm, bg=DIALOG)
+        btn_bar.pack(fill="x")
+
+        def do_optimize():
+            try:
+                with open(PROFILE, encoding="utf-8") as f:
+                    p_curr = json.load(f)
+            except Exception:
+                p_curr = prof
+            p_new, old_s, new_s, count = bot.auto_optimize_bullets_ats(p_curr)
+            refresh_view()
+            self.show_profile()
+            messagebox.showinfo("ATS Optimization Complete",
+                                f"Successfully optimized {count} bullet points!\n\n"
+                                f"ATS Score upgraded: {old_s}/100 ➔ {new_s}/100\n\n"
+                                "Your profile and tailored CVs will now lead with high-impact quantifiable metrics.",
+                                parent=win)
+
+        b_opt = ttk.Button(btn_bar, text="✨  Auto-Optimize All Bullets to 95+ (Google XYZ)", style="Big.TButton", command=do_optimize)
+        b_opt.pack(side="left", padx=(0, 10))
+
+        ttk.Button(btn_bar, text="Close", command=win.destroy).pack(side="right")
 
     def model_state(self):
         """gemini_state.json, or an empty state when it belongs to an older key."""
@@ -1614,6 +1775,7 @@ class App(tk.Tk):
         if self.jobs and matches < 20:
             text += self.near_misses()
         self.count_lbl.config(text=text, wraplength=round(560 * self.scale), justify="left")
+        self.update_metrics()
         if again:
             self.tree.selection_set(again)
             self.tree.see(again)
@@ -1655,11 +1817,21 @@ class App(tk.Tk):
         t.delete("1.0", "end")
         t.insert("end", j["title"] + "\n", "h1")
         t.insert("end", f"{j['company']}  ·  {where(j)[:120]}\n", "h2")
+
+        email_val = j.get("email", "")
+        if email_val:
+            if bot.verify_email_domain(email_val):
+                email_display = f"{email_val}  ·  ✔ Verified Recruiter Domain (Deliverable)"
+            else:
+                email_display = f"{email_val}  ·  ⚠️ Domain Unverified"
+        else:
+            email_display = "No direct email (Apply on company portal link below)"
+
         facts = [("Status", LABEL.get(j["status"], j["status"]) + (f"  ({j['why']})" if j.get("why") else "")),
                  ("Posted", (j.get("date") or "")[:10] + (f"  ({ago(j.get('date'))})" if j.get("date") else "")),
                  ("Salary", j.get("salary", "")), ("Type", j.get("job_type", "")), ("Level", j.get("level", "")),
                  ("Match", MATCH_HELP.get(j.get("match"), "")), ("Note", j.get("note", "")),
-                 ("Tags", j.get("tags", "")), ("Email", j.get("email", "")),
+                 ("Tags", j.get("tags", "")), ("Email", email_display),
                  ("Email found on", j.get("email_src", "")), ("Source", j["source"])]
         for k, v in facts:
             if v:
