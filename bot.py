@@ -2169,7 +2169,7 @@ def pid_alive(pid):
 
 def take_lock():
     """The lock holds the PID of the run that owns it; a run that was killed leaves a lock nobody owns."""
-    if os.path.exists(LOCK) and time.time() - os.path.getmtime(LOCK) < 1500:
+    if os.path.exists(LOCK):
         try:
             with open(LOCK, encoding="utf-8") as f:
                 content = f.read().strip()
@@ -2178,6 +2178,7 @@ def take_lock():
             owner = None
         if owner and pid_alive(owner):
             return False
+        drop_lock()
     try:
         with open(LOCK, "w", encoding="utf-8") as f:
             f.write(str(os.getpid()))
@@ -3063,6 +3064,18 @@ def run_one(job_id, mode):
 
 
 def main():
+    if "--replies" in sys.argv:
+        try:
+            cfg = load_config()
+            if has_gmail(cfg):
+                res = sync_gmail_tracker(cfg)
+                log(f"Gmail Tracker Checked: {res.get('replies_count', 0)} new reply(s) detected.")
+            else:
+                log("Gmail not configured for reply tracking.")
+        except Exception as e:
+            log(f"Reply check note: {e}")
+        return
+
     if "--check-models" in sys.argv:
         try:
             cfg = load_config()
