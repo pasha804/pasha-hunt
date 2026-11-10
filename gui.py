@@ -1628,7 +1628,10 @@ class App(tk.Tk):
 
     def run_bot(self, args, what):
         if self.proc:
+            messagebox.showwarning("Task In Progress", "A background task is currently active. Please wait for it to finish.", parent=self)
             return
+        if not getattr(self, "console_expanded", False):
+            self.toggle_console()
         self.write_log(f"\n▶ {what}\n")
         self.ai_status_lbl.configure(text=f"● {what[:20]}…", fg=WARNING)
         try:
@@ -1679,6 +1682,7 @@ class App(tk.Tk):
     def act(self, mode):
         j = self.selected()
         if not j:
+            messagebox.showinfo("Select Job First", "Please select an opportunity from the table on the left before clicking an action.", parent=self)
             return
         if mode in ("draft", "cv"):
             ok = self.ready_for(gmail=mode == "draft")
@@ -1833,7 +1837,19 @@ class App(tk.Tk):
         pass
 
     def check_replies(self, quiet=False):
-        self.run_bot(["--replies"], "Checking Gmail for recruiter replies")
+        threading.Thread(target=self._async_check_replies, args=(quiet,), daemon=True).start()
+
+    def _async_check_replies(self, quiet=False):
+        try:
+            cfg = read_config()
+            if hasattr(bot, "has_gmail") and bot.has_gmail(cfg):
+                res = bot.sync_gmail_tracker(cfg)
+                count = res.get("replies_count", 0)
+                if count > 0:
+                    self.write_log(f"★ Recruiter Tracker: {count} new response detected!\n")
+                    self.after(0, self.refresh_tracker_table)
+        except Exception:
+            pass
 
     def schedule_reply_checks(self):
         self.check_replies(quiet=True)
