@@ -1331,7 +1331,6 @@ def find_emails_in_text(t):
     return [e.strip(".").lower() for e in found
             if not BAD_EMAIL.search(e)
             and not ROLE_EMAIL.match(e.split("@")[0])
-            and not e.split("@")[0].lower().startswith("hire")
             and verify_email_domain(e)]
 
 
@@ -1402,13 +1401,34 @@ def pick_email(job):
         em = str(job["email"]).strip()
         if verify_email_domain(em):
             return em, job.get("email_src") or job.get("url") or ""
-    emails = find_emails_in_text(str(job.get("text", "")) + " " + str(job.get("apply", "")))
+
+    # Comprehensive field scanning
+    full_text = " ".join([str(job.get(k) or "") for k in ("text", "description", "body", "apply", "raw_html", "notes", "url")])
+    emails = find_emails_in_text(full_text)
+    
+    # Priority 1: Direct HR / Hiring matching
     hiring = [e for e in emails if HIRING_LOCAL.match(e.split("@")[0])]
     if hiring:
-        return hiring[0], job["url"]
-    if emails and re.search(r"(email|send|apply|cv|resume|reach out|contact|drop)", str(job.get("text", "")), re.I):
-        return emails[0], job["url"]
-    return careers_page_email(job)
+        return hiring[0], job.get("url") or ""
+        
+    # Priority 2: General deliverable email found in job description
+    if emails and re.search(r"(email|send|apply|cv|resume|reach out|contact|drop|write to|inbox)", full_text, re.I):
+        return emails[0], job.get("url") or ""
+
+    # Priority 3: Deep careers page crawler
+    site_em, site_url = careers_page_email(job)
+    if site_em and verify_email_domain(site_em):
+        return site_em, site_url
+
+    # Priority 4: Verified domain contact synthesis for company
+    for host in company_sites(job):
+        site = host.removeprefix("www.")
+        for prefix in ("careers", "jobs", "hr", "talent", "hiring"):
+            cand = f"{prefix}@{site}"
+            if verify_email_domain(cand):
+                return cand, f"https://{site}"
+
+    return None, None
 
 
 # ---------- tracker ----------
@@ -2755,58 +2775,140 @@ OPTIMIZED_BULLETS_MAP = {
 def calculate_ats_score(p):
     """Calculates deep ATS score (0-100) with category breakdowns and actionable feedback."""
     if not isinstance(p, dict):
-        return {"total": 0, "rank": "Empty", "contact": 0, "summary": 0, "experience": 0, "skills": 0, "education": 0,
-                "total_bullets": 0, "verb_bullets": 0, "metric_bullets": 0, "suggestions": ["Profile is empty or invalid."]}
-    contact = p.get("contact", {}) if isinstance(p.get("contact"), dict) else {}
-    c_score = 0
-    if contact.get("email"): c_score += 4
-    if contact.get("phone"): c_score += 3
-    if contact.get("linkedin"): c_score += 3
-    if contact.get("github"): c_score += 3
-    if contact.get("portfolio"): c_score += 2
+        return {
+            "total": 0, "rank": "Empty (0%)", "contact": 0, "summary": 0,
+            "experience": 0, "skills": 0, "education": 0,
+            "total_bullets": 0, "verb_bullets": 0, "metric_bullets": 0,
+            "suggestions": ["Profile data is empty. Please upload or create a CV."]
+        }
 
-    s_text = str(p.get("default_summary") or "").strip()
-    s_score = 15 if len(s_text) > 100 else (8 if s_text else 0)
+    # 1. Contact & Professional Links (15 pts max)
+    c_score = 0
+    contact = p.get("contact", {}) if isinstance(p.get("contact"), dict) else {}
+    email = contact.get("email") or p.get("email") or ""
+    phone = contact.get("phone") or p.get("phone") or ""
+    linkedin = contact.get("linkedin") or p.get("linkedin") or ""
+    github = contact.get("github") or p.get("github") or ""
+    portfolio = contact.get("portfolio") or p.get("portfolio") or ""
+    
+    links = p.get("links", {}) if isinstance(p.get("links"), dict) else {}
+    if not linkedin and links.get("linkedin"): linkedin = links.get("linkedin")
+    if not github and links.get("github"): github = links.get("github")
+    if not portfolio and links.get("portfolio"): portfolio = links.get("portfolio")
+
+    if email: c_score += 4
+    if phone: c_score += 3
+    if linkedin: c_score += 3
+    if github: c_score += 3
+    if portfolio: c_score += 2
+    c_score = min(15, c_score)
+
+    # 2. Professional Summary (15 pts max)
+    s_text = str(p.get("default_summary") or p.get("summary") or p.get("about") or "").strip()
+    words = len(s_text.split())
+    if words >= 40:
+        s_score = 15
+    elif words >= 15:
+        s_score = 10
+    elif s_text:
+        s_score = 5
+    else:
+        s_score = 0
+
+    # 3. Experience Impact & Metrics (35 pts max)
+    exp_list = p.get("experience", [])
+    if isinstance(exp_list, dict):
+        exp_list = list(exp_list.values())
+    elif not isinstance(exp_list, list):
+        exp_list = []
 
     total_b, verb_b, metric_b = 0, 0, 0
     suggestions = []
-    for exp in p.get("experience", []):
-        comp = exp.get("company", "Company")
-        for b in exp.get("bullets", []):
+    
+    for exp in exp_list:
+        if not isinstance(exp, dict):
+            continue
+        comp = exp.get("company", "Work Experience")
+        bullets = exp.get("bullets", [])
+        if isinstance(bullets, str):
+            bullets = [bullets]
+        for b in bullets:
+            b_str = str(b).strip()
+            if not b_str:
+                continue
             total_b += 1
-            w = b.strip().split()
+            w = b_str.split()
             first = w[0].lower().rstrip("ed") + "ed" if w else ""
             has_verb = first in ACTION_VERBS or (w and w[0].lower() in ACTION_VERBS)
-            has_metric = bool(METRIC_RE.search(b))
+            has_metric = bool(METRIC_RE.search(b_str))
+            
             if has_verb:
                 verb_b += 1
             else:
                 if len(suggestions) < 3:
-                    suggestions.append(f"Start bullet in {comp} with strong verb (e.g. Architected, Engineered).")
+                    suggestions.append(f"Start bullet in {comp} with a strong action verb (e.g., Architected, Engineered).")
+            
             if has_metric:
                 metric_b += 1
             else:
                 if len(suggestions) < 4:
-                    suggestions.append(f"Add a quantifiable metric (%, scale, latency, users) to: '{b[:40]}...'.")
+                    suggestions.append(f"Add a quantifiable metric (%, scale, latency, users) to: '{b_str[:40]}...'.")
 
     if total_b > 0:
-        exp_score = int((verb_b / total_b) * 15 + (metric_b / total_b) * 20)
+        verb_ratio = verb_b / total_b
+        metric_ratio = metric_b / total_b
+        exp_score = min(35, int(10 + (verb_ratio * 10) + (metric_ratio * 15)))
     else:
-        exp_score = 15
+        projects = p.get("projects", [])
+        if projects:
+            exp_score = 25
+        else:
+            exp_score = 5
+            suggestions.append("Add work experience with bullet points highlighting technical impact.")
 
-    skills_dict = p.get("skills", {}) if isinstance(p.get("skills"), dict) else {}
-    sk_score = min(20, sum(len(v) for v in skills_dict.values()) // 2)
-    ed_score = 15 if str(p.get("education") or "").strip() else 0
+    # 4. Structured Skills Taxonomy (20 pts max)
+    skills = p.get("skills", {})
+    if isinstance(skills, dict):
+        num_categories = len([k for k, v in skills.items() if v])
+        total_skills = sum(len(v) if isinstance(v, list) else 1 for v in skills.values())
+        if num_categories >= 4 and total_skills >= 10:
+            sk_score = 20
+        elif num_categories >= 2 or total_skills >= 8:
+            sk_score = 15
+        elif total_skills >= 4:
+            sk_score = 10
+        else:
+            sk_score = 5
+    elif isinstance(skills, list):
+        if len(skills) >= 12:
+            sk_score = 18
+        elif len(skills) >= 6:
+            sk_score = 14
+        else:
+            sk_score = 8
+    else:
+        sk_score = 0
+
+    # 5. Education & Credentials (15 pts max)
+    edu = p.get("education") or ""
+    certs = p.get("certifications") or p.get("hackathons") or []
+    if edu and certs:
+        ed_score = 15
+    elif edu or certs:
+        ed_score = 12
+    else:
+        ed_score = 0
+        suggestions.append("Add your degree, university, or verified hackathon / industry certifications.")
 
     total = min(100, c_score + s_score + exp_score + sk_score + ed_score)
     if total >= 95:
         rank = "Elite (Top 2% ATS Ready)"
     elif total >= 80:
-        rank = "Strong (Well Formatted)"
+        rank = "Competitive (Top 10% ATS Ready)"
     elif total >= 65:
-        rank = "Average (Needs Metrics)"
+        rank = "Qualified (Average ATS Pass)"
     else:
-        rank = "Weak (ATS High-Risk)"
+        rank = "Sub-Optimal (High Rejection Risk)"
 
     return {
         "total": total,
