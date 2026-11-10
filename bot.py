@@ -3063,6 +3063,64 @@ def run_one(job_id, mode):
 
 
 def main():
+    if "--check-models" in sys.argv:
+        try:
+            cfg = load_config()
+            key = str(cfg.get("gemini_api_key") or "").strip()
+            if not key:
+                log("❌ No API key found in config.json. Please enter your Apinex or Gemini API key.")
+                return
+            log(f"Testing AI Provider (Key: {key[:8]}...{key[-4:] if len(key)>12 else ''})")
+            if key.startswith("sk-"):
+                log("Detected Provider: Apinex Unified AI Gateway")
+                t0 = time.time()
+                req = urllib.request.Request(
+                    f"{APINEX_BASE_URL}/models",
+                    headers={"Authorization": f"Bearer {key}"}
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=15) as r:
+                        data = json.loads(r.read().decode())
+                    elapsed = int((time.time() - t0) * 1000)
+                    raw_models = [m.get("id", m) if isinstance(m, dict) else str(m) for m in data.get("data", data.get("models", []))]
+                    free_models = [m for m in raw_models if "free" in m.lower() or "qwen" in m.lower() or "flash" in m.lower()]
+                    log(f"✅ Apinex Gateway Connected! Ping Latency: {elapsed}ms")
+                    log(f"Available text models: {len(raw_models)} | Free tier models: {len(free_models)}")
+                except Exception as ex:
+                    log(f"  Note on model listing: {ex}. Proceeding to inference test...")
+
+                # Quick inference test with active model
+                active_m = cfg.get("gemini_model", "free/qwen-3.8-max")
+                log(f"Testing live inference with active model: {active_m} ...")
+                t1 = time.time()
+                test_res = gemini(cfg, "Return valid JSON with key status and value ok")
+                inf_time = int((time.time() - t1) * 1000)
+                log(f"✅ Inference Successful! Response Time: {inf_time}ms | Output: {test_res}")
+                log("★ AI Status: FULLY OPERATIONAL (Tier 1 Apinex Online)")
+            else:
+                log("Detected Provider: Google Gemini Direct API")
+                req = urllib.request.Request(f"{GEMINI_API}?pageSize=50", headers={"x-goog-api-key": key})
+                t0 = time.time()
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    data = json.loads(r.read().decode())
+                elapsed = int((time.time() - t0) * 1000)
+                models = [m["name"].removeprefix("models/") for m in data.get("models", [])]
+                log(f"✅ Google Gemini Connected! Ping Latency: {elapsed}ms | Models: {len(models)}")
+        except Exception as e:
+            log(f"❌ Connection Check Error: {e}")
+        return
+
+    if "--set-api-key" in sys.argv:
+        try:
+            new_key = sys.argv[sys.argv.index("--set-api-key") + 1].strip()
+            cfg = load_config()
+            cfg["gemini_api_key"] = new_key
+            save_config(cfg)
+            log(f"✅ API Key updated and saved successfully: {new_key[:8]}...")
+        except Exception as e:
+            log(f"❌ Failed to update API key: {e}")
+        return
+
     if "--ats-score" in sys.argv:
         try:
             res = calculate_ats_score(load_profile())
