@@ -9,272 +9,296 @@
 
 ## 1. System Philosophy & High-Level Architecture
 
-Pasha Hunt is designed from first principles as a **local-first, autonomous desktop agent** that turns job hunting from a manual, high-friction chore into an automated, highly-targeted background pipeline.
-
-### Core Value Proposition
-1. **Direct-to-Recruiter Sourcing:** Bypasses recruiter black holes by pinpointing verified direct hiring emails (`hr@*`, `careers@*`, `talent@*`).
-2. **Domain-Verified Deliverability:** Pre-validates every email domain via active DNS socket resolution before displaying or drafting, completely preventing *"Address not found"* (550 bounce) errors.
-3. **100% ATS-Optimized Applications:** Audits candidate experience against top enterprise ATS parsers (Workday, Greenhouse, Lever, Taleo) and elevates bullets to the **Google XYZ Formula** (`Accomplished [X] measured by [Y] doing [Z]`).
-4. **Tailored Local PDF Generation:** Compiles tailored A4 PDF resumes using headless Chromium/Edge without external cloud dependencies.
-5. **Zero-Hallucination Integrity:** Grounded strictly in the candidate's verified `profile.json`.
-
----
+Pasha Hunt is engineered as a **local-first, autonomous desktop agent** designed to eliminate the algorithmic and operational friction of modern technical job hunting.
 
 ```mermaid
 graph TB
-    subgraph SOURCES ["1. Autonomous Sourcing Matrix (18 Concurrent Feeds)"]
-        S1["Remotive / RemoteOK / Himalayas"]
-        S2["WeWorkRemotely / WorkingNomads / 4DayWeek"]
-        S3["Enterprise ATS (Lever, Greenhouse, Ashby)"]
-        S4["Hacker News Who Is Hiring (Algolia API)"]
-        S5["Gemini / Apinex Google Sourcing"]
-        S6["Pakistan Tech Hub & Software Houses"]
-        S7["Developer Community Posts (Facebook / LinkedIn)"]
+    subgraph CLIENT_TIER ["1. Presentation Layer (Desktop UI)"]
+        UI["Obsidian Void GUI (gui.py)<br/>Tkinter + Custom Styling"]
+        DWM["Windows 11 DWM Dark Caption Bar<br/>ctypes dwmapi.dll"]
+        HERO["Real-Time Hero KPI Dashboard<br/>ATS Score | Matches | Verified HR"]
+        MODAL["ATS 95+ Interactive Modal Dialog"]
     end
 
-    subgraph PREFILTER ["2. Ingestion & Filtering Engine"]
-        F1["Keyword Matcher (Title vs Body)"]
-        F2["Geolocation & Work Mode (Remote / Hybrid / Onsite)"]
-        F3["Age Filter (<= 30 Days)"]
-        F4["Experience Cap Heuristic"]
+    subgraph ENGINE_TIER ["2. Core Autonomous Engine (bot.py)"]
+        DISPATCHER["Multi-Threaded Sourcing Dispatcher<br/>ThreadPoolExecutor"]
+        MATCHER["Intelligent AST Token Matcher<br/>Role & Geo Pre-Filtering"]
+        DNS_RESOLVER["Socket DNS MX Deliverability Verifier<br/>verify_email_domain()"]
+        ATS_ENGINE["ATS 95+ Scorer & Google XYZ Optimizer<br/>calculate_ats_score()"]
+        FALLBACK_GEN["Deterministic Master Profile Engine"]
     end
 
-    subgraph EMAIL_VERIFY ["3. Email Extraction & Deliverability Engine"]
-        E1["Regex & Obfuscation Parser"]
-        E2["Dummy Domain Blacklist Filter"]
-        E3["Live DNS Socket Resolution (verify_email_domain)"]
-        E4["Badge Classifier: Verified HR vs Portal Apply"]
+    subgraph AI_TIER ["3. Fact-Grounded Reasoning Tier"]
+        ROUTER["LLM API Router & Fallback Chain"]
+        M1["Tier 1: Apinex Gemini 3.8 Flash"]
+        M2["Tier 2: DeepSeek V4.1 Flash"]
+        M3["Tier 3: Google Gemini 2.5 Flash Native"]
+        GUARD["Anti-Hallucination Fact Guardrail"]
     end
 
-    subgraph REASONING ["4. Fact-Grounded AI Reasoning Engine"]
-        R1["Apinex / Gemini Multi-Model Hierarchy"]
-        R2["Strict Zero-Hallucination Guardrails"]
-        R3["Master Profile Grounding (profile.json)"]
-        R4["Offline Fallback Engine"]
+    subgraph COMPILER_TIER ["4. Headless Compilation & Outreach"]
+        DOM_BUILDER["HTML5 / Print CSS A4 Template Builder (cv.py)"]
+        EDGE_PRINT["Headless Chromium / Edge Engine<br/>msedge.exe --headless=new"]
+        MIME_ENGINE["RFC 2822 Multipart MIME Assembler"]
+        IMAP_CLIENT["Gmail IMAP4_SSL Client (imap.gmail.com:993)"]
     end
 
-    subgraph ATS_ENGINE ["5. ATS 95+ Resume Scorer & Optimizer"]
-        A1["Action Verb Evaluator (100% Active)"]
-        A2["Quantifiable Metrics Scanner (%, $, latency, scale)"]
-        A3["Google XYZ Bullet Rewriter"]
-        A4["ATS Readiness Rank (Elite / Strong / Average)"]
+    subgraph STORAGE_TIER ["5. Local-First Storage Layer (%APPDATA%)"]
+        CFG["config.json (Keys & Credentials)"]
+        PROF["profile.json (Candidate Source of Truth)"]
+        JOBS["jobs.json (Normalized Postings Cache)"]
+        LOGS["tracker.csv (Application Ledger)"]
+        PDFS["cvs/*.pdf (Compiled Tailored Resumes)"]
     end
 
-    subgraph COMPILER ["6. Document Generation & Outreach"]
-        C1["A4 Print CSS DOM Generator"]
-        C2["Headless Chromium / Edge PDF Compiler"]
-        C3["RFC 2822 MIME & Attachment Builder"]
-        C4["Gmail IMAP Draft Injection"]
-    end
-
-    subgraph TRACKER ["7. Ledger & Recruiter Response Tracking"]
-        T1["tracker.csv Audit Ledger"]
-        T2["IMAP Inbound Response Thread Scanner"]
-        T3["Live Hero Metrics Dashboard"]
-    end
-
-    SOURCES --> PREFILTER
-    PREFILTER --> EMAIL_VERIFY
-    EMAIL_VERIFY --> REASONING
-    REASONING --> ATS_ENGINE
-    ATS_ENGINE --> COMPILER
-    COMPILER --> TRACKER
+    UI --> DISPATCHER
+    DISPATCHER --> MATCHER --> DNS_RESOLVER
+    DNS_RESOLVER --> ROUTER
+    ROUTER --> M1 & M2 & M3
+    M1 & M2 & M3 --> GUARD
+    GUARD --> DOM_BUILDER
+    DOM_BUILDER --> EDGE_PRINT --> MIME_ENGINE --> IMAP_CLIENT
+    
+    ATS_ENGINE <--> PROF
+    IMAP_CLIENT --> LOGS
+    EDGE_PRINT --> PDFS
+    DWM --- UI
+    HERO --- UI
+    MODAL --- UI
 ```
 
 ---
 
-## 2. Component Breakdown & Data Models
+## 2. Class & Module Architecture
 
-### 2.1 File System Topology
-```
-%APPDATA%\Job Hunter\   (or local repo directory during dev)
-├── config.json          # User search preferences, API keys, thresholds
-├── profile.json         # Candidate master facts (verified experience, skills, contact)
-├── jobs.json            # Active & cached job listings state machine
-├── tracker.csv          # Permanent application audit ledger
-├── gemini_cache.json    # Cached LLM responses for deduplication
-├── google_cache.json    # Cached Google Search Sourcing results
-├── bot.lock             # Atomic file lock preventing concurrent process collision
-└── cvs/                 # Compiled tailored PDF CVs and cover letters
-```
-
-### 2.2 Data Contract Schemas
-
-#### A. `profile.json` (Candidate Master Facts)
-```json
-{
-  "name": "Muhammad Mubashar",
-  "default_title": "AI Agentic Developer | Full-Stack Software Engineer",
-  "contact": {
-    "phone": "+92 308 4453846",
-    "email": "pashadev804@gmail.com",
-    "linkedin": "https://linkedin.com/in/pasha-dev",
-    "github": "https://github.com/pasha804",
-    "portfolio": "https://pasha-portfolio-v10.vercel.app"
-  },
-  "location": "Lahore, Pakistan (Open to Worldwide Remote)",
-  "years": "4+",
-  "default_summary": "Autonomous AI Agentic Developer and Full-Stack Software Engineer...",
-  "experience": [
-    {
-      "id": "pasha-dev",
-      "company": "Pasha Dev",
-      "place": "Lahore / Remote",
-      "title": "Lead Software Engineer",
-      "dates": "2023 — Present",
-      "bullets": [
-        "Architected and delivered 6+ production-grade full-stack web, AI agentic, and desktop applications using Python, FastAPI, and Next.js, optimizing delivery velocity by 40%."
-      ]
+```mermaid
+classDiagram
+    class PashaHuntGUI {
+        +Tk root
+        +StringVar search_var
+        +StringVar model_var
+        +List current_jobs
+        +init_ui()
+        +apply_dark_titlebar()
+        +update_hero_metrics()
+        +ats_optimizer()
+        +draft_selected_job()
+        +run_sweep_async()
     }
-  ],
-  "projects": [
-    {
-      "id": "pasha-hunt",
-      "name": "Pasha Hunt 2.0 (Autonomous AI Job Hunter)",
-      "text": "Engineered autonomous desktop career agent..."
+
+    class PashaBot {
+        +dict config
+        +dict profile
+        +dict domain_cache
+        +scrape_all_sources()
+        +verify_email_domain(email)
+        +calculate_ats_score(profile)
+        +auto_optimize_bullets_ats(profile)
+        +call_gemini(prompt, schema)
+        +create_gmail_draft(job, cv_path)
+        +check_inbound_replies()
     }
-  ],
-  "skills": {
-    "Backend & APIs": ["Python", "FastAPI", "PostgreSQL", "Redis", "Docker"]
-  },
-  "education": "BS Information Technology | Virtual University of Pakistan"
-}
-```
 
-#### B. `jobs.json` (Job Listing Entity)
-```json
-{
-  "id": "pk-systemslimited-fullstackdeveloper",
-  "source": "pakistan_tech",
-  "title": "Full Stack Developer (React / Python / FastAPI)",
-  "company": "Systems Limited",
-  "url": "https://www.systemsltd.com/careers",
-  "email": "careers@systemsltd.com",
-  "email_verified": true,
-  "location": "Lahore, Pakistan (Onsite - Seepz)",
-  "mode": "onsite",
-  "date": "2026-11-10T12:00:00Z",
-  "status": "ready",
-  "fit_score": 94,
-  "text": "Full job description text..."
-}
+    class CVBuilder {
+        +build_tailored_html(job, profile)
+        +compile_pdf_headless(html_path, output_pdf)
+        +verify_pdf_geometry(pdf_path)
+    }
+
+    class DNSResolver {
+        +dict domain_cache
+        +set dummy_domains
+        +resolve_socket(domain)
+        +is_deliverable(email)
+    }
+
+    class LocalStorage {
+        +Path app_data_dir
+        +load_json(file)
+        +save_json_atomic(file, data)
+        +append_tracker_csv(entry)
+    }
+
+    PashaHuntGUI --> PashaBot : Invokes
+    PashaBot --> CVBuilder : Compiles Resumes
+    PashaBot --> DNSResolver : Pre-validates Emails
+    PashaBot --> LocalStorage : Reads/Writes State
+    PashaHuntGUI --> LocalStorage : Reflects Metrics
 ```
 
 ---
 
-## 3. The 7 Engineering Pipelines
+## 3. Autonomous Sourcing Matrix (18 Concurrent Feeds)
 
-### 3.1 Pipeline 1: Multi-Source Concurrency & Polling
-* **Thread Pool Concurrency:** Uses `concurrent.futures.ThreadPoolExecutor(max_workers=5)` for network I/O bound sources.
-* **Throttling & Backoff:** Dedicated per-host pacing (`MIN_GAP = 1.5s`, company boards `0.3s`).
-* **Caching Matrix:** Remotive (6 hr TTL), Google Sourcing (4 hr TTL), Gemini Analysis (30 day TTL).
+```mermaid
+flowchart LR
+    subgraph REMOTE_FEEDS ["Global Remote Aggregators"]
+        R1["Remotive API"]
+        R2["RemoteOK API"]
+        R3["Himalayas Feed"]
+        R4["Arbeitnow API"]
+        R5["Jobicy Feed"]
+    end
 
-### 3.2 Pipeline 2: Prefiltering & Geolocation Heuristics
-* **Two-Pass Matcher:**
-  * *Pass 1 (Title Filter):* Matches user target keywords against job title using compiled regex with word-boundary checks.
-  * *Pass 2 (Context Heuristic):* Matches stack keywords inside the job body.
-* **Pakistan / Lahore Geolocation Unlock:**
-  * Detects on-site / hybrid openings in Lahore, Karachi, and Islamabad, classifying them as open to the candidate.
-  * Detects international roles offering visa sponsorship or relocation.
+    subgraph SPECIALIZED_FEEDS ["Specialized Tech Platforms"]
+        S1["WeWorkRemotely"]
+        S2["WorkingNomads"]
+        S3["4DayWeek"]
+        S4["Workew"]
+    end
 
-### 3.3 Pipeline 3: Email Extraction & DNS MX Deliverability
-* **Regex Extraction:** Extracts standard and obfuscated emails (`[at]`, `(dot)`).
-* **Blacklist Filtering:** Rejects dummy placeholders (`careers@company.com`, `example.com`, `domain.com`, `test.com`, `noreply@*`).
-* **Live Socket DNS Resolution (`verify_email_domain`):**
-  * Invokes `socket.getaddrinfo(domain, 80)` with a 1.5-second timeout.
-  * Caches verified domains in memory (`_domain_cache`).
-  * If the domain fails DNS resolution, the email is rejected, preventing Mailer-Daemon 550 bounces.
+    subgraph ENTERPRISE_ATS ["Direct Enterprise ATS Scrapers"]
+        E1["Greenhouse Boards"]
+        E2["Lever Portals"]
+        E3["Workday Jobs"]
+        E4["Ashby Systems"]
+    end
 
-### 3.4 Pipeline 4: PDF Ingestion & Document Parsing
-* **Direct PDF Text Extraction (`pypdf`):**
-  * Extracts raw text from multi-page PDF CVs.
-  * Avoids binary attachment drops when communicating with OpenAI-compatible proxies (Apinex).
-* **Deterministic Fallback (`_parse_cv_text_to_profile`):**
-  * Guarantees 100% upload success even during API rate limits or network dropouts.
+    subgraph REGIONAL_COMMUNITY ["Pakistan Regional Hubs"]
+        P1["Lahore/PK Tech Houses<br/>(InvoZone, Systems Ltd, CureMD, etc.)"]
+        P2["Facebook Developer Communities"]
+        P3["Hacker News (Algolia Search)"]
+        P4["Google Search (Gemini Live)"]
+    end
 
-### 3.5 Pipeline 5: ATS 95+ Resume Scorer & Google XYZ Optimizer
-* **Scoring Dimensions:**
-  * Contact Completeness (15 pts)
-  * Professional Summary Impact (15 pts)
-  * Experience Bullet Verbs & Metrics (35 pts)
-  * Skills Categorization (20 pts)
-  * Education & Certifications (15 pts)
-* **Google XYZ Formula:** Transforms bullets into `Accomplished [X] as measured by [Y] by doing [Z]`.
-
-### 3.6 Pipeline 6: Headless Chromium PDF Compilation
-* **Headless Browser Printing:** Uses Microsoft Edge / Chrome in headless mode (`--headless=new --print-to-pdf`).
-* **Pixel-Perfect A4 Geometry:** CSS rules configured for `@page { size: A4; margin: 12mm 15mm; }`.
-
-### 3.7 Pipeline 7: Outreach & Bi-Directional Tracking
-* **RFC 2822 MIME Assembly:** Builds multipart messages containing tailored cover letter and attached PDF CV.
-* **IMAP Draft Injection:** Saves messages directly to Gmail `[Gmail]/Drafts` via IMAP `APPEND`.
-* **Inbound Reply Scanner:** Scans IMAP threads for recruiter responses (`Re: Application: ...`), updating `tracker.csv`.
-
----
-
-## 4. UI/UX Design System: Pasha Elite
-
-```
-+-----------------------------------------------------------------------------------+
-|  [LOGO] Pasha Hunt 2.0 (Apinex Edition)                     [Auto-run: ON (30m)]  |
-|  [🔍 Find Jobs]  [✉ Auto-Draft]  [⏹ Stop]  [📁 Open ▾]  [⚙ Settings]  [❔ Help ▾]   |
-|-----------------------------------------------------------------------------------|
-|  Your CV: [📤 Upload CV]  [🎯 ATS 95+ Optimizer]  [👤 My Profile]  [📝 Tailor...] |
-|  AI Model: [free/gemini-3.8-flash (Apinex)                    ▾] [↻ Check Models] |
-|-----------------------------------------------------------------------------------|
-|  📊 ATS Score: 100% (Elite)  | 🎯 Matches: 24 | ✉️ Verified HR: 18 | 🚀 Ready: 12  |
-|===================================================================================|
-|  STATUS   | MATCH  | COMPANY          | ROLE               | EMAIL / LINK         |
-|-----------+--------+------------------+--------------------+----------------------|
-|  ✉ Ready  | ★★ Str | Systems Limited  | Full Stack Dev     | careers@systemsltd...|
-|  ✉ Ready  | ★★ Str | InvoZone         | Python Backend     | careers@invozone.com |
-|  🌐 Site  | ★ Part | Motive           | AI Software Eng    | https://motive.com...|
-|-----------------------------------------------------------------------------------|
-|  Detail Pane: Systems Limited · Lahore, Pakistan                                  |
-|  Email: careers@systemsltd.com  ·  ✔ Verified Recruiter Domain (Deliverable)      |
-|  [ ✉ Draft Email + CV ]   [ 📄 Make PDF CV ]   [ 🌐 Open URL ]   [ ✔ Applied ]     |
-|-----------------------------------------------------------------------------------|
-|  Run Log: [12:30:15] Sourced 24 active roles. 18 direct recruiter emails verified.|
-+-----------------------------------------------------------------------------------+
+    REMOTE_FEEDS & SPECIALIZED_FEEDS & ENTERPRISE_ATS & REGIONAL_COMMUNITY --> POOL["ThreadPoolExecutor (Concurrency: 16 Workers)"]
+    POOL --> DEDUP["Global Key Deduplicator & Hash Store"]
 ```
 
-### Color Tokens
-* **Background:** Obsidian Void `#0B0F19`
-* **Card Surface:** Midnight Slate `#111827`
-* **Border:** Dark Slate `#1E293B`
-* **Primary Accent:** Cyber Azure `#38BDF8`
-* **Success / Verified:** Neon Emerald `#10B981`
-* **Warning:** Vivid Amber `#F59E0B`
-* **Alert / Stop:** Coral Rose `#F43F5E`
-* **Text:** Pure Titanium White `#F8FAFC` / Muted Slate `#94A3B8`
-
 ---
 
-## 5. Security, Guardrails & AgentShield
-
-1. **Local-First Privacy:** Zero remote telemetry. Candidate facts never leave local storage.
-2. **Deterministic Sandboxing:** Fallbacks ensure no data loss even without internet connectivity.
-3. **Protected Secrets:** App passwords and API keys are stored locally in user `%APPDATA%` and excluded from git.
-4. **Anti-Hallucination Barrier:** Strict prompt guards prohibit inventing qualifications or job history.
-
----
-
-## 6. Build, Release & Packaging Workflow
+## 4. Socket DNS MX Email Deliverability Engine
 
 ```mermaid
 sequenceDiagram
-    participant Dev as Developer / Agent
-    participant PyI as PyInstaller
+    autonumber
+    participant Scraper as Sourcing Feed
+    participant Bot as Bot Engine
+    participant Cache as In-Memory _domain_cache
+    participant Socket as OS Socket Subsystem
+    participant DNS as Local/Gateway DNS Server
+    participant UI as Dashboard View
+
+    Scraper->>Bot: Job Raw Record { company: 'InvoZone', email: 'careers@invozone.com' }
+    Bot->>Bot: Extract FQDN -> 'invozone.com'
+    Bot->>Bot: Check Dummy Blacklist (company.com, etc.)
+    Bot->>Cache: Lookup 'invozone.com'
+    
+    alt Domain in Cache
+        Cache-->>Bot: Return Cached Verdict (True/False)
+    else Domain Uncached
+        Bot->>Socket: socket.getaddrinfo('invozone.com', 80)
+        Socket->>DNS: Resolve A / MX Records
+        DNS-->>Socket: IP 104.21.58.12 (Resolved)
+        Socket-->>Bot: Socket Address Tuple
+        Bot->>Cache: Store 'invozone.com' -> True
+    end
+    
+    alt Domain Deliverable
+        Bot-->>UI: job.email = 'careers@invozone.com'<br/>job.email_verified = True
+        UI-->>UI: Render [✔ Verified Recruiter Domain] in Neon Emerald
+    else Resolution Failed
+        Bot-->>UI: job.email = ''<br/>job.email_verified = False
+        UI-->>UI: Render [Apply on company portal link] in Vivid Amber
+    end
+```
+
+---
+
+## 5. Multi-Model AI Routing & Zero-Hallucination Hierarchy
+
+```mermaid
+flowchart TD
+    Prompt["Tailoring Prompt (Job Description + Candidate Master Profile)"] --> Primary{"Try Tier 1:<br/>Apinex Gemini 3.8 Flash"}
+    
+    Primary -- Success --> ValidateResponse["Validate JSON Schema & Fact Guardrails"]
+    Primary -- 429 / Timeout / Network Fail --> Secondary{"Try Tier 2:<br/>DeepSeek V4.1 Flash"}
+    
+    Secondary -- Success --> ValidateResponse
+    Secondary -- Error --> Tertiary{"Try Tier 3:<br/>Google Gemini 2.5 Flash Native"}
+    
+    Tertiary -- Success --> ValidateResponse
+    Tertiary -- Error --> OfflineFallback["Tier 4: Offline Deterministic Fallback<br/>(_generate_master_cv_fallback)"]
+    
+    ValidateResponse -- Fact Hallucination Detected --> RejectHallucination["Strip Unverified Claims / Revert to Master Profile"]
+    ValidateResponse -- Valid --> ApprovedContent["Approved Tailored Resume & Pitch Content"]
+    OfflineFallback --> ApprovedContent
+```
+
+> [!NOTE]
+> **Anti-Hallucination Protocol:** The LLM is strictly constrained from inventing new companies, dates of employment, universities, or unverified technical skills. Its scope is restricted to:
+> 1. Selecting the most relevant projects for the target role.
+> 2. Re-ordering bullet points based on JD technology overlap.
+> 3. Crafting a personalized introduction paragraph highlighting verified qualifications.
+
+---
+
+## 6. Headless Chromium / Edge Print Compilation Pipeline
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Tailor as AI Tailoring Engine
+    participant CV as cv.py (DOM Builder)
+    participant Temp as %TEMP%\pasha_hunt_sandbox\
+    participant Edge as msedge.exe / chrome.exe
+    participant FS as Local Filesystem (cvs/)
+
+    Tailor->>CV: Structured Tailored Candidate JSON
+    CV->>CV: Render HTML5 + Print CSS Template (A4 Dimensions)
+    CV->>Temp: Write index.html with inline fonts & SVG icons
+    CV->>Edge: Launch: msedge.exe --headless=new --print-to-pdf=dest.pdf --no-pdf-header-footer
+    Edge->>Edge: Rasterize Layout & Embed Vector Fonts
+    Edge->>FS: Write cvs/Company_Role_CV.pdf (<200KB)
+    CV->>Temp: Cleanup temporary HTML sandbox
+    CV-->>Tailor: Validated PDF Path Ready for MIME Attachment
+```
+
+---
+
+## 7. Windows 11 DWM Immersive Dark Architecture
+
+```mermaid
+flowchart LR
+    TkRoot["Tkinter Main Window (root)"] --> Win32Get["ctypes.windll.user32.GetParent(hwnd)"]
+    Win32Get --> HWND["Native Top-Level Windows HWND"]
+    
+    HWND --> DWM_Dark["DWMWA_USE_IMMERSIVE_DARK_MODE (20)<br/>Value: TRUE"]
+    HWND --> DWM_Color["DWMWA_CAPTION_COLOR (35)<br/>BGR: 0x00190F0B (Obsidian Void #0B0F19)"]
+    
+    DWM_Dark & DWM_Color --> DWM_API["DwmSetWindowAttribute() in dwmapi.dll"]
+    DWM_API --> BeautifulUI["Seamless Windows 11 Obsidian Dark Frame"]
+```
+
+---
+
+## 8. Build, Release & Packaging CI/CD Workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Chief Architect / Agent
+    participant PyI as PyInstaller Compiler
+    participant Spec as PashaHunt.spec
     participant Sync as sync_release.ps1
-    participant Inno as Inno Setup (ISCC)
-    participant Git as GitHub Repo
+    participant Inno as Inno Setup 6 (ISCC.exe)
+    participant Git as GitHub Remote (origin/main)
 
     Dev->>PyI: pyinstaller --noconfirm PashaHunt.spec
-    PyI-->>Dev: dist/PashaHunt/ (Standalone Binaries)
-    Dev->>Sync: powershell sync_release.ps1
-    Sync-->>Dev: Portable folder, installed app, desktop shortcut synced
+    PyI->>Spec: Parse hooks, DLLs, hidden imports (pypdf, opencv, PIL)
+    PyI-->>Dev: dist/PashaHunt/ (Standalone Windows Binaries)
+    
+    Dev->>Sync: powershell -ExecutionPolicy Bypass sync_release.ps1
+    Sync-->>Sync: Kill active PashaHunt.exe processes
+    Sync-->>Sync: Sync binaries to Pasha_Hunt_Release/ and Local Programs
+    Sync-->>Dev: Portable folder, desktop shortcut & start menu synced
+    
     Dev->>Inno: ISCC.exe installer/PashaHunt.iss
-    Inno-->>Dev: PashaHuntSetup_v2.0.exe generated
-    Dev->>Git: git commit & git push origin main
-    Git-->>Dev: Deployment synchronized
+    Inno-->>Dev: PashaHuntSetup_v2.0.exe (Enterprise Setup Installer)
+    
+    Dev->>Git: git add & git commit & git push origin main
+    Git-->>Dev: Remote Repository Fully Synchronized
 ```
+
+---
+*End of System Architecture Specification — Pasha Hunt 2.0*
