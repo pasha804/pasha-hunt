@@ -2,44 +2,84 @@
 
 @layer base {
   :root {
-    --bg-main: #080e19;
-    --bg-secondary: #0c1524;
-    --bg-surface: #111d2f;
-    --bg-elevated: #17253a;
-    --border-color: #223149;
+    --bg-main: #060913;
+    --bg-secondary: #0a0f1d;
+    --bg-surface: #0f1629;
+    --bg-elevated: #16203a;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(0, 214, 201, 0.3);
     --primary-blue: #168bff;
-    --electric-blue: #278eff;
+    --electric-blue: #38bdf8;
     --teal-accent: #00d6c9;
-    --success-green: #18c78a;
-    --warning-amber: #ffb547;
-    --danger-red: #ff5571;
-    --text-primary: #f3f7fc;
-    --text-secondary: #a2b1c6;
-    --text-muted: #718198;
+    --success-green: #10b981;
+    --warning-amber: #f59e0b;
+    --danger-red: #f43f5e;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
   }
 
   body {
-    background-color: var(--bg-main);
+    background-color: #060913;
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
     overflow-x: hidden;
+    letter-spacing: -0.01em;
   }
+}
+
+/* Background dot grid pattern */
+.bg-grid-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Glassmorphic luxury card */
+.glass-card {
+  background: rgba(15, 22, 41, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 214, 201, 0.25);
+}
+
+/* Gradient borders */
+.gradient-border-card {
+  position: relative;
+  background: #0d1424;
+  border-radius: 1rem;
+}
+.gradient-border-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(22, 139, 255, 0.4), rgba(0, 214, 201, 0.3), rgba(16, 185, 129, 0.2), transparent 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #080e19;
+  background: #060913;
 }
 ::-webkit-scrollbar-thumb {
-  background: #223149;
+  background: #1e293b;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #2e4363;
+  background: #334155;
 }
 
 /* Print styling for clean 1-page/2-page ATS Resume */
