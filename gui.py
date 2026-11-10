@@ -1020,8 +1020,11 @@ class App(tk.Tk):
             card = tk.Frame(kpi_container, bg=BG_SURFACE, bd=1, highlightthickness=1, highlightbackground=BORDER)
             card.pack(side="left", fill="both", expand=True, padx=4)
 
+            # 4-Color Luxury Accent Stripe
+            tk.Frame(card, bg=accent, height=3).pack(side="top", fill="x")
+
             top_row = tk.Frame(card, bg=BG_SURFACE)
-            top_row.pack(fill="x", padx=12, pady=(10, 2))
+            top_row.pack(fill="x", padx=12, pady=(8, 2))
             tk.Label(top_row, text=title, font=("Segoe UI", 9, "bold"), bg=BG_SURFACE, fg=TEXT_MUTED).pack(side="left")
             tk.Label(top_row, text=icon, font=("Segoe UI Emoji", 10), bg=BG_SURFACE, fg=accent).pack(side="right")
 
@@ -1057,7 +1060,7 @@ class App(tk.Tk):
         ats_btn_row.pack(fill="x", padx=14, pady=(0, 14))
         tk.Button(ats_btn_row, text="⚡ Optimize Bullets (Google XYZ)", font=("Segoe UI", 9, "bold"),
                   bg=PRIMARY_BLUE, fg="#FFFFFF", activebackground=ELECTRIC_BLUE, bd=0, relief="flat", padx=10, pady=5,
-                  command=self.ats_optimizer).pack(side="left", padx=(0, 8))
+                  command=self.run_ats_optimization_instant).pack(side="left", padx=(0, 8))
         tk.Button(ats_btn_row, text="📤 Upload CV", font=("Segoe UI", 9),
                   bg=BG_ELEVATED, fg=TEXT_PRIMARY, activebackground=HOVER, bd=0, relief="flat", padx=10, pady=5,
                   command=self.upload_cv).pack(side="left")
@@ -1459,6 +1462,33 @@ class App(tk.Tk):
         tk.Label(f, text="Configure and monitor your AI reasoning providers (Apinex, DeepSeek, Google Gemini).",
                  font=("Segoe UI", 10), bg=BG_MAIN, fg=TEXT_SECONDARY).pack(anchor="w", padx=24, pady=(0, 20))
 
+        # API Key Management Box
+        key_box = tk.Frame(f, bg=BG_SURFACE, bd=1, highlightthickness=1, highlightbackground=BORDER)
+        key_box.pack(fill="x", padx=24, pady=(0, 14))
+
+        tk.Label(key_box, text="APINEX & GEMINI API KEY MANAGEMENT", font=("Segoe UI", 10, "bold"), bg=BG_SURFACE, fg=TEXT_PRIMARY).pack(anchor="w", padx=16, pady=(14, 6))
+        
+        k_row = tk.Frame(key_box, bg=BG_SURFACE)
+        k_row.pack(fill="x", padx=16, pady=(0, 12))
+        
+        cfg_now = bot.load_config() if hasattr(bot, "load_config") else read_config()
+        self.api_key_var = tk.StringVar(value=cfg_now.get("gemini_api_key", ""))
+        
+        tk.Label(k_row, text="Active API Key:", font=("Segoe UI", 9, "bold"), bg=BG_SURFACE, fg=TEXT_MUTED).pack(side="left", padx=(0, 8))
+        self.api_key_entry = tk.Entry(k_row, textvariable=self.api_key_var, font=("Segoe UI", 9),
+                                      bg=BG_MAIN, fg=TEXT_PRIMARY, insertbackground=PRIMARY_BLUE,
+                                      bd=0, highlightthickness=1, highlightbackground=BORDER, width=42, show="*")
+        self.api_key_entry.pack(side="left", padx=(0, 8), ipady=3)
+
+        self.key_show_btn = tk.Button(k_row, text="👁", font=("Segoe UI Emoji", 9), bg=BG_ELEVATED, fg=TEXT_PRIMARY,
+                                      bd=0, relief="flat", padx=6, pady=2,
+                                      command=lambda: self.api_key_entry.configure(show="" if self.api_key_entry.cget("show") == "*" else "*"))
+        self.key_show_btn.pack(side="left", padx=(0, 8))
+
+        tk.Button(k_row, text="💾 Save & Test Apinex Key", font=("Segoe UI", 9, "bold"),
+                  bg=PRIMARY_BLUE, fg="#FFFFFF", activebackground=ELECTRIC_BLUE, bd=0, relief="flat", padx=12, pady=4,
+                  command=self.save_and_test_api_key).pack(side="left")
+
         box = tk.Frame(f, bg=BG_SURFACE, bd=1, highlightthickness=1, highlightbackground=BORDER)
         box.pack(fill="both", expand=True, padx=24, pady=(0, 20))
 
@@ -1833,6 +1863,17 @@ class App(tk.Tk):
             self.model_var.set(active)
         except Exception:
             pass
+
+    def save_and_test_api_key(self):
+        new_k = self.api_key_var.get().strip() if hasattr(self, "api_key_var") else ""
+        if not new_k:
+            messagebox.showwarning("API Key", "Please enter an Apinex or Gemini API key.", parent=self)
+            return
+        cfg = read_config()
+        cfg["gemini_api_key"] = new_k
+        write_config(cfg)
+        self.write_log(f"\n▶ Saved new API key: {new_k[:8]}...\n")
+        self.check_models()
 
     def pick_model(self, event=None):
         cfg = read_config()
