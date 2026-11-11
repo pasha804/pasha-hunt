@@ -11,16 +11,16 @@ def test():
         page.wait_for_timeout(500)
         
         # Fill form fields
-        page.fill("input[placeholder='e.g. Alex Henderson']", "Muhammad Mubashar QA")
-        page.fill("input[placeholder='alex@company.com']", "pashadev804@gmail.com")
-        page.fill("textarea[placeholder='Tell us about your team, use case, or questions...']", "This is an end-to-end verified test inquiry for Pasha Hunt 2.0.")
+        page.fill("input[placeholder='e.g. Alex Mercer']", "Muhammad Mubashar QA")
+        page.fill("input[placeholder='alex@enterprise.com']", "pashadev804@gmail.com")
+        page.fill("textarea[placeholder='Tell us about your team or feedback...']", "This is an end-to-end verified test inquiry for Pasha Hunt 2.0.")
         
         # Click submit
-        page.click("button:has-text('Submit Inquiry to Pasha Dev')")
+        page.click("button:has-text('Send Transmission')")
         page.wait_for_timeout(1000)
         
         # Verify success
-        has_success = page.locator("text=Submission Confirmed").count() > 0
+        has_success = page.locator("text=Transmission Received!").count() > 0
         print("Success banner visible:", has_success)
         
         page.screenshot(path="C:/Users/USER/.gemini/antigravity/brain/aca0c042-dc6e-4169-b99f-648e944b6bf8/web_screenshot_contact_success.png")
@@ -28,3 +28,4 @@ def test():
 
 if __name__ == "__main__":
     test()
+
