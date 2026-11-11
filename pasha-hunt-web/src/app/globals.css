@@ -2,106 +2,98 @@
 
 @layer base {
   :root {
-    --bg-main: #060913;
-    --bg-secondary: #0a0f1d;
-    --bg-surface: #0f1629;
-    --bg-elevated: #16203a;
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(0, 214, 201, 0.3);
-    --primary-blue: #168bff;
-    --electric-blue: #38bdf8;
-    --teal-accent: #00d6c9;
-    --success-green: #10b981;
-    --warning-amber: #f59e0b;
-    --danger-red: #f43f5e;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    --bg-main: #101820;
+    --bg-deep: #0B1118;
+    --bg-secondary: #17212A;
+    --card-surface: #1B2832;
+    --elevated-surface: #23313B;
+    --primary-amber: #F2AA4C;
+    --amber-hover: #FFC16F;
+    --soft-amber: #D9953E;
+    --warm-cream: #F7F3EA;
+    --primary-text: #F7F3EA;
+    --secondary-text: #B7B7AE;
+    --muted-text: #858B8D;
+    --borders: #34414A;
+    --subtle-borders: #27343D;
+    --pure-white: #FFFFFF;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
   }
 
   body {
-    background-color: #060913;
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Helvetica Neue", Arial, sans-serif;
+    background-color: #101820;
+    color: #F7F3EA;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Geist", "Manrope", sans-serif;
     overflow-x: hidden;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 }
 
-/* Background dot grid pattern */
-.bg-grid-pattern {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-  background-size: 28px 28px;
+/* Background grid pattern with subtle amber/warm tint */
+.bg-grid-midnight {
+  background-image: 
+    linear-gradient(to right, rgba(52, 65, 74, 0.25) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(52, 65, 74, 0.25) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-/* Glassmorphic luxury card */
-.glass-card {
-  background: rgba(15, 22, 41, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-.glass-card:hover {
-  border-color: rgba(0, 214, 201, 0.25);
-}
-
-/* Gradient borders */
-.gradient-border-card {
+/* Horizon Ember Glow Line (Inspired by reference aesthetic) */
+.amber-horizon-line {
   position: relative;
-  background: #0d1424;
-  border-radius: 1rem;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #D9953E 25%, #F2AA4C 50%, #D9953E 75%, transparent 100%);
+  box-shadow: 0 0 24px 2px rgba(242, 170, 76, 0.55), 0 0 48px 8px rgba(217, 149, 62, 0.25);
 }
-.gradient-border-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(22, 139, 255, 0.4), rgba(0, 214, 201, 0.3), rgba(16, 185, 129, 0.2), transparent 70%);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+
+/* Radial ambient lighting */
+.amber-ambient-radial {
+  background: radial-gradient(circle at 50% 0%, rgba(242, 170, 76, 0.12) 0%, rgba(16, 24, 32, 0) 70%);
+}
+
+.amber-glow-card {
+  background: #1B2832;
+  border: 1px solid #34414A;
+  box-shadow: 0 8px 32px -4px rgba(11, 17, 24, 0.6);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.amber-glow-card:hover {
+  border-color: #F2AA4C;
+  box-shadow: 0 12px 40px -4px rgba(242, 170, 76, 0.18);
+  transform: translateY(-2px);
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #060913;
+  background: #0B1118;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
+  background: #27343D;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #F2AA4C;
 }
 
-/* Print styling for clean 1-page/2-page ATS Resume */
+/* Print styling */
 @media print {
   body {
-    background: #ffffff !important;
     color: #111111 !important;
+    background: #ffffff !important;
   }
   .no-print {
     display: none !important;
   }
   .print-only {
     display: block !important;
-  }
-  .resume-print-card {
-    border: none !important;
-    background: transparent !important;
-    color: #111111 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  .resume-print-card * {
-    color: #111111 !important;
   }
 }
