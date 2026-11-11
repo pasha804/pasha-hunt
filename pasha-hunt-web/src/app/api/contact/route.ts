@@ -5,11 +5,12 @@ import path from "path";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, organization, inquiryType, message, honeypot } = body;
+    const { name, email, organization, inquiryType, message, inquiry, honeypot, honey } = body;
+    const actualMessage = message || inquiry || "";
 
     // Spam honeypot detection
-    if (honeypot && String(honeypot).trim().length > 0) {
-      return NextResponse.json({ success: true, referenceId: "SPAM-TRAP" });
+    if ((honeypot && String(honeypot).trim().length > 0) || (honey && String(honey).trim().length > 0)) {
+      return NextResponse.json({ success: true, ok: true, referenceId: "SPAM-TRAP" });
     }
 
     // Validation
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Please provide a valid corporate or personal email address." }, { status: 400 });
     }
 
-    if (!message || String(message).trim().length < 10) {
+    if (!actualMessage || String(actualMessage).trim().length < 10) {
       return NextResponse.json({ error: "Message must be at least 10 characters detailing your inquiry." }, { status: 400 });
     }
 
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       email: String(email).trim().toLowerCase(),
       organization: organization ? String(organization).trim() : "Individual / Stealth",
       inquiryType: inquiryType || "General Inquiry",
-      message: String(message).trim()
+      message: String(actualMessage).trim()
     };
 
     // Safely persist to local submissions log
@@ -60,7 +61,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      ok: true,
       referenceId,
+      inquiry: { referenceId },
       message: "Your message has been securely delivered to Pasha Dev engineering.",
       details: { name: submission.name, email: submission.email }
     });
