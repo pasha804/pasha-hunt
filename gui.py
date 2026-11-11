@@ -36,6 +36,20 @@ except ImportError:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import bot  # noqa: E402
 
+# CLI mode interceptor: when frozen into an executable, --bot and --cv run without opening the window
+if len(sys.argv) > 1 and sys.argv[1] == "--bot":
+    del sys.argv[1]
+    bot.main()
+    sys.exit(0)
+elif len(sys.argv) > 1 and sys.argv[1] == "--cv":
+    del sys.argv[1]
+    try:
+        import cv
+        cv.main()
+    except Exception as _e:
+        sys.stderr.write(f"CV error: {_e}\n")
+    sys.exit(0)
+
 # Your files live in bot.HERE: next to the scripts, or %APPDATA%\Job Hunter for the installed JobHunter.exe.
 FROZEN, HERE = bot.FROZEN, bot.HERE
 ICON = (os.path.join(sys._MEIPASS, "icon.ico") if FROZEN

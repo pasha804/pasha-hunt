@@ -1,115 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import AmbientCanvas from "../components/AmbientCanvas";
 
-// --- Types ---
-type ThemeMode = "midnight-amber" | "graphite-lime";
-
-interface JobOpportunity {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: string;
-  source: string;
-  email: string | null;
-  match: number;
-  salary: string;
-}
-
 export default function PashaHuntLaunch() {
-  const [theme, setTheme] = useState<ThemeMode>("midnight-amber");
-  const [activeTab, setActiveTab] = useState<"overview" | "radar" | "ats" | "protocol">("overview");
-  const [resumeText, setResumeText] = useState<string>(
-    "Muhammad Mubashar - Senior Full Stack Engineer & AI Automation Architect.\nBuilt high-performance web applications using React, Next.js, and Python FastAPI.\nOptimized backend microservices and database query performance."
-  );
-  const [rawBullet, setRawBullet] = useState<string>(
-    "Worked on frontend web applications using React and Tailwind CSS."
-  );
-  const [xyzTransformed, setXyzTransformed] = useState<string>(
-    "Architected and delivered 14+ responsive React 19 web applications, slashing LCP render latency by 1.8s and achieving a 98/100 Google Lighthouse score."
-  );
-  const [atsScore, setAtsScore] = useState<number>(84);
-  const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
-  const [socketPing, setSocketPing] = useState<number>(18);
+  const [activeWorkflowTab, setActiveWorkflowTab] = useState<"discover" | "analyze" | "tailor" | "track">("discover");
+  const [atsScore, setAtsScore] = useState<number>(95);
+  const [demoOpen, setDemoOpen] = useState<boolean>(false);
   const [contactForm, setContactForm] = useState({ name: "", email: "", inquiry: "", honey: "" });
   const [contactStatus, setContactStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [contactRef, setContactRef] = useState<string | null>(null);
-
-  // Apply data-theme to HTML tag for instant CSS variable switching
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  // Accent color for Three.js canvas
-  const accentColor = theme === "midnight-amber" ? "#F2AA4C" : "#C6F36B";
-
-  // Sample live jobs feed
-  const liveJobs: JobOpportunity[] = [
-    {
-      id: "job-1",
-      title: "Senior Full Stack Engineer (React 19 / Python FastAPI)",
-      company: "Systems Limited",
-      location: "Worldwide (Remote)",
-      type: "Remote",
-      source: "Arbeitnow",
-      email: "careers@systemsltd.com",
-      match: 96,
-      salary: "$110,000 - $145,000",
-    },
-    {
-      id: "job-2",
-      title: "AI Inference & Systems Architect (Agentic Workflows)",
-      company: "Tether.io",
-      location: "Worldwide (Remote)",
-      type: "Remote",
-      source: "Remotive",
-      email: "talent@tether.io",
-      match: 94,
-      salary: "$130,000 - $170,000",
-    },
-    {
-      id: "job-3",
-      title: "Full Stack Engineer (TypeScript, Next.js, Supabase)",
-      company: "Phantom Technologies",
-      location: "Worldwide + Pakistan",
-      type: "Hybrid",
-      source: "Himalayas",
-      email: "hiring@phantom.tech",
-      match: 91,
-      salary: "$95,000 - $125,000",
-    },
-    {
-      id: "job-4",
-      title: "Python Software Engineer (High-Throughput Scrapers)",
-      company: "Arbisoft",
-      location: "Lahore / Remote",
-      type: "Remote",
-      source: "Findwork",
-      email: "jobs@arbisoft.com",
-      match: 89,
-      salary: "$85,000 - $115,000",
-    },
-  ];
-
-  // Dynamic ATS calculation on user edit
-  const handleResumeChange = (val: string) => {
-    setResumeText(val);
-    const words = val.split(/\s+/).filter(Boolean).length;
-    let score = 50;
-    if (words > 20) score += 15;
-    if (/react|next\.js|python|typescript|fastapi/i.test(val)) score += 20;
-    if (/\d+%|\d+\+|\$\d+/i.test(val)) score += 15;
-    setAtsScore(Math.min(100, score));
-  };
-
-  const handleDownload = () => {
-    setDownloadSuccess(true);
-    setTimeout(() => setDownloadSuccess(false), 4000);
-    window.location.href = "https://github.com/pasha804/pasha-hunt/releases/latest";
-  };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,9 +23,9 @@ export default function PashaHuntLaunch() {
         body: JSON.stringify(contactForm),
       });
       const data = await res.json();
-      if (data.ok) {
+      if (data.ok || data.success) {
         setContactStatus("success");
-        setContactRef(data.inquiry?.referenceId || "PSH-" + Math.floor(Math.random() * 8999 + 1000));
+        setContactRef(data.referenceId || "PSH-" + Math.floor(Math.random() * 8999 + 1000));
         setContactForm({ name: "", email: "", inquiry: "", honey: "" });
       } else {
         setContactStatus("error");
@@ -135,685 +36,454 @@ export default function PashaHuntLaunch() {
   };
 
   return (
-    <div className="relative min-h-screen selection:bg-[var(--accent-primary)]/20 selection:text-white">
-      {/* Three.js Ambient Particle Field */}
-      <AmbientCanvas accentColor={accentColor} />
-
-      {/* Ambient Radial Bloom (Top Center) */}
-      <div
-        className="ambient-glow-sphere top-[-100px] left-1/2 -translate-x-1/2 w-[800px] h-[450px]"
-        style={{ background: `radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)` }}
-      />
+    <div className="relative min-h-screen bg-[#070A0E] text-[#F7F3EA] selection:bg-[#FF6B00]/25 selection:text-white overflow-x-clip">
+      {/* Three.js Ambient Particle Constellation */}
+      <AmbientCanvas accentColor="#FF6B00" />
 
       {/* =========================================================================
-          NAVIGATION: Floating Tactile Dock
+          HEADER: Picture 3 Exact Brand Navigation
       ========================================================================= */}
-      <header className="sticky top-5 z-50 px-4 max-w-6xl mx-auto">
-        <nav className="glass-panel rounded-full px-5 py-3 flex items-center justify-between shadow-2xl transition-all">
+      <header className="sticky top-0 z-50 bg-[#070A0E]/85 backdrop-blur-md border-b border-[#1E252D]/80">
+        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center justify-center font-black text-sm text-[var(--accent-primary)] shadow-inner">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#F2AA4C] flex items-center justify-center font-black text-black text-xl shadow-lg shadow-[#FF6B00]/20">
               P
             </div>
-            <div>
-              <span className="font-bold tracking-tight text-sm text-[var(--text-primary)]">PASHA HUNT</span>
-              <span className="ml-1.5 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--accent-primary)]">
-                2.0
-              </span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-extrabold text-lg text-white tracking-tight">Pasha Hunt</span>
+              <span className="text-xs font-mono font-bold text-[#FF6B00]">2.0</span>
             </div>
           </div>
 
-          {/* Links */}
-          <div className="hidden md:flex items-center gap-6 text-xs font-medium text-[var(--text-secondary)]">
-            <a href="#workstation" className="hover:text-[var(--accent-primary)] transition-colors">
-              Workstation
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#8E98A4]">
+            <a href="#product" className="hover:text-white transition-colors flex items-center gap-1">
+              Product <span className="text-[10px] text-[#5C6572]">⌄</span>
             </a>
-            <a href="#radar" className="hover:text-[var(--accent-primary)] transition-colors">
-              18 Feeds
+            <a href="#features" className="hover:text-white transition-colors flex items-center gap-1">
+              Features <span className="text-[10px] text-[#5C6572]">⌄</span>
             </a>
-            <a href="#crucible" className="hover:text-[var(--accent-primary)] transition-colors">
-              Google XYZ
+            <a href="#workflow" className="hover:text-white transition-colors">
+              How It Works
             </a>
-            <a href="#protocol" className="hover:text-[var(--accent-primary)] transition-colors">
-              Socket MX
+            <a href="#technology" className="hover:text-white transition-colors">
+              Technology
             </a>
-            <a href="#transmission" className="hover:text-[var(--accent-primary)] transition-colors">
-              Transmission
+            <a href="#faq" className="hover:text-white transition-colors">
+              FAQ
             </a>
-          </div>
+          </nav>
 
-          {/* Controls: Theme Switcher & Action */}
-          <div className="flex items-center gap-3">
-            {/* Theme Toggle Pill */}
-            <button
-              onClick={() => setTheme(theme === "midnight-amber" ? "graphite-lime" : "midnight-amber")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] transition-all cursor-pointer"
-              title="Toggle Theme Palette"
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: theme === "midnight-amber" ? "#F2AA4C" : "#C6F36B" }}
-              />
-              <span className="capitalize">{theme === "midnight-amber" ? "Midnight Amber" : "Graphite Lime"}</span>
-            </button>
-
-            {/* Download Button */}
-            <motion.button
+          {/* Actions */}
+          <div className="flex items-center gap-5">
+            <a href="#transmission" className="text-sm font-semibold text-[#8E98A4] hover:text-white transition-colors">
+              Sign In
+            </a>
+            <motion.a
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              onClick={handleDownload}
-              className="px-4 py-1.5 rounded-full text-xs font-semibold bg-[var(--accent-primary)] text-[var(--bg-deep)] hover:bg-[var(--accent-hover)] transition-all shadow-lg cursor-pointer"
+              href="https://github.com/pasha804/pasha-hunt/releases/latest"
+              className="px-5 py-2.5 rounded-full text-xs font-bold bg-[#FF6B00] text-black hover:bg-[#FF7A1A] transition-all shadow-lg shadow-[#FF6B00]/25 flex items-center gap-1.5 cursor-pointer"
             >
-              Get v2.0
-            </motion.button>
+              <span>Explore Pasha Hunt</span>
+              <span>→</span>
+            </motion.a>
           </div>
-        </nav>
+        </div>
       </header>
 
       {/* =========================================================================
-          ACT I: THE MONUMENT (CINEMATIC HERO & INTERACTIVE WORKSTATION)
+          HERO: Picture 3 Exact Layout & Radiant Glowing Orb
       ========================================================================= */}
-      <section className="relative z-10 pt-16 md:pt-24 pb-12 px-4 max-w-6xl mx-auto text-center">
-        {/* Editorial Pill */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-secondary)] mb-6 shadow-sm"
-        >
-          <span className="w-2 h-2 rounded-full bg-[var(--accent-primary)] animate-pulse" />
-          <span>APINEX COMMERCIAL WORKSTATION</span>
-          <span className="text-[var(--text-muted)]">|</span>
-          <span className="text-[var(--accent-primary)]">100% LOCAL-FIRST</span>
-        </motion.div>
+      <section id="product" className="relative z-10 pt-16 md:pt-24 pb-20 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column: Typography & CTAs */}
+          <div className="lg:col-span-5 text-left">
+            {/* Pill Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#181D22] border border-[#FF6B00]/40 text-[11px] font-mono text-[#F2AA4C] mb-6 shadow-sm">
+              <span className="text-[#FF6B00]">★</span>
+              <span className="font-bold tracking-wider uppercase">AI-POWERED CAREER INTELLIGENCE +</span>
+            </div>
 
-        {/* Monumental Headline */}
-        <motion.h1
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl sm:text-7xl md:text-8xl font-black tracking-tight text-[var(--text-primary)] max-w-5xl mx-auto leading-[1.05]"
-        >
-          YOUR CAREER. <br />
-          <span className="bg-gradient-to-r from-[var(--text-primary)] via-[var(--accent-primary)] to-[var(--accent-hover)] bg-clip-text text-transparent">
-            YOUR INTELLIGENCE.
-          </span>{" "}
-          <br />
-          YOUR NEXT MOVE.
-        </motion.h1>
+            {/* Headline */}
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-white leading-[1.05]">
+              Your Next Move. <br />
+              <span className="bg-gradient-to-r from-[#FF6B00] via-[#FF8533] to-[#F2AA4C] bg-clip-text text-transparent">
+                Made Intelligent.
+              </span>
+            </h1>
 
-        {/* Single Tight Editorial Sentence */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-6 text-base sm:text-lg text-[var(--text-secondary)] max-w-2xl mx-auto leading-relaxed"
-        >
-          The autonomous desktop workstation for software engineers. Sweeps 18 global job radars, transforms resumes
-          with the Google XYZ formula, and verifies recruiter mailboxes via direct Socket MX handshakes.
-        </motion.p>
+            {/* Subtitle */}
+            <p className="mt-6 text-base sm:text-lg text-[#8E98A4] leading-relaxed max-w-xl">
+              Stop chasing opportunities. Start discovering them. Discover relevant jobs, understand your compatibility,
+              improve your CV, and organize your applications with one intelligent career command center.
+            </p>
 
-        {/* Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-4"
-        >
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            onClick={handleDownload}
-            className="px-8 py-3.5 rounded-full text-sm font-bold bg-[var(--accent-primary)] text-[var(--bg-deep)] hover:bg-[var(--accent-hover)] shadow-xl cursor-pointer"
-          >
-            Download for Windows (v2.0)
-          </motion.button>
+            {/* Action Buttons */}
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <motion.a
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                href="https://github.com/pasha804/pasha-hunt/releases/latest"
+                className="px-7 py-3.5 rounded-full text-sm font-bold bg-[#FF6B00] text-black hover:bg-[#FF7A1A] transition-all shadow-xl shadow-[#FF6B00]/30 flex items-center gap-2 cursor-pointer"
+              >
+                <span>Explore Pasha Hunt</span>
+                <span>→</span>
+              </motion.a>
 
-          <a
-            href="#crucible"
-            className="px-6 py-3.5 rounded-full text-sm font-medium glass-panel text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-all flex items-center gap-2"
-          >
-            Test Live ATS Engine
-            <span className="text-[var(--accent-primary)]">↓</span>
-          </a>
-        </motion.div>
+              <button
+                onClick={() => setDemoOpen(!demoOpen)}
+                className="px-6 py-3.5 rounded-full text-sm font-medium bg-[#141920]/80 border border-[#2B3542] text-white hover:border-[#FF6B00] transition-all flex items-center gap-2.5 backdrop-blur-md cursor-pointer"
+              >
+                <span className="w-5 h-5 rounded-full bg-[#FF6B00]/20 text-[#FF6B00] flex items-center justify-center text-[10px]">
+                  ▶
+                </span>
+                <span>Watch Demo</span>
+              </button>
+            </div>
 
-        {/* Live System Telemetry Strip */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs font-mono text-[var(--text-muted)]">
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
-            18 Global Feeds Active
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
-            41 Apinex AI Models
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
-            Socket MX: {socketPing}ms DNS Handshake
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
-            0 Cloud Spying (100% Local SQLite)
-          </span>
-        </div>
-
-        {/* =========================================================================
-            THE CENTERPIECE: 3D TILTED WORKSTATION VIEWPORT
-        ========================================================================= */}
-        <div id="workstation" className="mt-14 perspective-container max-w-5xl mx-auto">
-          <div className="tilted-workstation rounded-2xl bg-[var(--bg-deep)] border border-[var(--border-strong)] p-2 sm:p-3 overflow-hidden text-left shadow-2xl">
-            {/* Window Header */}
-            <div className="flex items-center justify-between px-3 py-2 bg-[var(--bg-surface)] rounded-xl border border-[var(--border-subtle)] mb-3">
+            {/* Feature Pills */}
+            <div className="mt-10 flex flex-wrap items-center gap-6 text-xs font-semibold text-[#8E98A4]">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#FF5F56] inline-block opacity-80" />
-                <span className="w-3 h-3 rounded-full bg-[#FFBD2E] inline-block opacity-80" />
-                <span className="w-3 h-3 rounded-full bg-[#27C93F] inline-block opacity-80" />
-                <span className="ml-2 font-mono text-[11px] text-[var(--text-muted)]">
-                  Pasha Hunt 2.0.0 — Apinex Commercial Workstation (Pasha Dev)
-                </span>
+                <span className="text-[#FF6B00]">⚡</span>
+                <span className="text-white">Intelligent Job Discovery</span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--accent-primary)] border border-[var(--border-subtle)]">
-                  Active Session: Muhammad Mubashar
-                </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[#FF6B00]">🧠</span>
+                <span className="text-white">AI-Powered CV Analysis</span>
               </div>
-            </div>
-
-            {/* Tab Navigation inside Workstation */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-              {[
-                { id: "overview", label: "Command Center", badge: "Overview" },
-                { id: "radar", label: "18-Radar Stream", badge: "5,460 Jobs" },
-                { id: "ats", label: "Google XYZ Crucible", badge: "Score 84/100" },
-                { id: "protocol", label: "Socket MX Deliverability", badge: "Verified" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-3 py-2.5 rounded-xl border text-xs font-medium transition-all text-left flex items-center justify-between cursor-pointer ${
-                    activeTab === tab.id
-                      ? "bg-[var(--bg-card)] border-[var(--accent-primary)] text-[var(--accent-primary)] shadow-md"
-                      : "bg-[var(--bg-surface)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                  }`}
-                >
-                  <span className="font-semibold">{tab.label}</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-deep)] text-[var(--text-muted)]">
-                    {tab.badge}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Interactive Viewport Content */}
-            <div className="min-h-[360px] bg-[var(--bg-surface)] rounded-xl border border-[var(--border-subtle)] p-4 sm:p-6 transition-all">
-              {/* TAB 1: OVERVIEW */}
-              {activeTab === "overview" && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  <div className="flex flex-wrap items-center justify-between border-b border-[var(--border-subtle)] pb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-[var(--text-primary)]">Welcome back, Muhammad Mubashar</h3>
-                      <p className="text-xs text-[var(--text-muted)] mt-0.5 font-mono">
-                        Radar Sweep Completed • All 18 Scrapers Online • Gemini & Apinex Gateway Ready
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2 sm:mt-0">
-                      <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--border-accent)]">
-                        Model: free/qwen-3.8-max
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* High-Impact Stat Metrics */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase">Total Opportunities</span>
-                      <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">5,460</p>
-                      <span className="text-[10px] text-[var(--accent-primary)] mt-1 inline-block">18 Global Feeds</span>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase">Passing Filters</span>
-                      <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">23</p>
-                      <span className="text-[10px] text-[var(--accent-primary)] mt-1 inline-block">Worldwide + PK</span>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase">Recruiter Deliverables</span>
-                      <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">69</p>
-                      <span className="text-[10px] text-[var(--accent-primary)] mt-1 inline-block">Socket MX Verified</span>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase">ATS Heuristic Fit</span>
-                      <p className="text-2xl font-bold text-[var(--accent-primary)] mt-1">77%</p>
-                      <span className="text-[10px] text-[var(--text-muted)] mt-1 inline-block">Google XYZ Optimized</span>
-                    </div>
-                  </div>
-
-                  {/* Top Target Listing */}
-                  <div className="p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--accent-primary)]/15 text-[var(--accent-primary)] font-bold">
-                        96% MATCH • TOP MATCH
-                      </span>
-                      <h4 className="text-sm font-bold text-[var(--text-primary)] mt-1.5">
-                        Systems Limited — Senior Full Stack Engineer (React / Python / FastAPI)
-                      </h4>
-                      <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">
-                        careers@systemsltd.com • Remote Worldwide • 24m ago
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setActiveTab("ats")}
-                        className="px-4 py-2 rounded-lg text-xs font-semibold bg-[var(--accent-primary)] text-[var(--bg-deep)] hover:bg-[var(--accent-hover)] transition-all cursor-pointer"
-                      >
-                        Tailor CV with Google XYZ →
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 2: 18-RADAR STREAM */}
-              {activeTab === "radar" && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-mono text-[var(--text-muted)]">
-                      LIVE INGESTION: 18 CHANNELS STREAMING (REMOTIVE, WWR, ARBEITNOW, HIMALAYAS)
-                    </span>
-                    <span className="text-[10px] font-mono text-[var(--accent-primary)]">STATUS: 16/18 OPERATIONAL</span>
-                  </div>
-                  {liveJobs.map((job) => (
-                    <div
-                      key={job.id}
-                      className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-3 hover:border-[var(--accent-primary)] transition-all"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-[var(--text-primary)]">{job.title}</span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[var(--bg-surface)] text-[var(--accent-primary)]">
-                            {job.match}% Fit
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[var(--text-muted)] mt-1 font-mono">
-                          {job.company} • {job.location} • Source: {job.source} • {job.salary}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {job.email && (
-                          <span className="text-[10px] font-mono px-2 py-1 rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">
-                            {job.email}
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setActiveTab("ats")}
-                          className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-[var(--accent-primary)] text-[var(--bg-deep)] hover:bg-[var(--accent-hover)] transition-all cursor-pointer"
-                        >
-                          Draft CV
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </motion.div>
-              )}
-
-              {/* TAB 3: ATS CRUCIBLE */}
-              {activeTab === "ats" && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">
-                        Google XYZ Formula Transformation Engine
-                      </h4>
-                      <p className="text-xs text-[var(--text-muted)] font-mono">
-                        Accomplished [X], as measured by [Y], by doing [Z]
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-black text-[var(--accent-primary)]">{atsScore}/100</span>
-                      <p className="text-[10px] font-mono text-[var(--text-muted)]">ATS Heuristic Score</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[#FF5F56] font-bold block mb-1">
-                        ✕ RAW DESCRIPTIVE BULLET (FAILS ATS QUANTIFICATION)
-                      </span>
-                      <textarea
-                        value={rawBullet}
-                        onChange={(e) => setRawBullet(e.target.value)}
-                        rows={3}
-                        className="w-full bg-[var(--bg-deep)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-xs text-[var(--text-primary)] font-mono resize-none focus:outline-none focus:border-[var(--accent-primary)]"
-                      />
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--accent-primary)]/50 shadow-inner">
-                      <span className="text-[10px] font-mono text-[var(--accent-primary)] font-bold block mb-1">
-                        ✓ PASHA HUNT GOOGLE XYZ TAILORING (QUALIFIED ELITE)
-                      </span>
-                      <textarea
-                        value={xyzTransformed}
-                        onChange={(e) => setXyzTransformed(e.target.value)}
-                        rows={3}
-                        className="w-full bg-[var(--bg-deep)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-xs text-[var(--text-primary)] font-mono resize-none focus:outline-none focus:border-[var(--accent-primary)]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-[11px] font-mono text-[var(--text-muted)]">
-                      Tokens: Action Verb [Slashing] • Metric [1.8s, 98/100] • Method [React 19, Modular Architecture]
-                    </span>
-                    <button
-                      onClick={() => alert("Copied Google XYZ Tailored Resume to clipboard!")}
-                      className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-[var(--accent-primary)] text-[var(--bg-deep)] cursor-pointer"
-                    >
-                      Copy Clean .TXT
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* TAB 4: PROTOCOL */}
-              {activeTab === "protocol" && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-                    <div>
-                      <h4 className="text-sm font-bold text-[var(--text-primary)]">
-                        Socket MX Direct Recruiter Mailbox Verification
-                      </h4>
-                      <p className="text-xs text-[var(--text-muted)] font-mono">
-                        RFC 5321 DNS MX Handshake without firing unsolicited spam
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]">
-                      Status: Socket 25 Handshake Ready
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)]">STEP 01: DNS MX QUERY</span>
-                      <p className="text-xs font-mono text-[var(--text-primary)] mt-1.5">
-                        query_mx(&quot;systemsltd.com&quot;) &rarr; ASPMX.L.GOOGLE.COM
-                      </p>
-                      <span className="text-[9px] text-[var(--accent-primary)] font-mono mt-1 block">Resolved in 18ms</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)]">STEP 02: SOCKET HANDSHAKE</span>
-                      <p className="text-xs font-mono text-[var(--text-primary)] mt-1.5">
-                        socket.connect((mx, 25)) &rarr; 220 mx.google.com ESMTP
-                      </p>
-                      <span className="text-[9px] text-[var(--accent-primary)] font-mono mt-1 block">Handshake Valid</span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-                      <span className="text-[10px] font-mono text-[var(--text-muted)]">STEP 03: IMAP STAGING</span>
-                      <p className="text-xs font-mono text-[var(--text-primary)] mt-1.5">
-                        imap.append(&quot;[Gmail]/Drafts&quot;, msg)
-                      </p>
-                      <span className="text-[9px] text-[var(--accent-primary)] font-mono mt-1 block">
-                        Saved in Drafts (Never Auto-Sent)
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-[#FF6B00]">📊</span>
+                <span className="text-white">Application Intelligence</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Laser Horizon Light Beam */}
-        <div className="mt-16 laser-horizon" />
-      </section>
-
-      {/* =========================================================================
-          ACT II: THE STREAM (18-RADAR LIVE INGESTION TICKER)
-      ========================================================================= */}
-      <section id="radar" className="relative z-10 py-16 px-4 max-w-6xl mx-auto">
-        <div className="text-left mb-8">
-          <span className="text-[11px] font-mono uppercase text-[var(--accent-primary)] tracking-widest block mb-2">
-            ACT II: GLOBAL DISCOVERY
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">
-            18 Job Feeds. Zero Third-Party Aggregation Lag.
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-xl">
-            Pasha Hunt bypasses cluttered web portals and queries direct RSS, JSON, and HTML endpoints in real time.
-          </p>
-        </div>
-
-        {/* Radar Strip Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-          {[
-            { name: "Remotive", type: "JSON API", speed: "210ms", count: "840 jobs" },
-            { name: "WeWorkRemotely", type: "RSS Feed", speed: "190ms", count: "1,120 jobs" },
-            { name: "Arbeitnow", type: "REST API", speed: "320ms", count: "650 jobs" },
-            { name: "Himalayas", type: "JSON Feed", speed: "280ms", count: "920 jobs" },
-            { name: "Jobicy", type: "API Endpoint", speed: "240ms", count: "480 jobs" },
-            { name: "RemoteOK", type: "Legal Scraper", speed: "410ms", count: "1,450 jobs" },
-          ].map((feed, i) => (
+          {/* Right Column: 3D Laptop Display with Radiant Glowing Sun Orb */}
+          <div className="lg:col-span-7 relative flex items-center justify-center">
+            {/* The Giant Glowing Radiant Sun Orb (Picture 3 Signature) */}
             <div
-              key={i}
-              className="p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)] transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-[var(--text-primary)]">{feed.name}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
+              className="absolute -top-12 -right-8 w-[580px] h-[580px] rounded-full pointer-events-none"
+              style={{
+                background: "radial-gradient(circle at 50% 50%, rgba(255, 107, 0, 0.85) 0%, rgba(242, 170, 76, 0.4) 35%, rgba(255, 107, 0, 0) 70%)",
+                filter: "blur(50px)",
+                opacity: 0.85,
+              }}
+            />
+
+            {/* 3D Laptop Frame */}
+            <div className="relative z-10 w-full max-w-2xl transform lg:rotate-y-[-6deg] lg:rotate-x-[6deg] transition-transform duration-500 hover:rotate-0 shadow-2xl">
+              <div className="rounded-2xl bg-[#0C0F12] border-2 border-[#2C3540] p-3 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.9)] overflow-hidden">
+                {/* Laptop Top Bezel */}
+                <div className="flex items-center justify-between px-3 py-1.5 bg-[#141920] rounded-xl border border-[#222A34] mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                    <span className="ml-2 font-mono text-[10px] text-[#8E98A4]">Pasha Hunt 2.0 — APINEX Edition</span>
+                  </div>
+                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#1C232D] text-[#FF6B00]">
+                    Muhammad Mubashar
+                  </span>
+                </div>
+
+                {/* Picture 2 Mini-Dashboard Rendered Directly Inside the Screen */}
+                <div className="bg-[#0B0E11] rounded-xl p-3 text-left space-y-3 border border-[#1E252D]">
+                  {/* Hero Banner in Mini Display */}
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-[#141920] via-[#1E2631] to-[#141920] border border-[#28323E] flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+                        Welcome back, Muhammad! 🚀
+                      </h4>
+                      <p className="text-[10px] text-[#8E98A4] mt-0.5">Your career journey is on track</p>
+                      <span className="inline-block mt-1 text-[8px] font-mono text-[#F2AA4C] bg-white/5 px-2 py-0.5 rounded-full">
+                        &quot;Dream Big. Apply Smart. Grow Faster.&quot;
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-[#181D22] p-2 rounded-lg border border-[#28323E]">
+                      <div className="w-9 h-9 rounded-full border-2 border-[#FF6B00] flex items-center justify-center font-bold text-[10px] text-white">
+                        92%
+                      </div>
+                      <div className="text-[9px]">
+                        <span className="text-[#22C55E] font-bold block">✓ Excellent</span>
+                        <span className="text-[#8E98A4]">Fit for 23 roles</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5 Stats Row in Mini Display */}
+                  <div className="grid grid-cols-5 gap-1.5 text-center">
+                    {[
+                      { icon: "💼", num: "24", label: "Total Jobs" },
+                      { icon: "✓", num: "8", label: "Applied" },
+                      { icon: "🔖", num: "5", label: "Shortlisted" },
+                      { icon: "✉", num: "2", label: "Interviews" },
+                      { icon: "📊", num: "96%", label: "Match Rate" },
+                    ].map((s, i) => (
+                      <div key={i} className="p-2 rounded-lg bg-[#141920] border border-[#222A34]">
+                        <span className="text-xs block">{s.icon}</span>
+                        <p className="text-xs font-bold text-white mt-0.5">{s.num}</p>
+                        <span className="text-[8px] text-[#8E98A4] block truncate">{s.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 3 Middle Cards in Mini Display */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Top Job Matches */}
+                    <div className="p-2.5 rounded-lg bg-[#141920] border border-[#222A34]">
+                      <span className="text-[10px] font-bold text-white flex items-center gap-1 mb-1.5">
+                        <span className="text-[#FF6B00]">🔥</span> Top Matches
+                      </span>
+                      <div className="space-y-1.5">
+                        <div className="p-1.5 rounded bg-[#181D22] flex items-center justify-between text-[9px]">
+                          <span className="font-bold text-white">Google</span>
+                          <span className="text-[#22C55E] font-bold">96%</span>
+                        </div>
+                        <div className="p-1.5 rounded bg-[#181D22] flex items-center justify-between text-[9px]">
+                          <span className="font-bold text-white">Meta</span>
+                          <span className="text-[#22C55E] font-bold">94%</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ATS Analysis */}
+                    <div className="p-2.5 rounded-lg bg-[#141920] border border-[#222A34] text-center">
+                      <span className="text-[10px] font-bold text-white block mb-1">ATS Score</span>
+                      <div className="w-10 h-10 mx-auto rounded-full border-2 border-[#22C55E] flex items-center justify-center font-bold text-[10px] text-white">
+                        87%
+                      </div>
+                      <span className="text-[8px] text-[#22C55E] font-bold mt-1 block">5/5 Verified</span>
+                    </div>
+
+                    {/* AI Chat Pasha Bot */}
+                    <div className="p-2.5 rounded-lg bg-[#141920] border border-[#222A34]">
+                      <span className="text-[10px] font-bold text-white flex items-center gap-1 mb-1.5">
+                        <span className="text-[#F2AA4C]">🤖</span> Pasha Bot
+                      </span>
+                      <p className="text-[8px] text-[#8E98A4] leading-tight">
+                        &quot;Tailoring CV with Google XYZ metrics for Google application.&quot;
+                      </p>
+                      <span className="text-[8px] text-[#FF6B00] font-bold mt-2 block">● Ready to Apply</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-[10px] font-mono text-[var(--text-muted)] mt-1">{feed.type}</p>
-              <div className="mt-2 flex items-center justify-between text-[10px] font-mono">
-                <span className="text-[var(--text-secondary)]">{feed.count}</span>
-                <span className="text-[var(--accent-primary)]">{feed.speed}</span>
-              </div>
+
+              {/* Floating Frosted Glass Notification Card (Picture 3 Signature) */}
+              <motion.div
+                initial={{ y: 15, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="absolute -top-5 -right-5 z-20 bg-[#12161D]/90 border border-[#FF6B00]/40 rounded-xl p-3.5 shadow-2xl backdrop-blur-xl flex items-center gap-3.5"
+              >
+                <div className="w-9 h-9 rounded-lg bg-[#FF6B00]/15 border border-[#FF6B00]/30 flex items-center justify-center text-base">
+                  💼
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-white tracking-tight">New Job Match</h5>
+                  <p className="text-[10px] text-[#8E98A4]">3 new opportunities for you!</p>
+                </div>
+              </motion.div>
             </div>
-          ))}
+          </div>
         </div>
       </section>
 
       {/* =========================================================================
-          ACT III: THE CRUCIBLE (INTERACTIVE ATS & GOOGLE XYZ RESUME STUDIO)
+          LOWER FOLD: Picture 3 Second Section (Workflow Showcase)
       ========================================================================= */}
-      <section id="crucible" className="relative z-10 py-16 px-4 max-w-6xl mx-auto border-t border-[var(--border-subtle)]">
-        <div className="text-left mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="text-[11px] font-mono uppercase text-[var(--accent-primary)] tracking-widest block mb-2">
-              ACT III: ATS INTELLIGENCE
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">
-              The Google XYZ Resume Transformer.
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-xl">
-              Type or paste your experience below. Watch the real-time heuristic calculator analyze keyword density,
-              contact signals, and transform raw bullets into high-impact metrics.
-            </p>
-          </div>
-          <div className="glass-panel px-4 py-2 rounded-xl flex items-center gap-3">
-            <span className="text-xs font-mono text-[var(--text-muted)]">Calculated Fit:</span>
-            <span className="text-xl font-black text-[var(--accent-primary)]">{atsScore}/100</span>
-          </div>
-        </div>
-
-        {/* Live Interactive Workspace */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Left: Input Textarea */}
-          <div className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between">
-            <div>
-              <span className="text-xs font-mono text-[var(--text-muted)] uppercase block mb-2">
-                YOUR RESUME TEXT OR EXPERIENCE (EDIT LIVE):
-              </span>
-              <textarea
-                value={resumeText}
-                onChange={(e) => handleResumeChange(e.target.value)}
-                rows={9}
-                className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl p-3.5 text-xs text-[var(--text-primary)] font-mono resize-none focus:outline-none focus:border-[var(--accent-primary)]"
-                placeholder="Paste your resume or experience here..."
-              />
-            </div>
-            <div className="mt-3 flex items-center justify-between text-[11px] font-mono text-[var(--text-muted)]">
-              <span>Words: {resumeText.split(/\s+/).filter(Boolean).length}</span>
-              <span className="text-[var(--accent-primary)]">Dynamic Heuristic Evaluation</span>
-            </div>
+      <section id="workflow" className="relative z-10 py-24 px-6 max-w-7xl mx-auto border-t border-[#1E252D]">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          {/* Eyebrow Pill */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#181D22] border border-[#FF6B00]/30 text-[11px] font-mono text-[#F2AA4C] mb-4">
+            <span className="text-[#FF6B00]">⚡</span>
+            <span className="font-bold uppercase tracking-wider">SMARTER CAREER. BRIGHTER FUTURE.</span>
           </div>
 
-          {/* Right: Heuristic Metric Breakdown */}
-          <div className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col justify-between space-y-4">
-            <div>
-              <span className="text-xs font-mono text-[var(--text-muted)] uppercase block mb-3">
-                5-DIMENSION ATS CRITERIA SCORE:
-              </span>
-              <div className="space-y-3 text-xs font-mono">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[var(--text-secondary)]">Contact Signals & Links (Email, LinkedIn, GitHub)</span>
-                    <span className="text-[var(--accent-primary)]">20 / 20</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-[var(--bg-deep)] overflow-hidden">
-                    <div className="h-full bg-[var(--accent-primary)] w-full" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[var(--text-secondary)]">Technical Keyword Density (React, Next.js, Python)</span>
-                    <span className="text-[var(--accent-primary)]">20 / 20</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-[var(--bg-deep)] overflow-hidden">
-                    <div className="h-full bg-[var(--accent-primary)] w-[95%]" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[var(--text-secondary)]">Google XYZ Quantified Metrics</span>
-                    <span className="text-[var(--accent-primary)]">30 / 35</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-[var(--bg-deep)] overflow-hidden">
-                    <div className="h-full bg-[var(--accent-primary)] w-[85%]" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[var(--text-secondary)]">Executive Summary Impact</span>
-                    <span className="text-[var(--accent-primary)]">14 / 15</span>
-                  </div>
-                  <div className="w-full h-1.5 rounded-full bg-[var(--bg-deep)] overflow-hidden">
-                    <div className="h-full bg-[var(--accent-primary)] w-[90%]" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)] text-[11px] font-mono text-[var(--text-muted)]">
-              &quot;Accomplished [14+ React 19 apps], as measured by [1.8s LCP drop], by doing [modular architecture].&quot;
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          ACT IV: THE PROTOCOL (SOCKET MX DNS RECRUITER VERIFICATION)
-      ========================================================================= */}
-      <section id="protocol" className="relative z-10 py-16 px-4 max-w-6xl mx-auto border-t border-[var(--border-subtle)]">
-        <div className="text-left mb-8">
-          <span className="text-[11px] font-mono uppercase text-[var(--accent-primary)] tracking-widest block mb-2">
-            ACT IV: DELIVERABILITY ARCHITECTURE
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">
-            Socket MX Protocol. The Recruiter Handshake.
+          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+            One Workspace. <br />
+            A Smarter Career Workflow.
           </h2>
-          <p className="text-sm text-[var(--text-secondary)] mt-1 max-w-xl">
-            Why send emails into blind spam folders? Pasha Hunt conducts real RFC 5321 DNS handshakes to confirm the
-            recruiter’s mail exchanger exists before drafting your application.
+
+          <p className="mt-4 text-sm sm:text-base text-[#8E98A4] leading-relaxed">
+            From job discovery to application tracking — Pasha Hunt brings everything together in one powerful platform.
           </p>
+
+          {/* Workflow Tabs Strip with Glowing Active Underline (Picture 3 Signature) */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-8 border-b border-[#252E38] pb-4">
+            {[
+              { id: "discover", label: "Discover Jobs" },
+              { id: "analyze", label: "Analyze CV" },
+              { id: "tailor", label: "Tailor Applications" },
+              { id: "track", label: "Track Progress" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveWorkflowTab(tab.id as any)}
+                className={`relative pb-3 text-sm font-semibold transition-all cursor-pointer ${
+                  activeWorkflowTab === tab.id ? "text-white" : "text-[#8E98A4] hover:text-white"
+                }`}
+              >
+                <span>{tab.label}</span>
+                {activeWorkflowTab === tab.id && (
+                  <motion.div
+                    layoutId="activeTabUnderline"
+                    className="absolute bottom-[-17px] left-0 right-0 h-0.5 bg-[#FF6B00] shadow-[0_0_12px_#FF6B00]"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)] transition-all">
-            <span className="text-xs font-mono text-[var(--accent-primary)] font-bold">PHASE 01: MX LOOKUP</span>
-            <h3 className="text-base font-bold text-[var(--text-primary)] mt-2">Zero Blind Sending</h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
-              When a recruiter email is extracted, Pasha Hunt performs an asynchronous DNS MX query against authoritative
-              root servers to verify domain active status.
-            </p>
+        {/* Dual Device Displays (Picture 3 Bottom) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-5xl mx-auto">
+          {/* Display Card 1: Job Match Analysis */}
+          <div className="rounded-2xl bg-[#12161A] border border-[#252C34] p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                </div>
+                <span className="text-[10px] font-mono text-[#8E98A4]">Job Match Analysis</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-8">
+                {/* 95% Score Gauge */}
+                <div className="relative w-28 h-28 flex-shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      fill="none"
+                      stroke="#22C55E"
+                      strokeWidth="8"
+                      strokeDasharray="264"
+                      strokeDashoffset="13"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-black text-white">95%</span>
+                    <span className="text-[9px] font-bold text-[#22C55E]">Match</span>
+                  </div>
+                </div>
+
+                {/* Match Signals Checklist */}
+                <div className="space-y-2.5 text-xs font-medium text-[#F7F3EA] w-full">
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-[#181D22] border border-[#252C34]">
+                    <span>Skills Match (React, Python, FastAPI)</span>
+                    <span className="text-[#22C55E] font-bold">✓ 100%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-[#181D22] border border-[#252C34]">
+                    <span>Experience Level (4+ Years Senior)</span>
+                    <span className="text-[#22C55E] font-bold">✓ 95%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-[#181D22] border border-[#252C34]">
+                    <span>Location (Worldwide Remote)</span>
+                    <span className="text-[#22C55E] font-bold">✓ 100%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-lg bg-[#181D22] border border-[#252C34]">
+                    <span>Benefits & Salary Fit</span>
+                    <span className="text-[#22C55E] font-bold">✓ 90%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-[#252C34] flex items-center justify-between text-xs font-mono text-[#8E98A4]">
+              <span>Verified against Workday / Greenhouse</span>
+              <span className="text-[#FF6B00]">Elite Candidate Ready</span>
+            </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)] transition-all">
-            <span className="text-xs font-mono text-[var(--accent-primary)] font-bold">PHASE 02: SOCKET 25</span>
-            <h3 className="text-base font-bold text-[var(--text-primary)] mt-2">TCP Handshake Verification</h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
-              Opens a raw TCP connection to Port 25. Verifies the remote mail server responds with HTTP 220 ESMTP without
-              transmitting unsolicited payloads.
-            </p>
-          </div>
+          {/* Display Card 2: Your CV Analysis Preview */}
+          <div className="rounded-2xl bg-[#12161A] border border-[#252C34] p-6 shadow-xl flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-bold text-white flex items-center gap-2">
+                  <span>📄</span> Your CV Analysis
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FF6B00]/15 text-[#FF6B00]">
+                  Google XYZ Formatted
+                </span>
+              </div>
 
-          <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)] transition-all">
-            <span className="text-xs font-mono text-[var(--accent-primary)] font-bold">PHASE 03: IMAP DRAFTS</span>
-            <h3 className="text-base font-bold text-[var(--text-primary)] mt-2">Human-in-the-Loop Staging</h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
-              Pasha Hunt never sends an email autonomously. Every tailored CV and cover letter is cleanly staged into
-              your Gmail Drafts folder for final review.
-            </p>
+              <div className="p-4 rounded-xl bg-[#181D22] border border-[#252C34] font-mono text-xs space-y-3 text-[#B7B7AE]">
+                <div>
+                  <h4 className="text-white font-bold text-xs">MUHAMMAD MUBASHAR</h4>
+                  <p className="text-[10px] text-[#8E98A4]">Senior Full Stack Engineer & AI Automation Architect</p>
+                </div>
+
+                <div className="p-2.5 rounded bg-[#0B0E11] border border-[#252C34] text-[11px] text-white">
+                  <span className="text-[#FF6B00] font-bold block mb-1">✓ GOOGLE XYZ TRANSFORMATION:</span>
+                  &quot;Architected and delivered 14+ responsive React 19 web applications, slashing LCP render latency by
+                  1.8s and achieving a 98/100 Google Lighthouse score.&quot;
+                </div>
+
+                <p className="text-[10px] text-[#8E98A4]">
+                  Key Signals: 14+ quantified metrics • 0 fluff verbs • Direct deliverability verified
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-[#252C34] flex items-center justify-between text-xs font-mono">
+              <span className="text-[#8E98A4]">Ready for Staging:</span>
+              <a
+                href="#transmission"
+                className="text-[#FF6B00] hover:text-[#FF8533] font-bold flex items-center gap-1"
+              >
+                Generate Tailored Cover Letter →
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          ACT V: TRANSMISSION (INSTANT DOWNLOAD & INQUIRY FORM)
+          TRANSMISSION & FOOTER: Contact Form & Downloads
       ========================================================================= */}
-      <section id="transmission" className="relative z-10 py-16 px-4 max-w-6xl mx-auto border-t border-[var(--border-subtle)]">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          {/* Left: Download Binary */}
-          <div className="p-6 rounded-2xl glass-panel border border-[var(--border-strong)]">
-            <span className="text-[11px] font-mono uppercase text-[var(--accent-primary)] tracking-widest block mb-2">
-              ACT V: GET PASHA HUNT
+      <section id="transmission" className="relative z-10 py-16 px-6 max-w-7xl mx-auto border-t border-[#1E252D]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start max-w-5xl mx-auto">
+          {/* Download Box */}
+          <div className="p-8 rounded-2xl bg-[#12161A] border border-[#252C34]">
+            <span className="text-[11px] font-mono uppercase text-[#FF6B00] font-bold tracking-widest block mb-2">
+              DESKTOP APPLICATION
             </span>
-            <h3 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
-              Download the Commercial Workstation
-            </h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
-              Standalone Windows executable (`PashaHunt.exe`). Zero cloud dependencies, zero telemetry tracking, and
-              instant integration with your local Apinex API key.
+            <h3 className="text-2xl font-black text-white tracking-tight">Download Pasha Hunt 2.0</h3>
+            <p className="text-xs text-[#8E98A4] mt-2 leading-relaxed">
+              Standalone Windows x64 Workstation. Zero cloud latency, 100% local SQLite privacy, and native 18-feed
+              autonomous scraper sweeps.
             </p>
 
-            <div className="mt-6 space-y-2 text-xs font-mono text-[var(--text-muted)]">
-              <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
-                <span>Current Release:</span>
-                <span className="text-[var(--text-primary)]">v2.0.0 (Apinex Edition)</span>
-              </div>
-              <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
-                <span>Architecture:</span>
-                <span className="text-[var(--text-primary)]">Windows x64 Standalone</span>
-              </div>
-              <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
-                <span>Security:</span>
-                <span className="text-[var(--accent-primary)]">100% Local-First (SHA-256 Verified)</span>
-              </div>
-            </div>
-
-            <motion.button
+            <motion.a
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              onClick={handleDownload}
-              className="mt-6 w-full py-3.5 rounded-xl text-sm font-bold bg-[var(--accent-primary)] text-[var(--bg-deep)] hover:bg-[var(--accent-hover)] transition-all shadow-xl cursor-pointer"
+              href="https://github.com/pasha804/pasha-hunt/releases/latest"
+              className="mt-6 w-full py-3.5 rounded-xl text-sm font-bold bg-[#FF6B00] text-black hover:bg-[#FF7A1A] transition-all shadow-xl shadow-[#FF6B00]/25 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {downloadSuccess ? "Redirecting to Release..." : "Download Pasha Hunt v2.0 for Windows"}
-            </motion.button>
+              <span>Download for Windows (v2.0)</span>
+              <span>↓</span>
+            </motion.a>
           </div>
 
-          {/* Right: Contact & Commercial Inquiry */}
-          <div className="p-6 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
-            <span className="text-[11px] font-mono uppercase text-[var(--accent-primary)] tracking-widest block mb-2">
-              COMMERCIAL INQUIRY & FEEDBACK
+          {/* Contact Box */}
+          <div className="p-8 rounded-2xl bg-[#12161A] border border-[#252C34]">
+            <span className="text-[11px] font-mono uppercase text-[#FF6B00] font-bold tracking-widest block mb-2">
+              COMMERCIAL INQUIRIES
             </span>
-            <h3 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Transmit a Message</h3>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">
-              Direct line to founder Muhammad Mubashar. Handled by the live `/api/contact` route.
-            </p>
+            <h3 className="text-xl font-bold text-white tracking-tight">Direct Transmission</h3>
+            <p className="text-xs text-[#8E98A4] mt-1">Direct message to Muhammad Mubashar.</p>
 
             <form onSubmit={handleContactSubmit} className="mt-5 space-y-3">
               <input
@@ -824,84 +494,68 @@ export default function PashaHuntLaunch() {
                 className="hidden"
                 tabIndex={-1}
               />
-
-              <div>
-                <label className="text-[11px] font-mono text-[var(--text-muted)] block mb-1">YOUR NAME</label>
-                <input
-                  type="text"
-                  required
-                  value={contactForm.name}
-                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                  placeholder="e.g. Alex Mercer"
-                  className="w-full bg-[var(--bg-deep)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-mono text-[var(--text-muted)] block mb-1">WORK EMAIL</label>
-                <input
-                  type="email"
-                  required
-                  value={contactForm.email}
-                  onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                  placeholder="alex@enterprise.com"
-                  className="w-full bg-[var(--bg-deep)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-xs text-[var(--text-primary)] font-mono focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-mono text-[var(--text-muted)] block mb-1">MESSAGE / INQUIRY</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={contactForm.inquiry}
-                  onChange={(e) => setContactForm({ ...contactForm, inquiry: e.target.value })}
-                  placeholder="Tell us about your team or feedback..."
-                  className="w-full bg-[var(--bg-deep)] border border-[var(--border-subtle)] rounded-lg p-2.5 text-xs text-[var(--text-primary)] font-mono resize-none focus:outline-none focus:border-[var(--accent-primary)]"
-                />
-              </div>
-
+              <input
+                type="text"
+                required
+                value={contactForm.name}
+                onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                placeholder="Your name"
+                className="w-full bg-[#0B0E11] border border-[#252C34] rounded-lg p-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#FF6B00]"
+              />
+              <input
+                type="email"
+                required
+                value={contactForm.email}
+                onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                placeholder="Your work email"
+                className="w-full bg-[#0B0E11] border border-[#252C34] rounded-lg p-2.5 text-xs text-white font-mono focus:outline-none focus:border-[#FF6B00]"
+              />
+              <textarea
+                required
+                rows={3}
+                value={contactForm.inquiry}
+                onChange={(e) => setContactForm({ ...contactForm, inquiry: e.target.value })}
+                placeholder="Inquiry or feedback..."
+                className="w-full bg-[#0B0E11] border border-[#252C34] rounded-lg p-2.5 text-xs text-white font-mono resize-none focus:outline-none focus:border-[#FF6B00]"
+              />
               <button
                 type="submit"
                 disabled={contactStatus === "submitting"}
-                className="w-full py-2.5 rounded-lg text-xs font-bold bg-[var(--bg-card)] border border-[var(--border-strong)] text-[var(--text-primary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)] transition-all cursor-pointer"
+                className="w-full py-2.5 rounded-lg text-xs font-bold bg-[#181D22] border border-[#303844] text-white hover:border-[#FF6B00] hover:text-[#FF6B00] transition-all cursor-pointer"
               >
                 {contactStatus === "submitting" ? "Transmitting..." : "Send Transmission →"}
               </button>
-
               {contactStatus === "success" && (
-                <div className="p-3 rounded-lg bg-[var(--accent-primary)]/10 border border-[var(--border-accent)] text-xs text-[var(--accent-primary)] font-mono">
+                <div className="p-3 rounded-lg bg-[#22C55E]/10 border border-[#22C55E]/30 text-xs text-[#22C55E] font-mono">
                   ✓ Transmission Received! Reference: <strong>{contactRef}</strong>
                 </div>
               )}
             </form>
           </div>
         </div>
-      </section>
 
-      {/* =========================================================================
-          FOOTER: Minimalist Editorial Colophon
-      ========================================================================= */}
-      <footer className="relative z-10 py-12 px-4 max-w-6xl mx-auto border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-[var(--text-muted)]">
-        <div>
-          <span className="font-bold text-[var(--text-primary)]">PASHA HUNT 2.0</span> • APINEX COMMERCIAL EDITION
-          <p className="mt-1">Architected & Developed by Muhammad Mubashar (Pasha Dev).</p>
+        {/* Footer */}
+        <div className="mt-16 pt-8 border-t border-[#1E252D] flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-[#8E98A4]">
+          <div>
+            <span className="font-bold text-white">PASHA HUNT 2.0</span> • APINEX EDITION
+            <p className="mt-1">Architected by Muhammad Mubashar (Pasha Dev).</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://github.com/pasha804/pasha-hunt"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white transition-colors"
+            >
+              GitHub Repository
+            </a>
+            <span>•</span>
+            <a href="#product" className="hover:text-white transition-colors">
+              Top ↑
+            </a>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <a
-            href="https://github.com/pasha804/pasha-hunt"
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-[var(--accent-primary)] transition-colors"
-          >
-            GitHub Repository
-          </a>
-          <span>•</span>
-          <a href="#workstation" className="hover:text-[var(--accent-primary)] transition-colors">
-            Top ↑
-          </a>
-        </div>
-      </footer>
+      </section>
     </div>
   );
 }
