@@ -1,12 +1,16 @@
 """Pasha Hunt 2.0 — APINEX Edition Desktop Workstation
 1:1 Pixel-Perfect Modern Desktop Architecture (Picture 2)
-Powered by PySide6 & QWebEngineView with native background worker threads and local IPC server.
+Integrated with Native Cinematic Splash Screen (OpenCV + PySide6),
+Dynamic Candidate Intelligence, Real-Time MX Verification,
+and Local REST IPC Server on 127.0.0.1:58241.
 """
 import sys
 import os
 import json
 import threading
 import time
+import urllib.request
+import cv2
 from PySide6 import QtCore, QtGui, QtWidgets, QtWebEngineWidgets
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -29,6 +33,93 @@ elif len(sys.argv) > 1 and sys.argv[1] == "--cv":
     sys.exit(0)
 
 
+class NativeVideoSplash(QtWidgets.QWidget):
+    finished = QtCore.Signal()
+
+    def __init__(self, video_path):
+        super().__init__()
+        self.setWindowFlags(QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.Tool)
+        self.setAttribute(QtCore.Qt.WA_TranslucentBackground, False)
+        self.setStyleSheet("background-color: #070A0E;")
+        
+        self.video_path = video_path
+        self.cap = cv2.VideoCapture(self.video_path)
+        
+        # 16:9 cinematic aspect ratio centered
+        self.video_w = 960
+        self.video_h = 540
+        self.resize(self.video_w, self.video_h)
+        
+        # Center on primary monitor
+        screen = QtGui.QGuiApplication.primaryScreen().geometry()
+        x = (screen.width() - self.video_w) // 2
+        y = (screen.height() - self.video_h) // 2
+        self.move(x, y)
+        
+        # Video render canvas
+        self.label = QtWidgets.QLabel(self)
+        self.label.setGeometry(0, 0, self.video_w, self.video_h)
+        self.label.setScaledContents(True)
+
+        # Skip Intro Button
+        self.skip_btn = QtWidgets.QPushButton("Skip Intro [Esc] ⏭", self)
+        self.skip_btn.setGeometry(self.video_w - 180, self.video_h - 55, 160, 36)
+        self.skip_btn.setCursor(QtGui.Qt.PointingHandCursor)
+        self.skip_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(14, 19, 24, 0.88);
+                border: 1px solid #FF6B00;
+                color: #FFFFFF;
+                font-family: -apple-system, Segoe UI, sans-serif;
+                font-size: 12px;
+                font-weight: 700;
+                border-radius: 18px;
+            }
+            QPushButton:hover {
+                background-color: #FF6B00;
+                color: #000000;
+            }
+        """)
+        self.skip_btn.clicked.connect(self.close_and_finish)
+
+        # 24 FPS timer (~41ms)
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.next_frame)
+        self.timer.start(41)
+
+    def next_frame(self):
+        if not self.cap or not self.cap.isOpened():
+            self.close_and_finish()
+            return
+        ret, frame = self.cap.read()
+        if not ret:
+            self.close_and_finish()
+            return
+        
+        # Convert BGR to RGB
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb.shape
+        bytes_per_line = ch * w
+        q_img = QtGui.QImage(rgb.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        self.label.setPixmap(QtGui.QPixmap.fromImage(q_img))
+
+    def keyPressEvent(self, event):
+        if event.key() in (QtCore.Qt.Key_Escape, QtCore.Qt.Key_Space, QtCore.Qt.Key_Return):
+            self.close_and_finish()
+
+    def mousePressEvent(self, event):
+        self.close_and_finish()
+
+    def close_and_finish(self):
+        if hasattr(self, "timer") and self.timer.isActive():
+            self.timer.stop()
+        if hasattr(self, "cap") and self.cap:
+            self.cap.release()
+            self.cap = None
+        self.close()
+        self.finished.emit()
+
+
 class WorkstationWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -36,7 +127,7 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.resize(1360, 880)
         self.setMinimumSize(1100, 720)
 
-        # Set Icon
+        # Set Application Icon
         icon_path = os.path.join(HERE, "installer", "icon.ico")
         if not os.path.exists(icon_path):
             icon_path = os.path.join(HERE, "icon.ico")
@@ -51,17 +142,50 @@ class WorkstationWindow(QtWidgets.QMainWindow):
             daemon=True
         )
         self.server_thread.start()
-        time.sleep(0.3)
+
+        # Connect replay callback
+        desktop_server.set_replay_intro_callback(self.replay_intro)
 
         # WebEngine View
         self.browser = QtWebEngineWidgets.QWebEngineView(self)
         self.setCentralWidget(self.browser)
 
-        # Load from local server
-        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
+        # Keyboard shortcuts
+        self.refresh_shortcut = QtGui.QShortcut(QtGui.QKeySequence("F5"), self)
+        self.refresh_shortcut.activated.connect(self.browser.reload)
+        self.ctrl_r_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+R"), self)
+        self.ctrl_r_shortcut.activated.connect(self.browser.reload)
+
+        # Active handshake waiting before loading URL to eliminate ERR_EMPTY_RESPONSE
+        self._wait_and_load_server()
 
         # Background Scraper Thread state
         self.is_scanning = False
+
+    def _wait_and_load_server(self):
+        """Polls server stats endpoint until 200 OK before loading URL."""
+        url = f"http://127.0.0.1:{self.port}/api/stats"
+        max_attempts = 30
+        for _ in range(max_attempts):
+            try:
+                req = urllib.request.Request(url)
+                with urllib.request.urlopen(req, timeout=0.5) as resp:
+                    if resp.status == 200:
+                        break
+            except Exception:
+                time.sleep(0.1)
+
+        # Load workstation UI
+        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
+
+    def replay_intro(self):
+        """Replays cinematic intro splash natively upon user request."""
+        video_path = os.path.join(HERE, "intro.mp4")
+        if not os.path.exists(video_path):
+            video_path = os.path.join(os.path.dirname(HERE), "intro.mp4")
+        if os.path.exists(video_path):
+            self.splash = NativeVideoSplash(video_path)
+            self.splash.show()
 
     def scan_jobs_async(self):
         """Asynchronously runs the 18 scraper feeds without blocking the GUI."""
@@ -80,9 +204,30 @@ class WorkstationWindow(QtWidgets.QMainWindow):
 
 
 def main():
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    app.setApplicationName("Pasha Hunt 2.0")
+
+    # Locate intro.mp4
+    video_path = os.path.join(HERE, "intro.mp4")
+    if not os.path.exists(video_path):
+        video_path = os.path.join(os.path.dirname(HERE), "intro.mp4")
+
+    # Initialize main window
     window = WorkstationWindow()
-    window.show()
+
+    # If video exists, play Native Video Splash first
+    if os.path.exists(video_path):
+        splash = NativeVideoSplash(video_path)
+        splash.finished.connect(lambda: (
+            window.show(),
+            window.raise_(),
+            window.activateWindow()
+        ))
+        splash.show()
+    else:
+        window.show()
+
     sys.exit(app.exec())
 
 

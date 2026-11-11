@@ -1,6 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['jobhunter.py'],
     pathex=[],
@@ -9,9 +8,29 @@ a = Analysis(
         ('installer/icon.ico', '.'),
         ('installer/icon.ico', 'installer'),
         ('logo.png', '.'),
-        ('intro.mp4', '.')
+        ('intro.mp4', '.'),
+        ('desktop_ui', 'desktop_ui'),
+        ('jobs.json', '.'),
+        ('profile.json', '.'),
+        ('tracker.csv', '.')
     ],
-    hiddenimports=['cv2', 'PIL', 'PIL.Image', 'PIL.ImageTk', 'pypdf'],
+    hiddenimports=[
+        'PySide6',
+        'PySide6.QtCore',
+        'PySide6.QtGui',
+        'PySide6.QtWidgets',
+        'PySide6.QtWebEngineWidgets',
+        'PySide6.QtWebEngineCore',
+        'cv2',
+        'PIL',
+        'PIL.Image',
+        'PIL.ImageTk',
+        'pypdf',
+        'imaplib',
+        'email',
+        'dns',
+        'dns.resolver'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
