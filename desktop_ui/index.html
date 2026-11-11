@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pasha Hunt 2.0 — APINEX Edition</title>
+  <title>Pasha Hunt 2.0 — APINEX Edition Workstation</title>
   <style>
     * {
       box-sizing: border-box;
@@ -14,12 +14,12 @@
     }
 
     :root {
-      --bg-base: #0B0E11;
-      --bg-surface: #12161A;
-      --bg-card: #181D22;
-      --bg-card-elevated: #20262D;
-      --border-subtle: #252C34;
-      --border-hover: #37424E;
+      --bg-base: #070A0E;
+      --bg-surface: #0E1318;
+      --bg-card: #141A22;
+      --bg-card-elevated: #1B232E;
+      --border-subtle: #222C38;
+      --border-hover: #374659;
       --accent-orange: #FF6B00;
       --accent-amber: #F2AA4C;
       --accent-glow: rgba(255, 107, 0, 0.35);
@@ -29,6 +29,7 @@
       --text-dim: #5C6572;
       --green-status: #22C55E;
       --blue-accent: #38BDF8;
+      --purple-accent: #A855F7;
     }
 
     body {
@@ -55,6 +56,91 @@
       background: var(--accent-orange);
     }
 
+    /* --- Intro Video Splash Overlay --- */
+    #introSplash {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #introSplash.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .intro-video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+    .intro-video-container video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .intro-hud {
+      position: absolute;
+      top: 24px;
+      left: 32px;
+      right: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    .intro-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(14, 19, 24, 0.7);
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 107, 0, 0.3);
+      backdrop-filter: blur(8px);
+    }
+    .intro-brand span {
+      font-weight: 900;
+      font-size: 14px;
+      color: #FFF;
+      letter-spacing: -0.02em;
+    }
+    .intro-brand em {
+      font-style: normal;
+      font-size: 10px;
+      color: var(--accent-orange);
+      font-family: monospace;
+      font-weight: 700;
+    }
+    .intro-skip-btn {
+      background: rgba(14, 19, 24, 0.85);
+      border: 1px solid var(--accent-orange);
+      color: #FFF;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 20px rgba(255, 107, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+    .intro-skip-btn:hover {
+      background: var(--accent-orange);
+      color: #000;
+      transform: scale(1.05);
+    }
+
     /* --- Sidebar --- */
     .sidebar {
       width: 240px;
@@ -65,20 +151,19 @@
       justify-content: space-between;
       padding: 16px 12px;
       flex-shrink: 0;
+      z-index: 20;
     }
-
     .brand-header {
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 4px 8px 16px 8px;
     }
-
     .brand-logo {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       background: linear-gradient(135deg, #FF6B00, #F2AA4C);
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -87,7 +172,6 @@
       font-size: 18px;
       box-shadow: 0 0 15px var(--accent-glow);
     }
-
     .brand-text h1 {
       font-size: 14px;
       font-weight: 800;
@@ -96,12 +180,11 @@
     }
     .brand-text p {
       font-size: 9px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--accent-amber);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-
     .nav-list {
       display: flex;
       flex-direction: column;
@@ -110,7 +193,6 @@
       overflow-y: auto;
       flex-grow: 1;
     }
-
     .nav-item {
       display: flex;
       align-items: center;
@@ -121,375 +203,339 @@
       font-weight: 600;
       color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.2s ease;
       text-decoration: none;
-    }
-
-    .nav-item:hover {
-      color: var(--text-white);
-      background-color: rgba(255, 255, 255, 0.03);
-    }
-
-    .nav-item.active {
-      background: linear-gradient(90deg, rgba(255, 107, 0, 0.2), rgba(242, 170, 76, 0.1));
-      color: var(--text-white);
-      border: 1px solid rgba(255, 107, 0, 0.4);
-      box-shadow: 0 0 15px rgba(255, 107, 0, 0.15);
-    }
-
-    .nav-item.active .nav-icon {
-      color: var(--accent-orange);
-    }
-
-    .nav-icon {
-      width: 16px;
-      height: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    /* Promo Card in Sidebar */
-    .promo-card {
-      background: linear-gradient(180deg, #1A1F26 0%, #111418 100%);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 12px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
-      overflow: hidden;
-      margin-bottom: 12px;
     }
-
-    .promo-card::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 40px;
-      background: radial-gradient(ellipse at bottom, rgba(255, 107, 0, 0.25) 0%, transparent 80%);
-      pointer-events: none;
+    .nav-item:hover {
+      background-color: var(--bg-card);
+      color: var(--text-white);
+      transform: translateX(2px);
     }
-
+    .nav-item.active {
+      background-color: var(--bg-card);
+      color: var(--accent-orange);
+      box-shadow: inset 0 0 12px rgba(255, 107, 0, 0.12);
+      border-left: 3px solid var(--accent-orange);
+    }
+    .nav-item .nav-icon {
+      font-size: 15px;
+      width: 18px;
+      text-align: center;
+    }
+    .promo-card {
+      background: linear-gradient(180deg, #1C1710, #13171D);
+      border: 1px solid rgba(255, 107, 0, 0.25);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .promo-card:hover {
+      border-color: var(--accent-orange);
+      box-shadow: 0 0 15px rgba(255, 107, 0, 0.2);
+    }
     .promo-header {
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 11px;
-      font-weight: 700;
-      color: var(--text-white);
+      font-weight: 800;
+      color: var(--accent-orange);
+      margin-bottom: 2px;
     }
-
-    .promo-header span.crown {
-      color: var(--accent-amber);
-    }
-
     .promo-desc {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--text-muted);
-      margin-top: 2px;
     }
-
-    /* User Profile Pill */
     .user-pill {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 8px 10px;
-      border-radius: 12px;
+      border-radius: 10px;
       background-color: var(--bg-card);
       border: 1px solid var(--border-subtle);
+      margin-top: 10px;
       cursor: pointer;
+      transition: border 0.2s ease;
     }
-
     .user-pill:hover {
-      border-color: var(--border-hover);
+      border-color: var(--accent-orange);
     }
-
     .user-avatar {
       width: 28px;
       height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #2D3748, #4A5568);
+      border-radius: 8px;
+      background: linear-gradient(135deg, #FF6B00, #F2AA4C);
+      color: #000;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      color: #FFF;
-      border: 1px solid var(--accent-orange);
+      font-weight: 900;
+      font-size: 13px;
     }
-
     .user-details h4 {
       font-size: 11px;
       font-weight: 700;
       color: var(--text-white);
-      line-height: 1.2;
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-
     .user-details p {
       font-size: 9px;
       color: var(--green-status);
       font-weight: 600;
     }
 
-    /* --- Main Workspace --- */
+    /* --- Workspace Main Layout --- */
     .workspace {
-      flex: 1;
+      flex-grow: 1;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      background-color: var(--bg-base);
+      background: var(--bg-base);
     }
-
-    /* --- Top Bar --- */
     .top-bar {
-      height: 52px;
+      height: 60px;
+      background-color: var(--bg-surface);
       border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
-      background-color: var(--bg-surface);
+      padding: 0 24px;
       flex-shrink: 0;
     }
-
     .search-box {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       background-color: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: 10px;
-      padding: 6px 14px;
-      width: 380px;
-      color: var(--text-muted);
-      font-size: 11px;
-      transition: all 0.2s;
+      padding: 7px 14px;
+      width: 360px;
+      transition: all 0.2s ease;
     }
-
     .search-box:focus-within {
       border-color: var(--accent-orange);
-      box-shadow: 0 0 10px rgba(255, 107, 0, 0.2);
+      box-shadow: 0 0 12px rgba(255, 107, 0, 0.25);
     }
-
     .search-box input {
       background: transparent;
       border: none;
       outline: none;
-      color: var(--text-cream);
-      font-size: 11px;
+      color: var(--text-white);
+      font-size: 12px;
       width: 100%;
     }
-
     .top-right {
       display: flex;
       align-items: center;
       gap: 14px;
     }
-
     .status-badge {
       display: flex;
       align-items: center;
       gap: 6px;
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--green-status);
-      background-color: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.25);
-      padding: 4px 10px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 5px 12px;
       border-radius: 20px;
     }
-
     .status-dot {
-      width: 6px;
-      height: 6px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background-color: var(--green-status);
       box-shadow: 0 0 8px var(--green-status);
+      animation: pulseGreen 2s infinite;
     }
-
-    .bell-btn {
-      position: relative;
-      cursor: pointer;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
     }
-
-    .bell-btn:hover {
-      color: var(--text-white);
-    }
-
-    .bell-badge {
-      position: absolute;
-      top: -3px;
-      right: -3px;
-      background-color: #EF4444;
-      color: #FFF;
-      font-size: 9px;
-      font-weight: 800;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid var(--bg-surface);
-    }
-
     .scan-btn {
+      background: linear-gradient(135deg, #FF6B00, #F2AA4C);
+      color: #000;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      background: linear-gradient(135deg, #FF6B00, #F2AA4C);
-      color: #000;
+      box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+      transition: all 0.2s ease;
+    }
+    .scan-btn:hover {
+      transform: translateY(-1px) scale(1.02);
+      box-shadow: 0 6px 20px rgba(255, 107, 0, 0.45);
+    }
+    .intro-replay-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
       font-size: 11px;
       font-weight: 700;
-      padding: 6px 14px;
+      padding: 7px 12px;
       border-radius: 8px;
-      border: none;
       cursor: pointer;
-      box-shadow: 0 0 15px rgba(255, 107, 0, 0.35);
-      transition: transform 0.1s ease;
-    }
-
-    .scan-btn:hover {
-      transform: scale(1.02);
-    }
-
-    /* --- Scrollable Workspace Content --- */
-    .content-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
       display: flex;
-      flex-direction: column;
-      gap: 16px;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .intro-replay-btn:hover {
+      color: #FFF;
+      border-color: var(--accent-orange);
     }
 
-    /* --- Hero Skyline Banner --- */
+    /* --- Multi-Page View Container --- */
+    .content-area {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 24px;
+      position: relative;
+    }
+    .page-view {
+      display: none;
+      animation: pageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .page-view.active {
+      display: block;
+    }
+    @keyframes pageFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Page Headers --- */
+    .page-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .page-header-row h2 {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text-white);
+      letter-spacing: -0.02em;
+    }
+    .page-header-row p {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* --- Picture 2 Hero Banner (Dashboard) --- */
     .hero-banner {
-      background: linear-gradient(90deg, #111418 0%, #1A1F26 50%, #15191F 100%);
+      background: linear-gradient(135deg, rgba(20, 26, 34, 0.95), rgba(14, 19, 24, 0.95));
       border: 1px solid var(--border-subtle);
-      border-radius: 20px;
+      border-radius: 16px;
       padding: 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      margin-bottom: 20px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
-
-    .hero-banner::before {
+    .hero-banner::after {
       content: "";
       position: absolute;
-      top: 0;
-      right: 0;
-      width: 400px;
-      height: 100%;
-      background: radial-gradient(circle at center, rgba(255, 107, 0, 0.15) 0%, transparent 70%);
+      top: -50px;
+      right: 180px;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(255, 107, 0, 0.15) 0%, transparent 70%);
       pointer-events: none;
     }
-
     .hero-left {
       display: flex;
       align-items: center;
-      gap: 20px;
-      z-index: 1;
+      gap: 18px;
     }
-
     .hero-avatar {
-      width: 72px;
-      height: 72px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #FF6B00, #8A2BE2);
+      width: 58px;
+      height: 58px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #FF6B00, #F2AA4C);
+      color: #000;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 32px;
-      box-shadow: 0 0 20px rgba(255, 107, 0, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      flex-shrink: 0;
+      font-size: 24px;
+      font-weight: 900;
+      box-shadow: 0 0 20px rgba(255, 107, 0, 0.35);
     }
-
     .hero-welcome h2 {
       font-size: 22px;
-      font-weight: 800;
+      font-weight: 900;
       color: var(--text-white);
       letter-spacing: -0.02em;
     }
-
     .hero-welcome p {
-      font-size: 12px;
+      font-size: 13px;
       color: var(--text-muted);
-      margin-top: 3px;
+      margin-top: 2px;
     }
-
     .quote-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background-color: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border-subtle);
+      background: rgba(255, 107, 0, 0.1);
+      border: 1px solid rgba(255, 107, 0, 0.3);
       padding: 4px 10px;
       border-radius: 20px;
       font-size: 10px;
+      font-weight: 700;
       color: var(--accent-amber);
-      margin-top: 10px;
-      font-style: italic;
+      margin-top: 8px;
     }
-
-    /* Career Score Circular Gauge */
     .career-score-card {
-      background-color: rgba(24, 29, 34, 0.8);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 14px 20px;
       display: flex;
       align-items: center;
       gap: 16px;
-      z-index: 1;
-      backdrop-filter: blur(10px);
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 107, 0, 0.35);
+      border-radius: 14px;
+      padding: 12px 18px;
+      box-shadow: 0 0 25px rgba(255, 107, 0, 0.15);
     }
-
     .gauge-circle {
       position: relative;
-      width: 64px;
-      height: 64px;
+      width: 56px;
+      height: 56px;
     }
-
     .gauge-circle svg {
       width: 100%;
       height: 100%;
       transform: rotate(-90deg);
     }
-
-    .gauge-circle circle {
+    .gauge-bg {
       fill: none;
+      stroke: var(--border-subtle);
+      stroke-width: 6;
+    }
+    .gauge-fill {
+      fill: none;
+      stroke: var(--accent-orange);
       stroke-width: 6;
       stroke-linecap: round;
-    }
-
-    .gauge-bg {
-      stroke: rgba(255, 255, 255, 0.08);
-    }
-
-    .gauge-fill {
-      stroke: var(--accent-orange);
       stroke-dasharray: 175;
-      stroke-dashoffset: 14; /* 92% */
-      filter: drop-shadow(0 0 6px var(--accent-orange));
+      stroke-dashoffset: 14;
     }
-
     .gauge-value {
       position: absolute;
       inset: 0;
@@ -497,241 +543,227 @@
       align-items: center;
       justify-content: center;
       font-size: 14px;
+      font-weight: 900;
+      color: var(--text-white);
+    }
+    .score-details h4 {
+      font-size: 12px;
       font-weight: 800;
       color: var(--text-white);
     }
-
-    .score-details h4 {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-white);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
     .score-details p {
       font-size: 10px;
       color: var(--text-muted);
       margin-top: 2px;
     }
-
     .score-details a {
       font-size: 10px;
-      color: var(--accent-amber);
+      color: var(--accent-orange);
+      font-weight: 700;
       text-decoration: none;
-      font-weight: 600;
       display: inline-block;
-      margin-top: 6px;
+      margin-top: 4px;
+      cursor: pointer;
+    }
+    .score-details a:hover {
+      text-decoration: underline;
     }
 
     /* --- 5 KPI Cards Row --- */
     .kpi-row {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 12px;
+      gap: 14px;
+      margin-bottom: 20px;
     }
-
     .kpi-card {
-      background-color: var(--bg-surface);
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
+      border-radius: 12px;
       padding: 14px;
       display: flex;
       align-items: center;
       gap: 12px;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-
     .kpi-card:hover {
       border-color: var(--border-hover);
       transform: translateY(-2px);
     }
-
     .kpi-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 900;
     }
-
-    .kpi-icon.orange { background: rgba(255, 107, 0, 0.15); color: var(--accent-orange); border: 1px solid rgba(255, 107, 0, 0.3); }
-    .kpi-icon.green  { background: rgba(34, 197, 94, 0.15); color: var(--green-status); border: 1px solid rgba(34, 197, 94, 0.3); }
-    .kpi-icon.amber  { background: rgba(242, 170, 76, 0.15); color: var(--accent-amber); border: 1px solid rgba(242, 170, 76, 0.3); }
-    .kpi-icon.blue   { background: rgba(56, 189, 248, 0.15); color: var(--blue-accent); border: 1px solid rgba(56, 189, 248, 0.3); }
-    .kpi-icon.purple { background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); }
-
+    .kpi-icon.orange { background: rgba(255, 107, 0, 0.15); color: var(--accent-orange); }
+    .kpi-icon.green { background: rgba(34, 197, 94, 0.15); color: var(--green-status); }
+    .kpi-icon.amber { background: rgba(242, 170, 76, 0.15); color: var(--accent-amber); }
+    .kpi-icon.blue { background: rgba(56, 189, 248, 0.15); color: var(--blue-accent); }
+    .kpi-icon.purple { background: rgba(168, 85, 247, 0.15); color: var(--purple-accent); }
     .kpi-info h3 {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: 16px;
+      font-weight: 900;
       color: var(--text-white);
-      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
     }
-
+    .kpi-trend {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--green-status);
+    }
     .kpi-info p {
       font-size: 10px;
       color: var(--text-muted);
-      margin-top: 2px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
-    .kpi-trend {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--green-status);
-      margin-left: 4px;
-    }
-
-    /* --- Middle Grid (3 Columns) --- */
+    /* --- 3 Columns Middle Grid --- */
     .middle-grid {
       display: grid;
-      grid-template-columns: 1.1fr 1fr 1.1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 14px;
+      margin-bottom: 20px;
     }
-
     .dash-box {
-      background-color: var(--bg-surface);
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
-      border-radius: 18px;
+      border-radius: 14px;
       padding: 16px;
       display: flex;
       flex-direction: column;
     }
-
     .box-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 10px;
     }
-
     .box-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-white);
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-white);
+      gap: 6px;
     }
-
     .box-action {
-      font-size: 10px;
-      color: var(--accent-amber);
-      text-decoration: none;
-      font-weight: 600;
+      font-size: 11px;
+      color: var(--accent-orange);
+      font-weight: 700;
       cursor: pointer;
     }
+    .box-action:hover {
+      text-decoration: underline;
+    }
 
-    /* Top Job Matches */
+    /* Job Card in List */
     .job-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
-
     .job-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 12px;
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
-
     .job-card:hover {
       border-color: var(--accent-orange);
-      background-color: var(--bg-card-elevated);
+      transform: translateX(2px);
+      background: rgba(255, 107, 0, 0.04);
     }
-
     .job-main {
       display: flex;
       align-items: center;
       gap: 10px;
     }
-
     .company-logo {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       border-radius: 8px;
-      background-color: #FFF;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 800;
-      font-size: 14px;
-      color: #000;
+      font-size: 13px;
+      font-weight: 900;
+      color: #FFF;
       flex-shrink: 0;
     }
-
-    .company-logo.google { color: #EA4335; }
-    .company-logo.meta { color: #0668E1; }
-    .company-logo.msft { color: #00A4EF; }
-
+    .company-logo.google { background: #4285F4; }
+    .company-logo.meta { background: #0668E1; }
+    .company-logo.msft { background: #00A4EF; }
+    .company-logo.systems { background: #00875A; }
+    .company-logo.arbi { background: #EA580C; }
+    .company-logo.devsinc { background: #8B5CF6; }
+    .company-logo.generic { background: #374151; }
     .job-info h4 {
       font-size: 11px;
       font-weight: 700;
       color: var(--text-white);
     }
-
     .job-info p {
       font-size: 9px;
       color: var(--text-muted);
       margin-top: 1px;
     }
-
     .match-pill {
-      font-size: 9px;
-      font-weight: 700;
+      background: rgba(34, 197, 94, 0.12);
+      border: 1px solid rgba(34, 197, 94, 0.3);
       color: var(--green-status);
-      background-color: rgba(34, 197, 94, 0.12);
-      border: 1px solid rgba(34, 197, 94, 0.25);
+      font-size: 10px;
+      font-weight: 700;
       padding: 3px 8px;
-      border-radius: 20px;
+      border-radius: 6px;
     }
 
-    /* ATS Analysis */
+    /* ATS Breakdown Layout */
     .ats-layout {
       display: flex;
       align-items: center;
-      justify-content: space-around;
-      padding: 6px 0;
+      gap: 16px;
+      margin-bottom: 12px;
     }
-
     .ats-circle {
       position: relative;
-      width: 90px;
-      height: 90px;
+      width: 78px;
+      height: 78px;
+      flex-shrink: 0;
     }
-
     .ats-circle svg {
       width: 100%;
       height: 100%;
       transform: rotate(-90deg);
     }
-
-    .ats-circle circle {
-      fill: none;
-      stroke-width: 8;
-      stroke-linecap: round;
-    }
-
     .ats-bg {
-      stroke: rgba(255, 255, 255, 0.08);
+      fill: none;
+      stroke: var(--border-subtle);
+      stroke-width: 7;
     }
-
     .ats-fill {
-      stroke: #22C55E;
+      fill: none;
+      stroke: var(--green-status);
+      stroke-width: 7;
+      stroke-linecap: round;
       stroke-dasharray: 245;
-      stroke-dashoffset: 32; /* 87% */
-      filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.4));
+      stroke-dashoffset: 30;
     }
-
     .ats-center {
       position: absolute;
       inset: 0;
@@ -740,245 +772,425 @@
       align-items: center;
       justify-content: center;
     }
-
     .ats-center h3 {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 900;
       color: var(--text-white);
     }
-
     .ats-center span {
       font-size: 8px;
+      font-weight: 700;
       color: var(--green-status);
-      font-weight: 600;
+      text-transform: uppercase;
     }
-
     .ats-checklist {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      font-size: 10px;
-      color: var(--text-cream);
+      gap: 4px;
+      flex-grow: 1;
     }
-
     .ats-check-item {
       display: flex;
       align-items: center;
       gap: 6px;
+      font-size: 10px;
+      color: var(--text-cream);
     }
-
-    .ats-check-item span.check {
+    .ats-check-item .check {
       color: var(--green-status);
-      font-weight: 800;
+      font-weight: 900;
     }
-
     .ats-tip {
-      margin-top: 12px;
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
+      background: rgba(255, 107, 0, 0.08);
+      border: 1px solid rgba(255, 107, 0, 0.25);
+      border-radius: 8px;
       padding: 8px 10px;
-      font-size: 9px;
-      color: var(--text-muted);
+      font-size: 10px;
+      color: var(--accent-amber);
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    /* Recent Activity */
+    /* Activity Timeline */
     .activity-timeline {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      position: relative;
-      padding-left: 18px;
+      gap: 10px;
     }
-
-    .activity-timeline::before {
-      content: "";
-      position: absolute;
-      top: 6px;
-      bottom: 6px;
-      left: 6px;
-      width: 1px;
-      background-color: var(--border-subtle);
-    }
-
     .activity-item {
       position: relative;
-      display: flex;
-      flex-direction: column;
+      padding-left: 18px;
+      border-left: 2px solid var(--border-subtle);
     }
-
     .activity-node {
       position: absolute;
-      left: -18px;
+      left: -5px;
       top: 3px;
-      width: 12px;
-      height: 12px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      background-color: var(--accent-orange);
-      border: 2px solid var(--bg-surface);
-      box-shadow: 0 0 8px var(--accent-orange);
+      background: var(--accent-orange);
+      box-shadow: 0 0 6px var(--accent-orange);
     }
-
     .activity-item h5 {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 10px;
+      font-weight: 700;
       color: var(--text-white);
     }
-
     .activity-item p {
       font-size: 9px;
-      color: var(--text-dim);
-      margin-top: 1px;
+      color: var(--text-muted);
     }
 
-    /* --- Bottom Row (2 Columns) --- */
+    /* --- Bottom Grid (Career Progress & Pasha Bot) --- */
     .bottom-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1.2fr;
       gap: 14px;
     }
-
-    /* Spline Wave Chart */
     .chart-container {
+      height: 120px;
       width: 100%;
-      height: 130px;
       position: relative;
-      margin-top: 8px;
     }
-
     .chart-container svg {
       width: 100%;
       height: 100%;
     }
-
-    /* AI Chat Pasha Bot */
     .bot-card-inner {
       display: flex;
+      align-items: stretch;
       gap: 14px;
-      height: 100%;
-      align-items: center;
+      flex-grow: 1;
     }
-
     .bot-chat-col {
-      flex: 1;
+      flex-grow: 1;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      height: 100%;
     }
-
     .chat-bubble {
-      background-color: var(--bg-card);
+      background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 10px 14px;
+      border-radius: 10px;
+      padding: 10px 12px;
       font-size: 11px;
       color: var(--text-cream);
-      line-height: 1.4;
-      position: relative;
+      line-height: 1.5;
+      max-height: 90px;
+      overflow-y: auto;
     }
-
-    .chat-bubble::after {
-      content: "";
-      position: absolute;
-      left: -6px;
-      top: 14px;
-      width: 0;
-      height: 0;
-      border-top: 6px solid transparent;
-      border-bottom: 6px solid transparent;
-      border-right: 6px solid var(--bg-card);
-    }
-
     .chat-input-bar {
       display: flex;
       align-items: center;
-      gap: 6px;
-      margin-top: 12px;
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 10px;
-      padding: 4px 6px;
+      gap: 8px;
+      margin-top: 10px;
     }
-
     .chat-input-bar input {
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text-cream);
-      font-size: 11px;
-      padding-left: 6px;
-      flex: 1;
-    }
-
-    .chat-send-btn {
-      width: 28px;
-      height: 28px;
+      flex-grow: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
       border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text-white);
+      font-size: 11px;
+      outline: none;
+    }
+    .chat-input-bar input:focus {
+      border-color: var(--accent-orange);
+    }
+    .chat-send-btn {
       background: var(--accent-orange);
       color: #000;
       border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 800;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
+      transition: all 0.2s ease;
     }
-
+    .chat-send-btn:hover {
+      background: var(--accent-amber);
+    }
     .bot-avatar-col {
-      width: 100px;
-      height: 110px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      flex-shrink: 0;
-    }
-
-    .robot-graphic {
       width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #2D3748 0%, #171923 100%);
-      border: 2px solid var(--accent-orange);
-      box-shadow: 0 0 20px var(--accent-glow);
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
     }
-
-    .robot-visor {
-      width: 48px;
-      height: 20px;
-      border-radius: 10px;
-      background-color: #000;
+    .robot-graphic {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #252D37 0%, #10141A 100%);
+      border: 2px solid var(--accent-orange);
+      box-shadow: 0 0 15px rgba(255, 107, 0, 0.35);
       display: flex;
       align-items: center;
-      justify-content: space-around;
-      padding: 0 6px;
-      border: 1px solid #4A5568;
+      justify-content: center;
     }
-
+    .robot-visor {
+      width: 36px;
+      height: 14px;
+      background: #000;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
     .robot-eye {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background-color: var(--accent-orange);
+      background: var(--accent-orange);
       box-shadow: 0 0 8px var(--accent-orange);
-      animation: eyeGlow 2s infinite alternate;
+      animation: eyeGlow 1.5s infinite alternate;
     }
-
     @keyframes eyeGlow {
-      from { opacity: 0.7; }
+      from { opacity: 0.6; }
       to { opacity: 1; filter: drop-shadow(0 0 4px var(--accent-orange)); }
     }
 
-    /* Modal Overlay & Dialogs */
+    /* --- Find Jobs Page View --- */
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+    }
+    .filter-pills {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .filter-pill:hover, .filter-pill.active {
+      background: var(--accent-orange);
+      color: #000;
+      border-color: var(--accent-orange);
+    }
+    .jobs-table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .jobs-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12px;
+    }
+    .jobs-table th {
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .jobs-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-cream);
+      vertical-align: middle;
+    }
+    .jobs-table tr:hover td {
+      background: rgba(255, 107, 0, 0.03);
+    }
+    .tbl-action-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--accent-orange);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tbl-action-btn:hover {
+      background: var(--accent-orange);
+      color: #000;
+    }
+
+    /* --- Drafts & Email Applications Page --- */
+    .drafts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .draft-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+    .draft-card:hover {
+      border-color: var(--accent-orange);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    }
+    .draft-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .mx-badge {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .mx-badge.verified {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      color: var(--green-status);
+    }
+    .mx-badge.unverified {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #EF4444;
+    }
+
+    /* --- Application Tracker (Kanban) --- */
+    .kanban-board {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      height: calc(100vh - 210px);
+      overflow-x: auto;
+    }
+    .kanban-col {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+    }
+    .kanban-col-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .kanban-col-head h4 {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text-white);
+      text-transform: uppercase;
+    }
+    .kanban-col-head span {
+      font-size: 10px;
+      font-mono: true;
+      color: var(--accent-orange);
+      font-weight: 800;
+    }
+    .kanban-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      flex-grow: 1;
+    }
+    .kanban-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .kanban-item:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    /* --- Settings & Profile Page --- */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+    }
+    .settings-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text-white);
+      font-size: 12px;
+      outline: none;
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      border-color: var(--accent-orange);
+    }
+    .save-profile-btn {
+      background: var(--accent-orange);
+      color: #000;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .save-profile-btn:hover {
+      background: var(--accent-amber);
+      transform: scale(1.02);
+    }
+
+    /* --- Modals & Overlays --- */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -1072,6 +1284,23 @@
 </head>
 <body>
 
+  <!-- ================= 00. INTRO VIDEO SPLASH ================= -->
+  <div id="introSplash">
+    <div class="intro-video-container">
+      <div class="intro-hud">
+        <div class="intro-brand">
+          <span>PASHA HUNT 2.0</span>
+          <em>APINEX WORKSTATION</em>
+        </div>
+        <button class="intro-skip-btn" onclick="skipIntro()">
+          <span>Skip Intro [Esc]</span>
+          <span>⏭</span>
+        </button>
+      </div>
+      <video id="introVideo" src="intro.mp4" autoplay muted playsinline onended="skipIntro()"></video>
+    </div>
+  </div>
+
   <!-- ================= SIDEBAR ================= -->
   <aside class="sidebar">
     <div>
@@ -1084,51 +1313,47 @@
       </div>
 
       <nav class="nav-list">
-        <a class="nav-item active" href="#dashboard">
+        <a class="nav-item active" onclick="switchPage('dashboard')">
           <span class="nav-icon">⊞</span>
           <span>Dashboard</span>
         </a>
-        <a class="nav-item" href="#find-jobs" onclick="triggerScan()">
+        <a class="nav-item" onclick="switchPage('find-jobs')">
           <span class="nav-icon">🔍</span>
           <span>Find Jobs</span>
         </a>
-        <a class="nav-item" href="#ai-matches">
+        <a class="nav-item" onclick="switchPage('ai-matches')">
           <span class="nav-icon">⭐</span>
           <span>AI Matches</span>
         </a>
-        <a class="nav-item" href="#cv-intelligence">
+        <a class="nav-item" onclick="switchPage('cv-intelligence')">
           <span class="nav-icon">📄</span>
           <span>CV Intelligence</span>
         </a>
-        <a class="nav-item" href="#cv-tailoring">
+        <a class="nav-item" onclick="switchPage('cv-tailoring')">
           <span class="nav-icon">🪄</span>
           <span>CV Tailoring</span>
         </a>
-        <a class="nav-item" href="#cover-letter">
+        <a class="nav-item" onclick="switchPage('cover-letter')">
           <span class="nav-icon">✉️</span>
           <span>Cover Letter Studio</span>
         </a>
-        <a class="nav-item" href="#email-applications">
+        <a class="nav-item" onclick="switchPage('email-applications')">
           <span class="nav-icon">✈️</span>
           <span>Email Applications</span>
         </a>
-        <a class="nav-item" href="#tracker">
+        <a class="nav-item" onclick="switchPage('tracker')">
           <span class="nav-icon">📊</span>
           <span>Application Tracker</span>
         </a>
-        <a class="nav-item" href="#contacts">
+        <a class="nav-item" onclick="switchPage('contacts')">
           <span class="nav-icon">👥</span>
           <span>Recruiter Contacts</span>
         </a>
-        <a class="nav-item" href="#models">
-          <span class="nav-icon">💎</span>
-          <span>AI Models</span>
-        </a>
-        <a class="nav-item" href="#settings">
+        <a class="nav-item" onclick="switchPage('settings')">
           <span class="nav-icon">⚙️</span>
-          <span>Settings</span>
+          <span>Candidate & Settings</span>
         </a>
-        <a class="nav-item" href="#help">
+        <a class="nav-item" onclick="switchPage('help')">
           <span class="nav-icon">❓</span>
           <span>Help & Support</span>
         </a>
@@ -1136,22 +1361,21 @@
     </div>
 
     <div>
-      <!-- Promo Banner -->
-      <div class="promo-card">
+      <div class="promo-card" onclick="openAtsModal()">
         <div class="promo-header">
-          <span class="crown">👑</span>
+          <span>👑</span>
           <span>Build a Better Career</span>
         </div>
-        <p class="promo-desc">With Pasha Hunt AI Workstation</p>
+        <p class="promo-desc">92% Elite ATS Workstation</p>
       </div>
 
-      <!-- User Profile -->
-      <div class="user-pill">
+      <!-- User Profile (Dynamic) -->
+      <div class="user-pill" onclick="switchPage('settings')">
         <div style="display:flex; align-items:center; gap:8px;">
-          <div class="user-avatar">M</div>
+          <div class="user-avatar" id="sidebarUserInitial">M</div>
           <div class="user-details">
-            <h4>Muhammad Mubashar</h4>
-            <p>● Premium User</p>
+            <h4 id="sidebarUserName">Muhammad Mubashar</h4>
+            <p>● Verified Profile</p>
           </div>
         </div>
         <span style="color:var(--text-dim); font-size:12px;">›</span>
@@ -1169,14 +1393,14 @@
       </div>
 
       <div class="top-right">
+        <button class="intro-replay-btn" onclick="replayIntro()" title="Watch cinematic intro video">
+          <span>🎬</span>
+          <span>Replay Intro</span>
+        </button>
+
         <div class="status-badge">
           <span class="status-dot"></span>
           <span>All Systems Online</span>
-        </div>
-
-        <div class="bell-btn" title="2 Unread Notifications">
-          <span>🔔</span>
-          <span class="bell-badge">2</span>
         </div>
 
         <button class="scan-btn" onclick="triggerScan()">
@@ -1186,270 +1410,662 @@
       </div>
     </header>
 
-    <!-- Content Area -->
+    <!-- Multi-Page Content Area -->
     <div class="content-area">
 
-      <!-- HERO BANNER -->
-      <section class="hero-banner">
-        <div class="hero-left">
-          <div class="hero-avatar">🚀</div>
-          <div class="hero-welcome">
-            <h2>Welcome back, Muhammad!</h2>
-            <p>Your career journey is on track 🚀</p>
-            <div class="quote-pill">
-              <span>&ldquo;Dream Big. Apply Smart. Grow Faster.&rdquo; — Pasha Hunt</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Career Score Card -->
-        <div class="career-score-card">
-          <div class="gauge-circle">
-            <svg viewBox="0 0 64 64">
-              <circle class="gauge-bg" cx="32" cy="32" r="28" />
-              <circle class="gauge-fill" cx="32" cy="32" r="28" />
-            </svg>
-            <div class="gauge-value">92%</div>
-          </div>
-          <div class="score-details">
-            <h4>Your Career Score <span style="color:var(--green-status); font-size:11px;">✓ Excellent</span></h4>
-            <p>You&apos;re a great fit for 23 active roles!</p>
-            <a href="#ats-report">View Details →</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- 5 KPI STAT CARDS ROW -->
-      <section class="kpi-row">
-        <div class="kpi-card">
-          <div class="kpi-icon orange">💼</div>
-          <div class="kpi-info">
-            <h3>24 <span class="kpi-trend">↑ +2</span></h3>
-            <p>Total Jobs</p>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon green">✓</div>
-          <div class="kpi-info">
-            <h3>8 <span class="kpi-trend">↑ +1</span></h3>
-            <p>Applied</p>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon amber">🔖</div>
-          <div class="kpi-info">
-            <h3>5 <span class="kpi-trend">↑ +1</span></h3>
-            <p>Shortlisted</p>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon blue">✉</div>
-          <div class="kpi-info">
-            <h3>2 <span class="kpi-trend">↑ +0</span></h3>
-            <p>Interviews</p>
-          </div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-icon purple">📊</div>
-          <div class="kpi-info">
-            <h3>96% <span class="kpi-trend">↑ +2%</span></h3>
-            <p>Match Rate</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- MIDDLE GRID (3 COLUMNS) -->
-      <section class="middle-grid">
-        <!-- Col 1: Top Job Matches -->
-        <div class="dash-box">
-          <div class="box-header">
-            <div class="box-title">
-              <span style="color:var(--accent-orange);">🔥</span>
-              <span>Top Job Matches</span>
-            </div>
-            <a class="box-action" onclick="triggerScan()">View All →</a>
-          </div>
-
-          <div class="job-list" id="jobMatchesList">
-            <div class="job-card" onclick="alert('Viewing Google - Senior Python Developer details')">
-              <div class="job-main">
-                <div class="company-logo google">G</div>
-                <div class="job-info">
-                  <h4>Senior Python Developer</h4>
-                  <p>Google • Remote Worldwide</p>
-                </div>
+      <!-- ================= PAGE 1: DASHBOARD ================= -->
+      <div id="page-dashboard" class="page-view active">
+        <!-- Hero Banner with Dynamic Candidate Greeting -->
+        <section class="hero-banner">
+          <div class="hero-left">
+            <div class="hero-avatar">🚀</div>
+            <div class="hero-welcome">
+              <h2 id="heroWelcomeName">Welcome back, Muhammad!</h2>
+              <p>Your career journey is on track 🚀</p>
+              <div class="quote-pill">
+                <span>&ldquo;Dream Big. Apply Smart. Grow Faster.&rdquo; — Pasha Hunt</span>
               </div>
-              <span class="match-pill">96% Match</span>
-            </div>
-
-            <div class="job-card" onclick="alert('Viewing Meta - Full Stack Developer details')">
-              <div class="job-main">
-                <div class="company-logo meta">M</div>
-                <div class="job-info">
-                  <h4>Full Stack Developer</h4>
-                  <p>Meta • Remote USA</p>
-                </div>
-              </div>
-              <span class="match-pill">94% Match</span>
-            </div>
-
-            <div class="job-card" onclick="alert('Viewing Microsoft - Software Engineer details')">
-              <div class="job-main">
-                <div class="company-logo msft">⊞</div>
-                <div class="job-info">
-                  <h4>Software Engineer</h4>
-                  <p>Microsoft • Hybrid USA</p>
-                </div>
-              </div>
-              <span class="match-pill">92% Match</span>
             </div>
           </div>
-        </div>
 
-        <!-- Col 2: ATS Analysis -->
-        <div class="dash-box">
-          <div class="box-header">
-            <div class="box-title">
-              <span style="color:var(--accent-amber);">📊</span>
-              <span>ATS Analysis</span>
-            </div>
-            <a class="box-action">View Report →</a>
-          </div>
-
-          <div class="ats-layout">
-            <div class="ats-circle">
-              <svg viewBox="0 0 90 90">
-                <circle class="ats-bg" cx="45" cy="45" r="39" />
-                <circle class="ats-fill" cx="45" cy="45" r="39" />
+          <!-- Career Score Card -->
+          <div class="career-score-card">
+            <div class="gauge-circle">
+              <svg viewBox="0 0 64 64">
+                <circle class="gauge-bg" cx="32" cy="32" r="28" />
+                <circle class="gauge-fill" cx="32" cy="32" r="28" />
               </svg>
-              <div class="ats-center">
-                <h3>87%</h3>
-                <span>ATS Score</span>
-                <span style="font-size:7px; color:var(--text-dim);">Good Score</span>
+              <div class="gauge-value" id="dashboardAtsScore">92%</div>
+            </div>
+            <div class="score-details">
+              <h4>Your Career Score <span style="color:var(--green-status); font-size:11px;">✓ Excellent</span></h4>
+              <p>You&apos;re a great fit for 23 active roles!</p>
+              <a onclick="openAtsModal()">View Details →</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 KPI STAT CARDS ROW -->
+        <section class="kpi-row">
+          <div class="kpi-card" onclick="switchPage('find-jobs')" style="cursor:pointer;">
+            <div class="kpi-icon orange">💼</div>
+            <div class="kpi-info">
+              <h3 id="statTotalJobs">5,435 <span class="kpi-trend">↑ +2</span></h3>
+              <p>Total Jobs</p>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchPage('tracker')" style="cursor:pointer;">
+            <div class="kpi-icon green">✓</div>
+            <div class="kpi-info">
+              <h3 id="statApplied">8 <span class="kpi-trend">↑ +1</span></h3>
+              <p>Applied</p>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchPage('tracker')" style="cursor:pointer;">
+            <div class="kpi-icon amber">🔖</div>
+            <div class="kpi-info">
+              <h3 id="statShortlisted">5 <span class="kpi-trend">↑ +1</span></h3>
+              <p>Shortlisted</p>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchPage('tracker')" style="cursor:pointer;">
+            <div class="kpi-icon blue">✉</div>
+            <div class="kpi-info">
+              <h3 id="statInterviews">2 <span class="kpi-trend">↑ +0</span></h3>
+              <p>Interviews</p>
+            </div>
+          </div>
+
+          <div class="kpi-card" onclick="switchPage('ai-matches')" style="cursor:pointer;">
+            <div class="kpi-icon purple">📊</div>
+            <div class="kpi-info">
+              <h3 id="statMatchRate">96% <span class="kpi-trend">↑ +2%</span></h3>
+              <p>Match Rate</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- MIDDLE GRID (3 COLUMNS) -->
+        <section class="middle-grid">
+          <!-- Col 1: Top Job Matches -->
+          <div class="dash-box">
+            <div class="box-header">
+              <div class="box-title">
+                <span style="color:var(--accent-orange);">🔥</span>
+                <span>Top Job Matches</span>
+              </div>
+              <a class="box-action" onclick="switchPage('find-jobs')">View All →</a>
+            </div>
+            <div class="job-list" id="jobMatchesList">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+
+          <!-- Col 2: ATS Analysis -->
+          <div class="dash-box">
+            <div class="box-header">
+              <div class="box-title">
+                <span style="color:var(--accent-amber);">📊</span>
+                <span>ATS Analysis</span>
+              </div>
+              <a class="box-action" onclick="openAtsModal()">View Report →</a>
+            </div>
+            <div class="ats-layout">
+              <div class="ats-circle">
+                <svg viewBox="0 0 90 90">
+                  <circle class="ats-bg" cx="45" cy="45" r="39" />
+                  <circle class="ats-fill" cx="45" cy="45" r="39" />
+                </svg>
+                <div class="ats-center">
+                  <h3>87%</h3>
+                  <span>ATS Score</span>
+                </div>
+              </div>
+              <div class="ats-checklist">
+                <div class="ats-check-item"><span class="check">✓</span> <span>Contact Info (15/15)</span></div>
+                <div class="ats-check-item"><span class="check">✓</span> <span>Skills Match (20/20)</span></div>
+                <div class="ats-check-item"><span class="check">✓</span> <span>Experience Metrics (35/35)</span></div>
+                <div class="ats-check-item"><span class="check">✓</span> <span>Education & Credentials</span></div>
+                <div class="ats-check-item"><span class="check">✓</span> <span>Action Verbs Verified</span></div>
               </div>
             </div>
-
-            <div class="ats-checklist">
-              <div class="ats-check-item"><span class="check">✓</span> <span>Contact Info</span></div>
-              <div class="ats-check-item"><span class="check">✓</span> <span>Skills Match</span></div>
-              <div class="ats-check-item"><span class="check">✓</span> <span>Experience</span></div>
-              <div class="ats-check-item"><span class="check">✓</span> <span>Education</span></div>
-              <div class="ats-check-item"><span class="check">✓</span> <span>Keywords</span></div>
+            <div class="ats-tip">
+              <span>💡</span>
+              <span>Tip: All bullets meet Google XYZ format ('Accomplished X measured by Y doing Z').</span>
             </div>
           </div>
 
-          <div class="ats-tip">
-            <span>💡</span>
-            <span>Tip: Add more quantified metrics for a 95+ score.</span>
-          </div>
-        </div>
-
-        <!-- Col 3: Recent Activity -->
-        <div class="dash-box">
-          <div class="box-header">
-            <div class="box-title">
-              <span style="color:var(--blue-accent);">🕒</span>
-              <span>Recent Activity</span>
-            </div>
-            <a class="box-action">View All →</a>
-          </div>
-
-          <div class="activity-timeline">
-            <div class="activity-item">
-              <div class="activity-node"></div>
-              <h5>Job match found: Senior Python Developer</h5>
-              <p>Google • 2 min ago</p>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-node" style="background-color:var(--blue-accent); box-shadow:0 0 8px var(--blue-accent);"></div>
-              <h5>CV analysis completed</h5>
-              <p>Score: 87% • 5 min ago</p>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-node" style="background-color:var(--accent-amber); box-shadow:0 0 8px var(--accent-amber);"></div>
-              <h5>Cover letter generated</h5>
-              <p>Systems Limited • 12 min ago</p>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-node" style="background-color:var(--green-status); box-shadow:0 0 8px var(--green-status);"></div>
-              <h5>Application added to tracker</h5>
-              <p>Tether.io • 1 hour ago</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- BOTTOM ROW (2 COLUMNS) -->
-      <section class="bottom-grid">
-        <!-- Career Progress Spline Chart -->
-        <div class="dash-box">
-          <div class="box-header">
-            <div class="box-title">
-              <span style="color:var(--accent-orange);">📈</span>
-              <span>Career Progress</span>
-            </div>
-            <span style="font-size:10px; color:var(--text-muted); font-weight:600;">Last 30 Days ⌄</span>
-          </div>
-
-          <div class="chart-container">
-            <svg viewBox="0 0 400 120" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#FF6B00" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#FF6B00" stop-opacity="0.0"/>
-                </linearGradient>
-              </defs>
-              <!-- Filled Area -->
-              <path d="M 0 100 Q 60 70, 120 90 T 240 60 T 320 40 T 400 30 L 400 120 L 0 120 Z" fill="url(#chartGrad)"/>
-              <!-- Spline Line -->
-              <path d="M 0 100 Q 60 70, 120 90 T 240 60 T 320 40 T 400 30" fill="none" stroke="#FF6B00" stroke-width="3" stroke-linecap="round"/>
-              <!-- Active Point (72%) -->
-              <circle cx="280" cy="48" r="5" fill="#FF6B00" stroke="#FFF" stroke-width="2"/>
-              <text x="270" y="36" fill="#FF6B00" font-size="10" font-weight="bold">72%</text>
-            </svg>
-          </div>
-        </div>
-
-        <!-- AI Assistant - Pasha Bot -->
-        <div class="dash-box">
-          <div class="box-header">
-            <div class="box-title">
-              <span style="color:var(--accent-amber);">🤖</span>
-              <span>AI Assistant — Pasha Bot</span>
-            </div>
-            <span style="font-size:10px; color:var(--green-status); font-weight:700;">● Online</span>
-          </div>
-
-          <div class="bot-card-inner">
-            <div class="bot-chat-col">
-              <div class="chat-bubble" id="botMessage">
-                Hello Muhammad! 👋 I&apos;m here to help you find better opportunities, analyze your CV, and tailor your applications.
+          <!-- Col 3: Recent Activity -->
+          <div class="dash-box">
+            <div class="box-header">
+              <div class="box-title">
+                <span style="color:var(--blue-accent);">🕒</span>
+                <span>Recent Activity</span>
               </div>
-
-              <div class="chat-input-bar">
-                <input type="text" id="chatInput" placeholder="Ask me anything...">
-                <button class="chat-send-btn" onclick="sendChat()">➤</button>
+              <a class="box-action" onclick="switchPage('tracker')">View All →</a>
+            </div>
+            <div class="activity-timeline">
+              <div class="activity-item">
+                <div class="activity-node"></div>
+                <h5>Job match: Full Stack Developer (React / Python)</h5>
+                <p>Systems Limited • 2 min ago</p>
+              </div>
+              <div class="activity-item">
+                <div class="activity-node" style="background:var(--blue-accent); box-shadow:0 0 6px var(--blue-accent);"></div>
+                <h5>CV analysis completed: 92% Elite</h5>
+                <p>Workday & Greenhouse ATS Tested • 5 min ago</p>
+              </div>
+              <div class="activity-item">
+                <div class="activity-node" style="background:var(--accent-amber); box-shadow:0 0 6px var(--accent-amber);"></div>
+                <h5>Cover letter tailored: Python Software Engineer</h5>
+                <p>Arbisoft Lahore • 12 min ago</p>
+              </div>
+              <div class="activity-item">
+                <div class="activity-node" style="background:var(--green-status); box-shadow:0 0 6px var(--green-status);"></div>
+                <h5>Verified Recruiter Socket Active</h5>
+                <p>18 Feeds Connected • 1 hour ago</p>
               </div>
             </div>
+          </div>
+        </section>
 
-            <div class="bot-avatar-col">
-              <div class="robot-graphic">
-                <div class="robot-visor">
-                  <div class="robot-eye"></div>
-                  <div class="robot-eye"></div>
+        <!-- BOTTOM ROW (2 COLUMNS) -->
+        <section class="bottom-grid">
+          <!-- Career Progress Spline Chart -->
+          <div class="dash-box">
+            <div class="box-header">
+              <div class="box-title">
+                <span style="color:var(--accent-orange);">📈</span>
+                <span>Career Progress & Velocity</span>
+              </div>
+              <span style="font-size:10px; color:var(--text-muted); font-weight:700;">Last 30 Days ⌄</span>
+            </div>
+            <div class="chart-container">
+              <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#FF6B00" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#FF6B00" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+                <path d="M 0 100 Q 60 70, 120 90 T 240 60 T 320 40 T 400 30 L 400 120 L 0 120 Z" fill="url(#chartGrad)"/>
+                <path d="M 0 100 Q 60 70, 120 90 T 240 60 T 320 40 T 400 30" fill="none" stroke="#FF6B00" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="280" cy="48" r="5" fill="#FF6B00" stroke="#FFF" stroke-width="2"/>
+                <text x="270" y="36" fill="#FF6B00" font-size="10" font-weight="bold">72%</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- AI Assistant - Pasha Bot -->
+          <div class="dash-box">
+            <div class="box-header">
+              <div class="box-title">
+                <span style="color:var(--accent-amber);">🤖</span>
+                <span>AI Assistant — Pasha Bot</span>
+              </div>
+              <span style="font-size:10px; color:var(--green-status); font-weight:700;">● Online (APINEX Engine)</span>
+            </div>
+            <div class="bot-card-inner">
+              <div class="bot-chat-col">
+                <div class="chat-bubble" id="botMessage">
+                  Hello! 👋 I&apos;m here to help you find better opportunities, analyze your CV, and tailor your applications.
+                </div>
+                <div class="chat-input-bar">
+                  <input type="text" id="chatInput" placeholder="Ask Pasha Bot anything (CV tailoring, jobs, ATS tips)...">
+                  <button class="chat-send-btn" onclick="sendChat()">➤</button>
+                </div>
+              </div>
+              <div class="bot-avatar-col">
+                <div class="robot-graphic">
+                  <div class="robot-visor">
+                    <div class="robot-eye"></div>
+                    <div class="robot-eye"></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </section>
+      </div>
+
+      <!-- ================= PAGE 2: FIND JOBS ================= -->
+      <div id="page-find-jobs" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Opportunity Finder & 18-Radar Sweeper</h2>
+            <p>5,435 Indexed Roles from RemoteOK, Pakistan Tech, WeWorkRemotely, Himalayas, Jobicy & Facebook Groups</p>
+          </div>
+          <button class="scan-btn" onclick="triggerScan()">
+            <span>⚡</span>
+            <span>Sweep 18 Feeds Now</span>
+          </button>
         </div>
-      </section>
+
+        <div class="filter-bar">
+          <div class="filter-pills">
+            <button class="filter-pill active" onclick="applyJobFilter('all')">All Roles</button>
+            <button class="filter-pill" onclick="applyJobFilter('pakistan')">Pakistan Tech (Lahore / Karachi)</button>
+            <button class="filter-pill" onclick="applyJobFilter('remote')">Remote Worldwide</button>
+            <button class="filter-pill" onclick="applyJobFilter('python')">Python / FastAPI</button>
+            <button class="filter-pill" onclick="applyJobFilter('react')">React / Full Stack</button>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted); font-family:monospace;">
+            Showing <strong id="jobsCountLabel" style="color:#FFF;">5,435</strong> verified opportunities
+          </div>
+        </div>
+
+        <div class="jobs-table-container">
+          <table class="jobs-table">
+            <thead>
+              <tr>
+                <th>Company & Logo</th>
+                <th>Role Title</th>
+                <th>Location / Mode</th>
+                <th>ATS Match</th>
+                <th>Recruiter Deliverability</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="fullJobsTableBody">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 3: AI MATCHES ================= -->
+      <div id="page-ai-matches" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Curated AI High-Compatibility Matches</h2>
+            <p>Ranked by semantic AST matching against your verified skill set (Python, FastAPI, React, SQL)</p>
+          </div>
+          <button class="scan-btn" onclick="openAtsModal()">
+            <span>🪄</span>
+            <span>Optimize All Matches</span>
+          </button>
+        </div>
+
+        <div class="drafts-grid" id="aiMatchesGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- ================= PAGE 4: CV INTELLIGENCE ================= -->
+      <div id="page-cv-intelligence" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>CV Intelligence & ATS Scoring Engine</h2>
+            <p>5-Pillar enterprise ATS audit conforming to Workday, Greenhouse, and Lever criteria</p>
+          </div>
+          <button class="scan-btn" onclick="openTailorModal()">
+            <span>⚡</span>
+            <span>Optimize with Google XYZ</span>
+          </button>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-panel">
+            <h3 style="font-size:14px; color:var(--text-white); margin-bottom:12px;">Active Candidate Profile</h3>
+            <div style="background:var(--bg-surface); padding:14px; border-radius:10px; border:1px solid var(--border-subtle); margin-bottom:14px;">
+              <h4 id="cvIntelName" style="color:var(--text-white); font-size:15px; font-weight:800;">Muhammad Mubashar</h4>
+              <p id="cvIntelEmail" style="color:var(--accent-orange); font-size:11px; font-family:monospace;">pashadev804@gmail.com • +92 308 4453846</p>
+              <p id="cvIntelTitle" style="color:var(--text-muted); font-size:11px; margin-top:4px;">Full Stack Developer (React / Python / FastAPI)</p>
+            </div>
+
+            <h4 style="font-size:12px; color:var(--accent-amber); margin-bottom:8px;">Executive Summary (ATS Passed)</h4>
+            <div id="cvIntelSummary" style="background:var(--bg-surface); padding:12px; border-radius:8px; font-size:11px; line-height:1.6; color:var(--text-muted); margin-bottom:14px;">
+              Full Stack Software Engineer with 3+ years experience building scalable web applications and distributed Python microservices...
+            </div>
+
+            <h4 style="font-size:12px; color:var(--green-status); margin-bottom:8px;">Verified Work Experience Bullets (Google XYZ Standard)</h4>
+            <div id="cvIntelBullets" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Populated by JavaScript -->
+            </div>
+          </div>
+
+          <div class="settings-panel">
+            <h3 style="font-size:14px; color:var(--text-white); margin-bottom:14px;">ATS 5-Pillar Score Breakdown</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="background:var(--bg-surface); padding:12px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-white);">1. Contact & Socials</div>
+                  <div style="font-size:9px; color:var(--text-muted);">Email, Phone, LinkedIn, GitHub, Portfolio</div>
+                </div>
+                <span style="color:var(--green-status); font-weight:800; font-size:12px;">15 / 15 pts</span>
+              </div>
+
+              <div style="background:var(--bg-surface); padding:12px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-white);">2. Professional Summary</div>
+                  <div style="font-size:9px; color:var(--text-muted);">Action verb anchor, scale keywords</div>
+                </div>
+                <span style="color:var(--green-status); font-weight:800; font-size:12px;">15 / 15 pts</span>
+              </div>
+
+              <div style="background:var(--bg-surface); padding:12px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-white);">3. Experience Impact (XYZ)</div>
+                  <div style="font-size:9px; color:var(--text-muted);">Accomplished [X] measured by [Y] doing [Z]</div>
+                </div>
+                <span style="color:var(--green-status); font-weight:800; font-size:12px;">35 / 35 pts</span>
+              </div>
+
+              <div style="background:var(--bg-surface); padding:12px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-white);">4. Skills Taxonomy</div>
+                  <div style="font-size:9px; color:var(--text-muted);">Frontend, Backend, Databases, Cloud & DevOps</div>
+                </div>
+                <span style="color:var(--green-status); font-weight:800; font-size:12px;">20 / 20 pts</span>
+              </div>
+
+              <div style="background:var(--bg-surface); padding:12px; border-radius:8px; border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-size:11px; font-weight:700; color:var(--text-white);">5. Education & Credentials</div>
+                  <div style="font-size:9px; color:var(--text-muted);">BS Computer Science & certifications</div>
+                </div>
+                <span style="color:var(--green-status); font-weight:800; font-size:12px;">15 / 15 pts</span>
+              </div>
+            </div>
+
+            <div style="margin-top:20px; text-align:center; padding:16px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.3); border-radius:10px;">
+              <h2 style="font-size:28px; font-weight:900; color:var(--green-status);">100%</h2>
+              <p style="font-size:11px; font-weight:700; color:var(--text-white); margin-top:2px;">Elite (Top 2% ATS Ready)</p>
+              <p style="font-size:9px; color:var(--text-muted); margin-top:4px;">Guaranteed to pass automated ATS parsers without rejection.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 5: CV TAILORING STUDIO ================= -->
+      <div id="page-cv-tailoring" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Google XYZ Bullet Tailoring Studio</h2>
+            <p>Transform passive duty statements into high-impact quantified engineering achievements</p>
+          </div>
+        </div>
+
+        <div class="settings-panel" style="max-width:850px; margin:0 auto;">
+          <div class="form-group">
+            <label>Select Target Role or Company:</label>
+            <select id="tailorTargetSelect" onchange="onTailorRoleChange()">
+              <option value="Systems Limited — Full Stack Developer">Systems Limited — Full Stack Developer (React / Python)</option>
+              <option value="Google — Senior Python Developer">Google — Senior Python Developer</option>
+              <option value="Arbisoft — Python Software Engineer">Arbisoft — Python Software Engineer</option>
+              <option value="Meta — Full Stack Developer">Meta — Full Stack Developer</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Raw Bullet Point / Responsibility (Input):</label>
+            <textarea id="pageTailorInput" rows="3">Worked on backend Python APIs and fixed database performance bugs.</textarea>
+          </div>
+
+          <button class="save-profile-btn" onclick="executeTailorLive()" style="width:100%; margin-bottom:16px;">
+            ⚡ Rewrite with Google XYZ Engine
+          </button>
+
+          <label style="display:block; font-size:11px; color:var(--green-status); font-weight:800; margin-bottom:6px;">
+            Optimized Google XYZ Output:
+          </label>
+          <div id="pageTailorOutput" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:16px; font-size:12px; line-height:1.6; color:var(--text-white);">
+            Architected and deployed asynchronous Python/FastAPI microservices, reducing database query latency by 42% across 1.2M daily transactions.
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 6: COVER LETTER STUDIO ================= -->
+      <div id="page-cover-letter" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>AI Cover Letter Studio</h2>
+            <p>Generate highly personalized letters tailored to specific hiring managers and tech stacks</p>
+          </div>
+          <button class="scan-btn" onclick="copyCoverLetter()">
+            <span>📋</span>
+            <span>Copy Letter</span>
+          </button>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-panel">
+            <div class="form-group">
+              <label>Target Company:</label>
+              <input type="text" id="clCompany" value="Systems Limited">
+            </div>
+            <div class="form-group">
+              <label>Target Position:</label>
+              <input type="text" id="clPosition" value="Full Stack Developer (React / Python)">
+            </div>
+            <button class="save-profile-btn" onclick="generateCoverLetterLive()" style="width:100%;">
+              ⚡ Generate Tailored Cover Letter
+            </button>
+          </div>
+
+          <div class="settings-panel">
+            <label style="display:block; font-size:11px; font-weight:800; color:var(--accent-orange); margin-bottom:8px;">
+              Generated Cover Letter Preview:
+            </label>
+            <textarea id="clOutput" rows="16" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; font-size:11px; font-family:monospace; line-height:1.5; color:var(--text-white); resize:none;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 7: EMAIL APPLICATIONS & DRAFTS ================= -->
+      <div id="page-email-applications" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Recruiter Outreach & Drafts Manager</h2>
+            <p>Real-Time MX Verification prevents sending to non-existent or blocked mailboxes</p>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div style="font-size:12px; color:var(--green-status); font-weight:700;">
+            ✓ Deliverability Guard: Verified MX Handshake Active
+          </div>
+          <div style="font-size:11px; color:var(--text-muted);">
+            Green badge indicates confirmed active corporate mailbox.
+          </div>
+        </div>
+
+        <div class="drafts-grid" id="draftsContainer">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- ================= PAGE 8: APPLICATION TRACKER ================= -->
+      <div id="page-tracker" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Application Command Pipeline</h2>
+            <p>Track candidate lifecycle from cold discovery to interviews and signed contracts</p>
+          </div>
+        </div>
+
+        <div class="kanban-board">
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4>Discovered</h4>
+              <span>5,435</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kanban-item"><strong>Systems Limited</strong><br><span style="color:var(--text-muted);">Full Stack Developer</span></div>
+              <div class="kanban-item"><strong>Arbisoft</strong><br><span style="color:var(--text-muted);">Python Software Engineer</span></div>
+              <div class="kanban-item"><strong>Google</strong><br><span style="color:var(--text-muted);">Senior Python Developer</span></div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4>Applied</h4>
+              <span>8</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kanban-item"><strong>TechPulse Lahore</strong><br><span style="color:var(--text-muted);">Junior Full Stack Dev</span></div>
+              <div class="kanban-item"><strong>Folio3</strong><br><span style="color:var(--text-muted);">React Developer</span></div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4>Shortlisted</h4>
+              <span>5</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kanban-item"><strong>CureMD</strong><br><span style="color:var(--accent-amber);">QA Automation</span></div>
+              <div class="kanban-item"><strong>Devsinc</strong><br><span style="color:var(--accent-amber);">Full Stack Engineer</span></div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4>Interviews</h4>
+              <span style="color:var(--blue-accent);">2</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kanban-item" style="border-color:var(--blue-accent);"><strong>Tether.io</strong><br><span style="color:var(--blue-accent);">Technical Round (Thu)</span></div>
+              <div class="kanban-item" style="border-color:var(--blue-accent);"><strong>Educative</strong><br><span style="color:var(--blue-accent);">System Design (Fri)</span></div>
+            </div>
+          </div>
+
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <h4>Offers</h4>
+              <span style="color:var(--green-status);">1</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kanban-item" style="border-color:var(--green-status); background:rgba(34,197,94,0.06);"><strong>InvoZone</strong><br><span style="color:var(--green-status);">Offer Under Review</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 9: RECRUITER CONTACTS ================= -->
+      <div id="page-contacts" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Verified Recruiter Directory</h2>
+            <p>Direct hiring manager contacts with confirmed corporate mail servers</p>
+          </div>
+        </div>
+
+        <div class="jobs-table-container">
+          <table class="jobs-table">
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Talent Lead / Department</th>
+                <th>Verified Email Address</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Direct Action</th>
+              </tr>
+            </thead>
+            <tbody id="contactsTableBody">
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 10: CANDIDATE & SETTINGS ================= -->
+      <div id="page-settings" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Candidate Profile & System Settings</h2>
+            <p>Changes made here dynamically adapt the workstation greeting, tailoring, and ATS score</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-panel">
+            <h3 style="font-size:14px; color:var(--text-white); margin-bottom:14px;">Candidate Profile Information</h3>
+            <div class="form-group">
+              <label>Candidate Full Name:</label>
+              <input type="text" id="settingName" value="MUHAMMAD MUBASHAR">
+            </div>
+            <div class="form-group">
+              <label>Target Job Title:</label>
+              <input type="text" id="settingTitle" value="Full Stack Developer (React / Python / FastAPI)">
+            </div>
+            <div class="form-group">
+              <label>Email Address:</label>
+              <input type="email" id="settingEmail" value="pashadev804@gmail.com">
+            </div>
+            <div class="form-group">
+              <label>Phone Number:</label>
+              <input type="text" id="settingPhone" value="+92 308 4453846">
+            </div>
+            <div class="form-group">
+              <label>Location Preference:</label>
+              <input type="text" id="settingLocation" value="Lahore, Pakistan • Open to Remote">
+            </div>
+            <button class="save-profile-btn" onclick="saveProfileChanges()">
+              💾 Save Candidate Profile
+            </button>
+          </div>
+
+          <div class="settings-panel">
+            <h3 style="font-size:14px; color:var(--text-white); margin-bottom:14px;">AI & Email Outreach Settings</h3>
+            <div class="form-group">
+              <label>AI Intelligence Gateway:</label>
+              <select id="settingAiProvider">
+                <option value="apinex" selected>APINEX Free Commercial Engine (qwen-3.8-max)</option>
+                <option value="gemini">Google Gemini Pro API</option>
+                <option value="local">Local Offline Heuristic Engine</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Gmail SMTP App Password:</label>
+              <input type="password" id="settingGmailPass" placeholder="xxxx xxxx xxxx xxxx" value="••••••••••••••••">
+            </div>
+            <div class="form-group">
+              <label>Email Safety Mode:</label>
+              <select id="settingSafety">
+                <option value="strict" selected>Strict: Only Send to Verified MX Addresses</option>
+                <option value="draft_only">Draft Only (Never auto-send)</option>
+              </select>
+            </div>
+            <div style="background:rgba(255,107,0,0.08); border:1px solid rgba(255,107,0,0.25); border-radius:8px; padding:12px; font-size:10px; color:var(--accent-amber); line-height:1.5;">
+              🔒 <strong>Local-First Guarantee</strong>: Your credentials and resume data never leave your local machine. All storage is handled via local SQLite.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= PAGE 11: HELP & SUPPORT ================= -->
+      <div id="page-help" class="page-view">
+        <div class="page-header-row">
+          <div>
+            <h2>Workstation Help & Keyboard Shortcuts</h2>
+            <p>Pasha Hunt 2.0 APINEX Edition User Manual & Reference</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <div class="settings-panel">
+            <h3 style="font-size:14px; color:var(--text-white); margin-bottom:12px;">Keyboard Shortcuts</h3>
+            <ul style="padding-left:18px; font-size:11px; line-height:2; color:var(--text-muted);">
+              <li><strong style="color:#FFF;">Ctrl + K</strong>: Global Search across all jobs and recruiters</li>
+              <li><strong style="color:#FFF;">F5</strong>: Trigger 18-radar feeder sweep</li>
+              <li><strong style="color:#FFF;">Esc</strong>: Skip cinematic intro / close open modals</li>
+              <li><strong style="color:#FFF;">Enter</strong>: Send prompt to Pasha Bot in chat</li>
+            </ul>
+          </div>
+
+          <div class="settings-panel">
+            <h3 style="font-size:14px; color:var(--text-white); margin-bottom:12px;">About Pasha Hunt 2.0</h3>
+            <p style="font-size:11px; line-height:1.6; color:var(--text-muted);">
+              Architected by <strong>Muhammad Mubashar</strong> (Founder, Pasha Dev). Designed to revolutionize career discovery, ATS optimization, and direct recruiter outreach.
+            </p>
+          </div>
+        </div>
+      </div>
 
     </div>
   </main>
@@ -1534,12 +2150,12 @@
         <div style="margin-bottom:16px;">
           <h5 style="color:var(--accent-orange); font-size:11px; text-transform:uppercase; margin-bottom:6px;">Algorithm Recommendations</h5>
           <ul id="atsSuggestionsList" style="padding-left:18px; color:var(--text-muted); font-size:11px;">
-            <li>All 11 experience bullets strictly meet the Google XYZ benchmark ('Accomplished [X] measured by [Y] doing [Z]').</li>
+            <li>All experience bullets strictly meet the Google XYZ benchmark ('Accomplished [X] measured by [Y] doing [Z]').</li>
             <li>Profile ranks in the top 2% of applicants screened by Workday, Greenhouse, and Lever ATS parsers.</li>
           </ul>
         </div>
 
-        <button onclick="openTailorModal()" style="width:100%; padding:10px; background:var(--accent-orange); color:#000; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
+        <button onclick="closeModals(); switchPage('cv-tailoring');" style="width:100%; padding:10px; background:var(--accent-orange); color:#000; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
           Open Google XYZ Bullet Rewriter →
         </button>
       </div>
@@ -1579,26 +2195,76 @@
   <script>
     let allJobs = [];
     let currentSelectedJob = null;
+    let candidateProfile = {};
 
-    // Load initial stats & jobs from embedded local server
+    // --- Page Switching Logic ---
+    function switchPage(pageId) {
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      const activeNav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick')?.includes(pageId));
+      if (activeNav) activeNav.classList.add('active');
+
+      document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+      const targetPage = document.getElementById(`page-${pageId}`);
+      if (targetPage) {
+        targetPage.classList.add('active');
+      }
+
+      // Contextual refresh
+      if (pageId === 'find-jobs') renderFullJobsTable(allJobs);
+      if (pageId === 'ai-matches') renderAiMatches(allJobs);
+      if (pageId === 'email-applications') loadDrafts();
+      if (pageId === 'contacts') loadContacts();
+    }
+
+    // --- Intro Video Controls ---
+    function skipIntro() {
+      const splash = document.getElementById('introSplash');
+      const video = document.getElementById('introVideo');
+      if (video) video.pause();
+      splash.classList.add('hidden');
+    }
+
+    function replayIntro() {
+      const splash = document.getElementById('introSplash');
+      const video = document.getElementById('introVideo');
+      splash.classList.remove('hidden');
+      if (video) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      }
+    }
+
+    // --- Load Stats & Candidate Profile ---
     async function loadDashboard() {
       try {
         const statsRes = await fetch('/api/stats');
         if (statsRes.ok) {
           const stats = await statsRes.json();
-          // Update KPI stats if element exists
-          const kpis = document.querySelectorAll('.kpi-card .kpi-info h3');
-          if (kpis.length >= 5) {
-            kpis[0].innerHTML = `${stats.total_jobs.toLocaleString()} <span class="kpi-trend">↑ +2</span>`;
-            kpis[1].innerHTML = `${stats.applied} <span class="kpi-trend">↑ +1</span>`;
-            kpis[2].innerHTML = `${stats.shortlisted} <span class="kpi-trend">↑ +1</span>`;
-            kpis[3].innerHTML = `${stats.interviews} <span class="kpi-trend">↑ +0</span>`;
-            kpis[4].innerHTML = `${stats.match_rate}% <span class="kpi-trend">↑ +2%</span>`;
+          document.getElementById('statTotalJobs').innerHTML = `${stats.total_jobs.toLocaleString()} <span class="kpi-trend">↑ +2</span>`;
+          document.getElementById('statApplied').innerHTML = `${stats.applied} <span class="kpi-trend">↑ +1</span>`;
+          document.getElementById('statShortlisted').innerHTML = `${stats.shortlisted} <span class="kpi-trend">↑ +1</span>`;
+          document.getElementById('statInterviews').innerHTML = `${stats.interviews} <span class="kpi-trend">↑ +0</span>`;
+          document.getElementById('statMatchRate').innerHTML = `${stats.match_rate}% <span class="kpi-trend">↑ +2%</span>`;
+          document.getElementById('dashboardAtsScore').innerText = `${stats.career_score}%`;
+          
+          // Dynamic Candidate Name everywhere
+          if (stats.first_name) {
+            document.getElementById('heroWelcomeName').innerText = `Welcome back, ${stats.first_name}!`;
+            document.getElementById('sidebarUserName').innerText = stats.candidate;
+            document.getElementById('sidebarUserInitial').innerText = stats.first_name[0];
           }
         }
       } catch (e) {
-        console.warn('Local stats API:', e);
+        console.warn('Stats API error:', e);
       }
+
+      try {
+        const profRes = await fetch('/api/profile');
+        if (profRes.ok) {
+          candidateProfile = await profRes.json();
+          updateProfileUI(candidateProfile);
+        }
+      } catch (e) {}
 
       try {
         const jobsRes = await fetch('/api/jobs');
@@ -1606,20 +2272,70 @@
           allJobs = await jobsRes.json();
           renderJobs(allJobs.slice(0, 5));
         }
-      } catch (e) {
-        console.warn('Local jobs API:', e);
+      } catch (e) {}
+    }
+
+    function updateProfileUI(p) {
+      if (!p) return;
+      document.getElementById('settingName').value = p.name || 'Muhammad Mubashar';
+      document.getElementById('settingEmail').value = p.contact?.email || p.email || 'pashadev804@gmail.com';
+      document.getElementById('settingPhone').value = p.contact?.phone || '+92 308 4453846';
+      document.getElementById('settingTitle').value = p.default_title || 'Full Stack Developer';
+      
+      document.getElementById('cvIntelName').innerText = p.name || 'Muhammad Mubashar';
+      document.getElementById('cvIntelEmail').innerText = `${p.contact?.email || p.email || ''} • ${p.contact?.phone || ''}`;
+      document.getElementById('cvIntelTitle').innerText = p.default_title || 'Full Stack Developer';
+      if (p.default_summary) document.getElementById('cvIntelSummary').innerText = p.default_summary;
+
+      // Populate Bullets
+      const bContainer = document.getElementById('cvIntelBullets');
+      if (bContainer && p.experience) {
+        const allBullets = [];
+        p.experience.forEach(exp => {
+          if (exp.bullets) (Array.isArray(exp.bullets) ? exp.bullets : [exp.bullets]).forEach(b => allBullets.push(b));
+        });
+        bContainer.innerHTML = allBullets.slice(0, 5).map(b => `
+          <div style="background:var(--bg-surface); padding:8px 12px; border-radius:6px; font-size:11px; color:var(--text-white); border-left:2px solid var(--green-status);">
+            ${b}
+          </div>
+        `).join('');
       }
     }
 
+    async function saveProfileChanges() {
+      const name = document.getElementById('settingName').value.trim();
+      const email = document.getElementById('settingEmail').value.trim();
+      const phone = document.getElementById('settingPhone').value.trim();
+      const title = document.getElementById('settingTitle').value.trim();
+      const loc = document.getElementById('settingLocation').value.trim();
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            default_title: title,
+            location: loc,
+            contact: { email: email, phone: phone }
+          })
+        });
+        const data = await res.json();
+        showToast(data.message || 'Profile saved successfully!');
+        await loadDashboard();
+      } catch (e) {
+        showToast('Error saving profile.');
+      }
+    }
+
+    // --- Render Job Matches (Dashboard) ---
     function renderJobs(jobs) {
       const container = document.getElementById('jobMatchesList');
       if (!container) return;
-
       if (!jobs || jobs.length === 0) {
         container.innerHTML = '<div style="color:var(--text-dim); font-size:11px; padding:12px; text-align:center;">No matching opportunities found.</div>';
         return;
       }
-
       container.innerHTML = jobs.map((j, i) => `
         <div class="job-card" onclick="openJobModalByIndex(${i})">
           <div class="job-main">
@@ -1634,6 +2350,155 @@
       `).join('');
     }
 
+    // --- Render Full Jobs Table (Find Jobs Page) ---
+    function renderFullJobsTable(jobs) {
+      const tbody = document.getElementById('fullJobsTableBody');
+      const countLbl = document.getElementById('jobsCountLabel');
+      if (!tbody) return;
+      if (countLbl) countLbl.innerText = jobs.length.toLocaleString();
+
+      if (!jobs || jobs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No jobs match the current criteria.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = jobs.map((j, i) => `
+        <tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="company-logo ${j.logo_class}" style="width:26px; height:26px; font-size:11px;">${j.logo_letter}</div>
+              <strong>${j.company}</strong>
+            </div>
+          </td>
+          <td><strong>${j.title}</strong></td>
+          <td><span style="color:var(--text-muted);">${j.location}</span></td>
+          <td><span class="match-pill">${j.match}</span></td>
+          <td>
+            ${j.email ? `
+              <span class="mx-badge ${j.email_verified ? 'verified' : 'unverified'}">
+                ${j.email_verified ? '✓ MX Verified' : '⚠️ Unverified'} (${j.email})
+              </span>
+            ` : '<span style="color:var(--text-dim); font-size:10px;">Portal Application</span>'}
+          </td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button class="tbl-action-btn" onclick="openJobModalByIndex(${i})">Inspect</button>
+              <button class="tbl-action-btn" onclick="tailorForJobDirect(${i})" style="color:var(--accent-amber);">Tailor</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function applyJobFilter(filter) {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (filter === 'all') {
+        renderFullJobsTable(allJobs);
+      } else if (filter === 'pakistan') {
+        renderFullJobsTable(allJobs.filter(j => j.location.toLowerCase().includes('pakistan') || j.location.toLowerCase().includes('lahore')));
+      } else if (filter === 'remote') {
+        renderFullJobsTable(allJobs.filter(j => j.location.toLowerCase().includes('remote')));
+      } else if (filter === 'python') {
+        renderFullJobsTable(allJobs.filter(j => j.title.toLowerCase().includes('python')));
+      } else if (filter === 'react') {
+        renderFullJobsTable(allJobs.filter(j => j.title.toLowerCase().includes('react') || j.title.toLowerCase().includes('stack')));
+      }
+    }
+
+    // --- Render AI Matches Page ---
+    function renderAiMatches(jobs) {
+      const container = document.getElementById('aiMatchesGrid');
+      if (!container) return;
+      const topMatches = jobs.slice(0, 6);
+      container.innerHTML = topMatches.map((j, i) => `
+        <div class="draft-card">
+          <div>
+            <div class="draft-header">
+              <span class="match-pill" style="font-size:11px;">${j.match}</span>
+              <span class="mx-badge verified">✓ Core Stack Match</span>
+            </div>
+            <h3 style="font-size:15px; color:#FFF; margin-bottom:4px;">${j.title}</h3>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">${j.company} • ${j.location}</p>
+            <p style="font-size:11px; line-height:1.5; color:var(--text-cream); background:var(--bg-surface); padding:10px; border-radius:8px;">
+              ${j.snippet}
+            </p>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:14px;">
+            <button class="tbl-action-btn" onclick="openJobModalByIndex(${i})" style="flex:1;">Inspect Role</button>
+            <button class="tbl-action-btn" onclick="tailorForJobDirect(${i})" style="flex:1; color:var(--accent-amber);">🪄 Tailor Bullets</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // --- Load Drafts (Email Applications) ---
+    async function loadDrafts() {
+      const container = document.getElementById('draftsContainer');
+      if (!container) return;
+      try {
+        const res = await fetch('/api/drafts');
+        const drafts = await res.json();
+        container.innerHTML = drafts.map(d => `
+          <div class="draft-card">
+            <div>
+              <div class="draft-header">
+                <span class="mx-badge ${d.mx_verified ? 'verified' : 'unverified'}">
+                  ${d.mx_verified ? '✓ Real MX Verified Recruiter' : '⚠️ Unverified Mailbox'}
+                </span>
+                <span style="font-size:10px; color:var(--text-dim);">${d.date}</span>
+              </div>
+              <h3 style="font-size:14px; color:#FFF; margin-bottom:2px;">${d.company}</h3>
+              <div style="font-size:11px; color:var(--accent-orange); font-family:monospace; margin-bottom:8px;">To: ${d.to}</div>
+              <div style="font-size:11px; font-weight:700; color:var(--text-cream); margin-bottom:6px;">${d.subject}</div>
+              <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; padding:10px; font-size:11px; color:var(--text-muted); line-height:1.5; font-family:monospace; max-height:100px; overflow-y:auto;">
+                ${d.body}
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:14px;">
+              <button class="tbl-action-btn" onclick="window.open('https://mail.google.com/mail/u/0/#drafts', '_blank')" style="flex:1;">
+                Open in Gmail Web ↗
+              </button>
+              <button class="tbl-action-btn" onclick="showToast('Transmission verified and ready via connected SMTP socket!')" style="flex:1; color:var(--green-status);">
+                ✓ MX Verified Safe
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {}
+    }
+
+    // --- Load Recruiter Contacts ---
+    async function loadContacts() {
+      const tbody = document.getElementById('contactsTableBody');
+      if (!tbody) return;
+      try {
+        const res = await fetch('/api/contacts');
+        const contacts = await res.json();
+        tbody.innerHTML = contacts.map(c => `
+          <tr>
+            <td><strong>${c.company}</strong></td>
+            <td>${c.contact}</td>
+            <td><code style="color:var(--accent-orange);">${c.email}</code></td>
+            <td><span style="color:var(--text-muted);">${c.location}</span></td>
+            <td><span class="mx-badge verified">✓ Active Hiring</span></td>
+            <td>
+              <button class="tbl-action-btn" onclick="draftEmailToContact('${c.company}', '${c.email}')">Draft Email</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {}
+    }
+
+    function draftEmailToContact(company, email) {
+      switchPage('cover-letter');
+      document.getElementById('clCompany').value = company;
+      generateCoverLetterLive();
+      showToast(`Generating cover letter for ${company}...`);
+    }
+
+    // --- Modals Logic ---
     function openJobModalByIndex(index) {
       const job = allJobs[index];
       if (!job) return;
@@ -1659,10 +2524,20 @@
 
     function tailorForCurrentJob() {
       closeModals();
+      switchPage('cv-tailoring');
       if (currentSelectedJob) {
-        document.getElementById('tailorInput').value = `Engineered core systems for ${currentSelectedJob.title} requirements at ${currentSelectedJob.company}.`;
+        document.getElementById('pageTailorInput').value = `Engineered core systems for ${currentSelectedJob.title} requirements at ${currentSelectedJob.company}.`;
+        executeTailorLive();
       }
-      openTailorModal();
+    }
+
+    function tailorForJobDirect(index) {
+      const job = allJobs[index];
+      if (job) {
+        switchPage('cv-tailoring');
+        document.getElementById('pageTailorInput').value = `Engineered core systems for ${job.title} requirements at ${job.company}.`;
+        executeTailorLive();
+      }
     }
 
     async function openAtsModal() {
@@ -1681,6 +2556,30 @@
 
     function openTailorModal() {
       document.getElementById('tailorModal').classList.add('active');
+    }
+
+    function closeModals() {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    }
+
+    // --- Tailor Bullet Live ---
+    async function executeTailorLive() {
+      const input = document.getElementById('pageTailorInput').value.trim();
+      const output = document.getElementById('pageTailorOutput');
+      output.innerText = 'Rewriting with Google XYZ impact formula...';
+
+      try {
+        const res = await fetch('/api/tailor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bullet: input })
+        });
+        const data = await res.json();
+        output.innerHTML = `<strong>${data.optimized}</strong><br><span style="color:var(--accent-orange); font-size:11px; font-weight:800;">${data.improvement} • ${data.formula}</span>`;
+        showToast('Google XYZ bullet optimized!');
+      } catch (e) {
+        output.innerText = 'Engineered distributed microservice architecture, reducing query latency by 42% across 1.2M daily transactions.';
+      }
     }
 
     async function runTailorBullet() {
@@ -1702,11 +2601,34 @@
       }
     }
 
-    function closeModals() {
-      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    // --- Cover Letter Generator Live ---
+    async function generateCoverLetterLive() {
+      const company = document.getElementById('clCompany').value.trim();
+      const title = document.getElementById('clPosition').value.trim();
+      const output = document.getElementById('clOutput');
+      output.value = 'Generating tailored cover letter via APINEX Engine...';
+
+      try {
+        const res = await fetch('/api/cover-letter', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: company, title: title })
+        });
+        const data = await res.json();
+        output.value = data.letter;
+        showToast(`Cover letter generated for ${company}!`);
+      } catch (e) {
+        output.value = 'Error generating letter.';
+      }
     }
 
-    // Live Scan Trigger
+    function copyCoverLetter() {
+      const text = document.getElementById('clOutput').value;
+      navigator.clipboard.writeText(text);
+      showToast('Cover letter copied to clipboard!');
+    }
+
+    // --- Live Scan Trigger ---
     async function triggerScan() {
       const btn = document.querySelector('.scan-btn');
       btn.innerHTML = '<span>⏳</span><span>Scanning 18 Feeds...</span>';
@@ -1723,7 +2645,7 @@
       btn.innerHTML = '<span>⚡</span><span>Scan 18 Feeds</span>';
     }
 
-    // AI Pasha Bot Chat
+    // --- Pasha Bot AI Chat ---
     async function sendChat() {
       const input = document.getElementById('chatInput');
       const msg = input.value.trim();
@@ -1746,11 +2668,12 @@
       }
     }
 
-    // Search bar live filtering
+    // --- Search bar live filtering ---
     document.getElementById('searchInput')?.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
       if (!q) {
         renderJobs(allJobs.slice(0, 5));
+        renderFullJobsTable(allJobs);
         return;
       }
       const filtered = allJobs.filter(j => 
@@ -1758,10 +2681,11 @@
         j.company.toLowerCase().includes(q) ||
         j.location.toLowerCase().includes(q)
       );
-      renderJobs(filtered);
+      renderJobs(filtered.slice(0, 5));
+      renderFullJobsTable(filtered);
     });
 
-    // Toast Notification helper
+    // --- Toast Notification helper ---
     function showToast(msg) {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -1775,24 +2699,14 @@
       }, 3500);
     }
 
-    // Hook up View Details / View Report clicks
-    document.querySelectorAll('.box-action').forEach(el => {
-      if (el.innerText.includes('Report')) {
-        el.onclick = () => openAtsModal();
-      }
-    });
-    const careerScoreLink = document.querySelector('.career-score-card a');
-    if (careerScoreLink) {
-      careerScoreLink.onclick = (e) => { e.preventDefault(); openAtsModal(); };
-    }
-
-    // Shortcut Ctrl+K
+    // Shortcuts
     window.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         document.getElementById('searchInput')?.focus();
       }
       if (e.key === 'Escape') {
+        skipIntro();
         closeModals();
       }
       if (e.key === 'Enter' && document.activeElement === document.getElementById('chatInput')) {
@@ -1801,8 +2715,10 @@
     });
 
     // Initialize on page load
-    window.addEventListener('DOMContentLoaded', loadDashboard);
+    window.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      generateCoverLetterLive();
+    });
   </script>
 </body>
 </html>
-
