@@ -1516,7 +1516,7 @@ def _generate_master_cv_fallback(prompt_text):
         return {"status": "OK", "model": "ready"}
 
     # If this is an import CV prompt (IMPORT_PROMPT):
-    if any(k in prompt_text for k in ["Turn the attached CV into JSON", "IMPORT_PROMPT", '"default_title"']):
+    if any(k in prompt_text for k in ["Turn the attached CV into JSON", "IMPORT_PROMPT"]):
         for cand_path in [
             os.path.join(HERE, "profile.json"),
             os.path.join(CODE, "profile.json"),
