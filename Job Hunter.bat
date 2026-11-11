@@ -1,6 +1,10 @@
 @echo off
-where pythonw >nul 2>nul && (start "" pythonw -I "%~dp0gui.py" & exit /b)
-where pyw >nul 2>nul && (start "" pyw -3 -I "%~dp0gui.py" & exit /b)
-echo Python was not found. Install Python 3.10+ from https://www.python.org/downloads/
-echo and tick "Add python.exe to PATH" during setup.
+title Pasha Hunt 2.0 (APINEX Edition)
+cd /d "%~dp0"
+where pythonw >nul 2>nul && (start "" pythonw desktop_app.py && exit /b)
+where python >nul 2>nul && (start "" python desktop_app.py && exit /b)
+if exist "%LOCALAPPDATA%\Programs\Pasha Hunt\PashaHunt.exe" (
+    start "" "%LOCALAPPDATA%\Programs\Pasha Hunt\PashaHunt.exe"
+    exit /b
+)
 pause

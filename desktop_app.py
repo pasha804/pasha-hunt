@@ -38,6 +38,8 @@ class WorkstationWindow(QtWidgets.QMainWindow):
 
         # Set Icon
         icon_path = os.path.join(HERE, "installer", "icon.ico")
+        if not os.path.exists(icon_path):
+            icon_path = os.path.join(HERE, "icon.ico")
         if os.path.exists(icon_path):
             self.setWindowIcon(QtGui.QIcon(icon_path))
 
