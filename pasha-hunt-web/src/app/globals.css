@@ -2,98 +2,146 @@
 
 @layer base {
   :root {
-    --bg-main: #101820;
+    /* --- Default: Midnight + Amber Edition --- */
+    --theme-name: "midnight-amber";
+    --bg-primary: #101820;
     --bg-deep: #0B1118;
-    --bg-secondary: #17212A;
-    --card-surface: #1B2832;
-    --elevated-surface: #23313B;
-    --primary-amber: #F2AA4C;
-    --amber-hover: #FFC16F;
-    --soft-amber: #D9953E;
-    --warm-cream: #F7F3EA;
-    --primary-text: #F7F3EA;
-    --secondary-text: #B7B7AE;
-    --muted-text: #858B8D;
-    --borders: #34414A;
-    --subtle-borders: #27343D;
-    --pure-white: #FFFFFF;
+    --bg-surface: #17212A;
+    --bg-card: #1B2832;
+    --bg-card-hover: #23313B;
+    --accent-primary: #F2AA4C;
+    --accent-hover: #FFC16F;
+    --accent-subtle: #D9953E;
+    --accent-glow: rgba(242, 170, 76, 0.4);
+    --accent-glow-subtle: rgba(242, 170, 76, 0.12);
+    --text-primary: #F7F3EA;
+    --text-secondary: #B7B7AE;
+    --text-muted: #858B8D;
+    --border-subtle: #27343D;
+    --border-strong: #34414A;
+    --border-accent: rgba(242, 170, 76, 0.4);
+  }
+
+  /* --- Alternate: Graphite + Lime Edition --- */
+  [data-theme="graphite-lime"] {
+    --theme-name: "graphite-lime";
+    --bg-primary: #151719;
+    --bg-deep: #0D0E10;
+    --bg-surface: #1C1F22;
+    --bg-card: #22262B;
+    --bg-card-hover: #2B3037;
+    --accent-primary: #C6F36B;
+    --accent-hover: #D5F788;
+    --accent-subtle: #A3D841;
+    --accent-glow: rgba(198, 243, 107, 0.4);
+    --accent-glow-subtle: rgba(198, 243, 107, 0.12);
+    --text-primary: #E8E9E5;
+    --text-secondary: #9DA3A6;
+    --text-muted: #6E7579;
+    --border-subtle: #2B3037;
+    --border-strong: #3B424C;
+    --border-accent: rgba(198, 243, 107, 0.4);
+  }
+
+  * {
+    box-sizing: border-box;
   }
 
   html {
+    overflow-x: clip;
     scroll-behavior: smooth;
-    color-scheme: dark;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
   }
 
   body {
-    background-color: #101820;
-    color: #F7F3EA;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", "Geist", "Manrope", sans-serif;
-    overflow-x: hidden;
-    letter-spacing: -0.015em;
+    overflow-x: clip;
+    margin: 0;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
-/* Background grid pattern with subtle amber/warm tint */
-.bg-grid-midnight {
-  background-image: 
-    linear-gradient(to right, rgba(52, 65, 74, 0.25) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(52, 65, 74, 0.25) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* Horizon Ember Glow Line (Inspired by reference aesthetic) */
-.amber-horizon-line {
+/* --- Atmospheric Laser Horizon Line --- */
+.laser-horizon {
   position: relative;
   width: 100%;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, #D9953E 25%, #F2AA4C 50%, #D9953E 75%, transparent 100%);
-  box-shadow: 0 0 24px 2px rgba(242, 170, 76, 0.55), 0 0 48px 8px rgba(217, 149, 62, 0.25);
+  background: linear-gradient(90deg, transparent 0%, var(--accent-primary) 50%, transparent 100%);
+  box-shadow: 0 0 15px var(--accent-glow), 0 0 35px var(--accent-glow);
 }
 
-/* Radial ambient lighting */
-.amber-ambient-radial {
-  background: radial-gradient(circle at 50% 0%, rgba(242, 170, 76, 0.12) 0%, rgba(16, 24, 32, 0) 70%);
+.laser-horizon::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 30%;
+  right: 30%;
+  height: 25px;
+  background: radial-gradient(ellipse at center, var(--accent-glow) 0%, transparent 75%);
+  pointer-events: none;
 }
 
-.amber-glow-card {
-  background: #1B2832;
-  border: 1px solid #34414A;
-  box-shadow: 0 8px 32px -4px rgba(11, 17, 24, 0.6);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* --- 3D Workstation Perspective --- */
+.perspective-container {
+  perspective: 1200px;
+  perspective-origin: center top;
 }
 
-.amber-glow-card:hover {
-  border-color: #F2AA4C;
-  box-shadow: 0 12px 40px -4px rgba(242, 170, 76, 0.18);
-  transform: translateY(-2px);
+.tilted-workstation {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+  box-shadow: 0 30px 100px -20px rgba(0, 0, 0, 0.8), 0 0 60px -10px var(--accent-glow-subtle);
 }
 
-/* Custom scrollbars */
+.tilted-workstation:hover {
+  transform: rotateX(2deg) scale(1.01);
+  box-shadow: 0 40px 120px -20px rgba(0, 0, 0, 0.9), 0 0 80px -5px var(--accent-glow);
+}
+
+/* --- Glass Panels & Editorial Surfaces --- */
+.glass-panel {
+  background: rgba(23, 33, 42, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+}
+
+[data-theme="graphite-lime"] .glass-panel {
+  background: rgba(28, 31, 34, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+}
+
+/* --- Ambient Glows --- */
+.ambient-glow-sphere {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.18;
+  pointer-events: none;
+  background: radial-gradient(circle, var(--accent-primary) 0%, transparent 70%);
+  transition: background 0.4s ease;
+}
+
+/* --- Precision Scrollbars --- */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #0B1118;
-}
-::-webkit-scrollbar-thumb {
-  background: #27343D;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #F2AA4C;
+  background: var(--bg-deep);
 }
 
-/* Print styling */
-@media print {
-  body {
-    color: #111111 !important;
-    background: #ffffff !important;
-  }
-  .no-print {
-    display: none !important;
-  }
-  .print-only {
-    display: block !important;
-  }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
 }
