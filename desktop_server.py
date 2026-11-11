@@ -13,8 +13,48 @@ import urllib.parse
 import csv
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-UI_DIR = os.path.join(HERE, "desktop_ui")
 sys.path.insert(0, HERE)
+
+def resolve_file(filename):
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, filename))
+        if hasattr(sys, '_MEIPASS'):
+            candidates.append(os.path.join(sys._MEIPASS, filename))
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates.append(os.path.join(here, filename))
+    candidates.append(os.path.join("E:\\Job Hunt", filename))
+    candidates.append(os.path.join("E:\\Job Hunt\\job-hunter-repo", filename))
+    local_app_data = os.environ.get("LOCALAPPDATA", "")
+    if local_app_data:
+        candidates.append(os.path.join(local_app_data, "Programs", "Pasha Hunt", filename))
+        candidates.append(os.path.join(local_app_data, "Programs", "Job Hunter", filename))
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return os.path.join(here, filename)
+
+def resolve_ui_dir():
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, "desktop_ui"))
+        if hasattr(sys, '_MEIPASS'):
+            candidates.append(os.path.join(sys._MEIPASS, "desktop_ui"))
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates.append(os.path.join(here, "desktop_ui"))
+    candidates.append(os.path.join("E:\\Job Hunt", "desktop_ui"))
+    local_app_data = os.environ.get("LOCALAPPDATA", "")
+    if local_app_data:
+        candidates.append(os.path.join(local_app_data, "Programs", "Pasha Hunt", "desktop_ui"))
+        candidates.append(os.path.join(local_app_data, "Programs", "Job Hunter", "desktop_ui"))
+    for c in candidates:
+        if os.path.exists(c) and os.path.isdir(c):
+            return c
+    return os.path.join(here, "desktop_ui")
+
+UI_DIR = resolve_ui_dir()
 
 import bot
 
@@ -127,7 +167,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
 
     def _get_profile_data(self):
-        prof_file = os.path.join(HERE, "profile.json")
+        prof_file = resolve_file("profile.json")
         if os.path.exists(prof_file):
             try:
                 with open(prof_file, "r", encoding="utf-8") as f:
@@ -144,7 +184,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         self._send_json(self._get_profile_data())
 
     def _handle_save_profile(self, new_data):
-        prof_file = os.path.join(HERE, "profile.json")
+        prof_file = resolve_file("profile.json")
         try:
             current = self._get_profile_data()
             current.update(new_data)
@@ -157,7 +197,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
     def _handle_stats(self):
         jobs_count = 5435
         try:
-            jobs_file = os.path.join(HERE, "jobs.json")
+            jobs_file = resolve_file("jobs.json")
             if os.path.exists(jobs_file):
                 with open(jobs_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
@@ -198,7 +238,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         jobs = []
         try:
-            jobs_file = os.path.join(HERE, "jobs.json")
+            jobs_file = resolve_file("jobs.json")
             if os.path.exists(jobs_file):
                 with open(jobs_file, "r", encoding="utf-8") as f:
                     data = json.load(f)

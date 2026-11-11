@@ -31,8 +31,12 @@ def main():
         import cv
         cv.main()
     else:
-        import gui
-        gui.App().mainloop()
+        try:
+            import desktop_app
+            desktop_app.main()
+        except Exception as e:
+            import gui
+            gui.App().mainloop()
 
 
 if __name__ == "__main__":

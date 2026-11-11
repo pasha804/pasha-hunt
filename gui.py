@@ -1950,5 +1950,9 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    try:
+        import desktop_app
+        desktop_app.main()
+    except Exception as e:
+        app = App()
+        app.mainloop()
