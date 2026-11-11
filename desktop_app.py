@@ -1,16 +1,18 @@
 """Pasha Hunt 2.0 — APINEX Edition Desktop Workstation
 1:1 Pixel-Perfect Modern Desktop Architecture (Picture 2)
-Powered by PySide6 & QWebEngineView with native background worker threads.
+Powered by PySide6 & QWebEngineView with native background worker threads and local IPC server.
 """
 import sys
 import os
 import json
 import threading
+import time
 from PySide6 import QtCore, QtGui, QtWidgets, QtWebEngineWidgets
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import bot
+import desktop_server
 
 # Intercept CLI commands when packaged
 if len(sys.argv) > 1 and sys.argv[1] == "--bot":
@@ -39,13 +41,22 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         if os.path.exists(icon_path):
             self.setWindowIcon(QtGui.QIcon(icon_path))
 
+        # Start Local IPC Server on 127.0.0.1:58241 if not already running
+        self.port = 58241
+        self.server_thread = threading.Thread(
+            target=desktop_server.start_server,
+            args=(self.port,),
+            daemon=True
+        )
+        self.server_thread.start()
+        time.sleep(0.3)
+
         # WebEngine View
         self.browser = QtWebEngineWidgets.QWebEngineView(self)
         self.setCentralWidget(self.browser)
 
-        # Load local HTML
-        html_path = os.path.join(HERE, "desktop_ui", "index.html")
-        self.browser.setUrl(QtCore.QUrl.fromLocalFile(html_path))
+        # Load from local server
+        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
 
         # Background Scraper Thread state
         self.is_scanning = False
