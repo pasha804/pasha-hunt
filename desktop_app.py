@@ -127,6 +127,9 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.resize(1360, 880)
         self.setMinimumSize(1100, 720)
 
+        # Set dark background to prevent any white flash
+        self.setStyleSheet("background-color: #070A0E;")
+
         # Set Application Icon
         icon_path = os.path.join(HERE, "installer", "icon.ico")
         if not os.path.exists(icon_path):
@@ -146,8 +149,10 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         # Connect replay callback
         desktop_server.set_replay_intro_callback(self.replay_intro)
 
-        # WebEngine View
+        # WebEngine View with dark background
         self.browser = QtWebEngineWidgets.QWebEngineView(self)
+        self.browser.setStyleSheet("background-color: #070A0E;")
+        self.browser.page().setBackgroundColor(QtGui.QColor("#070A0E"))
         self.setCentralWidget(self.browser)
 
         # Keyboard shortcuts
