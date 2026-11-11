@@ -169,17 +169,17 @@ ROW = "  {:<12}{:<15}{:<28}{:<54}{}\n"
 ROW_HEAD = ROW.format("STATUS", "SOURCE", "COMPANY", "ROLE", "EMAIL / LINK")
 REASON_INDENT = 2 + 12 + 15  # reasons line up under the Company column
 
-# ---------- Modern Dark Dashboard Palette (Linear / Obsidian High-End) ----------
-CYBER_AZURE = "#38BDF8"     # Electric Cyan / Primary Action
-NEON_EMERALD = "#10B981"    # Verified Direct Email / 95+ ATS Elite
-VIVID_AMBER = "#F59E0B"     # Action / Warning
-CORAL_ROSE = "#F43F5E"      # Stop / Alert
-VIOLET_INDIGO = "#6366F1"   # Deep Indigo Accent
-OBSIDIAN_VOID = "#0B0F19"   # Core Canvas Background
-SLATE_SURFACE = "#111827"   # Modern Card Surface
-SLATE_BORDER = "#1E293B"    # Clean Minimal Border
-SLATE_MUTED = "#94A3B8"     # Slate Secondary Muted Text
-PURE_INK = "#F8FAFC"        # Pure High-Contrast White Text
+# ---------- Modern Dark Dashboard Palette (Midnight × Amber & Graphite × Lime) ----------
+CYBER_AZURE = "#F2AA4C"     # Radiant Amber / Primary Workstation Accent
+NEON_EMERALD = "#C6F36B"    # Cybernetic Lime / Verified Direct Email / 95+ ATS Elite
+VIVID_AMBER = "#FFC16F"     # Warm Glowing Amber / Action
+CORAL_ROSE = "#FF5571"      # Stop / Alert
+VIOLET_INDIGO = "#D9953E"   # Soft Golden Amber
+OBSIDIAN_VOID = "#101820"   # Core Midnight Canvas Background
+SLATE_SURFACE = "#17212A"   # Deep Slate Card Surface
+SLATE_BORDER = "#27343D"    # Clean Minimal Border
+SLATE_MUTED = "#858B8D"     # Warm Muted Secondary Text
+PURE_INK = "#F7F3EA"        # Warm Cream High-Contrast Text
 
 INDIGO = VIOLET_INDIGO
 WATERMELON = CORAL_ROSE
@@ -187,14 +187,14 @@ GOLD = VIVID_AMBER
 TURQUOISE = CYBER_AZURE
 JUNGLE = NEON_EMERALD
 
-GRADIENT = [(11, 15, 25), (15, 23, 42), (20, 30, 50), (13, 20, 36)]  # Deep Space Obsidian Slate
+GRADIENT = [(16, 24, 32), (11, 17, 24), (23, 33, 42), (16, 24, 32)]  # Deep Midnight 3D Gradient
 PERIOD = 2400   # pixels along the diagonal before the colours repeat
 BAND = 6        # width of one colour band
 GAP, PAD, RADIUS = 14, 10, 14  # space between cards, card padding, corner radius
 FROST, SMOKE = 0.15, 0.80       # subtle dark glass tinting
-WHITE, NIGHT = (255, 255, 255), (11, 15, 25)
+WHITE, NIGHT = (247, 243, 234), (16, 24, 32)
 INK, MUTED, LIGHT_INK, LIGHT_MUTED = PURE_INK, SLATE_MUTED, PURE_INK, SLATE_MUTED
-SURFACE, LINE, ACCENT, CONSOLE, DIALOG = SLATE_SURFACE, SLATE_BORDER, CYBER_AZURE, "#070A10", OBSIDIAN_VOID
+SURFACE, LINE, ACCENT, CONSOLE, DIALOG = SLATE_SURFACE, SLATE_BORDER, CYBER_AZURE, "#0B1118", OBSIDIAN_VOID
 
 
 def ago(iso):
