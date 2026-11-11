@@ -762,8 +762,11 @@ def src_jobicy_feed():
 def src_themuse():
     out = []
     for page in range(5):
-        d = fetch("https://www.themuse.com/api/public/jobs?location=Flexible%20%2F%20Remote&descending=true"
-                  f"&page={page}", as_json=True)
+        try:
+            d = fetch("https://www.themuse.com/api/public/jobs?location=Flexible%20%2F%20Remote&descending=true"
+                      f"&page={page}", as_json=True)
+        except Exception:
+            break
         for j in d.get("results", []):
             out.append(dict(source="themuse", id=f"themuse-{j['id']}", title=j.get("name", "").strip(),
                             company=(j.get("company") or {}).get("name", ""),
