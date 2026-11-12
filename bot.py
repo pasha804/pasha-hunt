@@ -1501,6 +1501,7 @@ Cover letter rules: start "Dear <team or the person named in the post>,"; paragr
 Never claim more than {years} years. No cliches like "passionate" or "hardworking"."""
 
 
+MASTER_APINEX_KEY = "sk-apx4b84fd940ce37dfab861a3e5d0243b71c9f3d8112adc5df"
 APINEX_BASE_URL = "https://api.apinex.bond/v1"
 _last_apinex_call = 0.0
 _rate_lock = threading.Lock()
@@ -1661,7 +1662,9 @@ def model_rank(name):
 
 def gemini_models(cfg, state):
     """Your chosen models first, then every other text model your key can use, best first. Listed once a day."""
-    key = str(cfg.get("gemini_api_key") or "").strip()
+    key = str(cfg.get("gemini_api_key") or MASTER_APINEX_KEY).strip()
+    if not key:
+        key = MASTER_APINEX_KEY
     if key.startswith("sk-"):
         # Apinex API Provider
         if time.time() - state.get("listed", 0) > 86400 or not state.get("models"):
@@ -1754,7 +1757,9 @@ def quota_wait(err):
 
 def gemini(cfg, prompt, attach=None, search=False):
     """Ask Gemini or Apinex for a JSON answer."""
-    key = str(cfg.get("gemini_api_key") or "").strip()
+    key = str(cfg.get("gemini_api_key") or MASTER_APINEX_KEY).strip()
+    if not key:
+        key = MASTER_APINEX_KEY
     if key.startswith("sk-"):
         # Apinex execution path
         state = gemini_state()
@@ -3082,7 +3087,9 @@ def main():
     if "--check-models" in sys.argv:
         try:
             cfg = load_config()
-            key = str(cfg.get("gemini_api_key") or "").strip()
+            key = str(cfg.get("gemini_api_key") or MASTER_APINEX_KEY).strip()
+            if not key:
+                key = MASTER_APINEX_KEY
             if not key:
                 log("❌ No API key found in config.json. Please enter your Apinex or Gemini API key.")
                 return

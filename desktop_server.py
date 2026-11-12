@@ -164,7 +164,7 @@ def save_config(cfg_updates):
 
 # Master APINEX Vault & Multi-Model Catalog
 APINEX_URL = "https://api.apinex.bond/v1/chat/completions"
-APINEX_TOKEN = "sk-apx8a660d087a150ce79fbe12593375ea9401369fdac8ed70e"
+APINEX_TOKEN = "sk-apx4b84fd940ce37dfab861a3e5d0243b71c9f3d8112adc5df"
 APINEX_CATALOG = [
     {"id": "free/qwen-3.8-max", "name": "Qwen 3.8 Max (High Speed & Code)", "badge": "Fastest"},
     {"id": "free/deepseek-v4.1-flash", "name": "DeepSeek V4.1 Flash (Deep ATS & Gap Analysis)", "badge": "Smartest"},
