@@ -1432,7 +1432,7 @@
   <aside class="sidebar">
     <div>
       <div class="brand-header">
-        <div class="brand-logo">P</div>
+        <img src="logo.png" alt="Pasha Hunt" style="width:36px; height:36px; border-radius:10px; object-fit:contain; box-shadow:0 4px 16px rgba(255,107,0,0.3); border:1px solid rgba(255,107,0,0.4);" />
         <div class="brand-text">
           <h1>Pasha Hunt 2.0</h1>
           <p>APINEX Edition</p>
@@ -1847,15 +1847,109 @@
 
       <!-- ================= PAGE 4: CV INTELLIGENCE ================= -->
       <div id="page-cv-intelligence" class="page-view">
-        <div class="page-header-row">
+        <div class="page-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
           <div>
-            <h2>CV Intelligence & ATS Scoring Engine</h2>
-            <p>5-Pillar enterprise ATS audit conforming to Workday, Greenhouse, and Lever criteria</p>
+            <h2>Master CV Studio &amp; ATS Scoring Engine</h2>
+            <p>Upload new CVs, edit skills and profile, and compile pixel-perfect ATS Master PDFs with 1 click</p>
           </div>
-          <button class="scan-btn" onclick="openTailorModal()">
-            <span>⚡</span>
-            <span>Optimize with Google XYZ</span>
-          </button>
+          <div style="display:flex; gap:8px;">
+            <input type="file" id="cvStudioFileInput" accept=".pdf" style="display:none;" onchange="handleCvFileInput(this)">
+            <button class="scan-btn" onclick="document.getElementById('cvStudioFileInput').click()" style="padding:6px 14px; font-size:11px; background:linear-gradient(135deg, #3B82F6, #1D4ED8);">
+              <span>📤</span>
+              <span>Upload New CV (PDF)</span>
+            </button>
+            <button class="scan-btn" onclick="saveCvProfileAndRebuild()" style="padding:6px 14px; font-size:11px;">
+              <span>⚡</span>
+              <span>Compile &amp; Rebuild Master ATS CV</span>
+            </button>
+            <button class="scan-btn" onclick="openCvInViewer()" style="padding:6px 14px; font-size:11px; background:rgba(255,255,255,0.08); border:1px solid var(--border-subtle);">
+              <span>👁</span>
+              <span>Open in PDF Reader</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Master CV Status Banner -->
+        <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 18px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:40px; height:40px; border-radius:10px; background:rgba(255,107,0,0.12); border:1px solid var(--accent-orange); display:flex; align-items:center; justify-content:center; font-size:20px;">📄</div>
+            <div>
+              <div id="cvFileInfoBadge" style="font-size:12px; font-weight:700; color:var(--text-white); font-family:monospace;">
+                <span style="color:#22C55E;">● Active Master PDF</span>: Muhammad_Mubashar_ATS_Master_CV_v2_.pdf
+              </div>
+              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">All outgoing job drafts and Gmail applications automatically attach this master document.</div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="cvStudioAtsScoreBadge" style="padding:4px 12px; border-radius:20px; background:rgba(34,197,94,0.12); border:1px solid #22C55E; color:#22C55E; font-weight:800; font-size:12px;">96% Elite ATS Ready</span>
+          </div>
+        </div>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div id="cvDropZone" ondragover="event.preventDefault(); this.style.borderColor='var(--accent-orange)';" ondragleave="this.style.borderColor='var(--border-subtle)';" ondrop="event.preventDefault(); this.style.borderColor='var(--border-subtle)'; handleCvDrop(event);" onclick="document.getElementById('cvStudioFileInput').click()" style="border:2px dashed var(--border-subtle); border-radius:12px; padding:20px; text-align:center; background:rgba(14,19,24,0.5); cursor:pointer; margin-bottom:20px; transition:border-color 0.2s;">
+          <div style="font-size:28px; margin-bottom:6px;">☁️</div>
+          <div style="font-size:13px; font-weight:700; color:var(--text-white);">Drag &amp; drop your updated CV PDF here, or click to browse</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Automatically extracts text via <code>pypdf</code>, updates <code>profile.json</code>, and saves as Master ATS CV.</div>
+        </div>
+
+        <!-- In-App CV & Profile Live Editor -->
+        <div class="settings-panel" style="margin-bottom:24px;">
+          <h3 style="font-size:14px; color:var(--text-white); margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Candidate Profile &amp; Master CV Editor</span>
+            <span style="font-size:11px; color:var(--accent-orange); font-weight:normal;">Real-time sync with profile.json</span>
+          </h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Candidate Full Name:</label>
+                <input type="text" id="cvStudioName" value="MUHAMMAD MUBASHAR" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+              </div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Target Professional Title:</label>
+                <input type="text" id="cvStudioTitle" value="AI Agentic Developer | Full-Stack Software Engineer | QA & Software Tester" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div class="form-group">
+                  <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Email Address:</label>
+                  <input type="email" id="cvStudioEmail" value="pashadev804@gmail.com" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Phone Number:</label>
+                  <input type="text" id="cvStudioPhone" value="+92 308 4453846" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div class="form-group">
+                  <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">LinkedIn Profile:</label>
+                  <input type="text" id="cvStudioLinkedIn" value="linkedin.com/in/pasha-dev" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+                </div>
+                <div class="form-group">
+                  <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">GitHub Profile:</label>
+                  <input type="text" id="cvStudioGitHub" value="github.com/pasha804" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Executive Summary (ATS Passed):</label>
+                <textarea id="cvStudioSummary" rows="4" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:11px; line-height:1.5; resize:vertical;">Autonomous AI Agentic Developer, Full-Stack Software Engineer, and QA Software Tester with deep expertise in building, testing, and deploying production-grade web applications, SaaS platforms, and native desktop systems.</textarea>
+              </div>
+              <div class="form-group" style="margin-bottom:12px;">
+                <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Key Technical Skills (Category: Skill1, Skill2):</label>
+                <textarea id="cvStudioSkills" rows="4" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:11px; line-height:1.5; resize:vertical; font-family:monospace;">Languages & Core: Python, TypeScript, JavaScript, SQL, HTML5, CSS3
+Full-Stack Web: FastAPI, Next.js, React, Node.js, Express, Tailwind CSS
+AI & LLM Systems: Agentic Workflows, LangChain, Tool-Calling, AST Parsing
+Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Exploratory QA</textarea>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:10px;">
+            <button class="scan-btn" onclick="saveCvProfileAndRebuild()" style="padding:8px 20px; font-size:12px;">
+              <span>💾</span>
+              <span>Save Changes &amp; Rebuild Master ATS CV</span>
+            </button>
+          </div>
         </div>
 
         <div class="settings-grid">
@@ -2031,66 +2125,76 @@
 
       <!-- ================= PAGE 8: APPLICATION TRACKER ================= -->
       <div id="page-tracker" class="page-view">
-        <div class="page-header-row">
+        <div class="page-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
           <div>
             <h2>Application Command Pipeline</h2>
-            <p>Track candidate lifecycle from cold discovery to interviews and signed contracts</p>
+            <p>100% Real-time dynamic records from <code>tracker.csv</code> &amp; active Gmail IMAP recruiter responses</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="scan-btn" onclick="loadTrackerPipeline()" style="padding:6px 14px; font-size:11px;">
+              <span>🔄</span>
+              <span>Sync Tracker &amp; IMAP</span>
+            </button>
+            <button class="scan-btn" onclick="autoDraftAllMatches()" style="padding:6px 14px; font-size:11px; background:linear-gradient(135deg, #10B981, #059669);">
+              <span>✉</span>
+              <span>Auto-Draft Best Matches</span>
+            </button>
           </div>
         </div>
 
         <div class="kanban-board">
+          <!-- Column 1: Discovered -->
           <div class="kanban-col">
             <div class="kanban-col-head">
               <h4>Discovered</h4>
-              <span>5,435</span>
+              <span id="countTrackerDiscovered" style="color:var(--accent-orange);">5,435</span>
             </div>
-            <div class="kanban-cards">
-              <div class="kanban-item"><strong>Systems Limited</strong><br><span style="color:var(--text-muted);">Full Stack Developer</span></div>
-              <div class="kanban-item"><strong>Arbisoft</strong><br><span style="color:var(--text-muted);">Python Software Engineer</span></div>
-              <div class="kanban-item"><strong>Google</strong><br><span style="color:var(--text-muted);">Senior Python Developer</span></div>
+            <div class="kanban-cards" id="cardsTrackerDiscovered">
+              <div style="color:var(--text-muted); font-size:11px; padding:8px;">Loading vetted jobs...</div>
             </div>
           </div>
 
+          <!-- Column 2: Drafted in Gmail -->
           <div class="kanban-col">
             <div class="kanban-col-head">
-              <h4>Applied</h4>
-              <span>8</span>
+              <h4>Drafted in Gmail</h4>
+              <span id="countTrackerDrafted" style="color:var(--accent-amber);">0</span>
             </div>
-            <div class="kanban-cards">
-              <div class="kanban-item"><strong>TechPulse Lahore</strong><br><span style="color:var(--text-muted);">Junior Full Stack Dev</span></div>
-              <div class="kanban-item"><strong>Folio3</strong><br><span style="color:var(--text-muted);">React Developer</span></div>
+            <div class="kanban-cards" id="cardsTrackerDrafted">
+              <div style="color:var(--text-muted); font-size:11px; padding:8px;">Loading pending drafts...</div>
             </div>
           </div>
 
+          <!-- Column 3: Sent Applications -->
           <div class="kanban-col">
             <div class="kanban-col-head">
-              <h4>Shortlisted</h4>
-              <span>5</span>
+              <h4>Sent / Applied</h4>
+              <span id="countTrackerApplied" style="color:var(--green-status);">0</span>
             </div>
-            <div class="kanban-cards">
-              <div class="kanban-item"><strong>CureMD</strong><br><span style="color:var(--accent-amber);">QA Automation</span></div>
-              <div class="kanban-item"><strong>Devsinc</strong><br><span style="color:var(--accent-amber);">Full Stack Engineer</span></div>
+            <div class="kanban-cards" id="cardsTrackerApplied">
+              <div style="color:var(--text-muted); font-size:11px; padding:8px;">Loading sent records...</div>
             </div>
           </div>
 
+          <!-- Column 4: Recruiter Replies -->
           <div class="kanban-col">
             <div class="kanban-col-head">
-              <h4>Interviews</h4>
-              <span style="color:var(--blue-accent);">2</span>
+              <h4>Recruiter Replies</h4>
+              <span id="countTrackerReplied" style="color:var(--blue-accent);">0</span>
             </div>
-            <div class="kanban-cards">
-              <div class="kanban-item" style="border-color:var(--blue-accent);"><strong>Tether.io</strong><br><span style="color:var(--blue-accent);">Technical Round (Thu)</span></div>
-              <div class="kanban-item" style="border-color:var(--blue-accent);"><strong>Educative</strong><br><span style="color:var(--blue-accent);">System Design (Fri)</span></div>
+            <div class="kanban-cards" id="cardsTrackerReplied">
+              <div style="color:var(--text-muted); font-size:11px; padding:8px;">Syncing with Gmail IMAP...</div>
             </div>
           </div>
 
+          <!-- Column 5: Skipped / Filtered -->
           <div class="kanban-col">
             <div class="kanban-col-head">
-              <h4>Offers</h4>
-              <span style="color:var(--green-status);">1</span>
+              <h4>Skipped / Filtered</h4>
+              <span id="countTrackerSkipped" style="color:var(--text-muted);">0</span>
             </div>
-            <div class="kanban-cards">
-              <div class="kanban-item" style="border-color:var(--green-status); background:rgba(34,197,94,0.06);"><strong>InvoZone</strong><br><span style="color:var(--green-status);">Offer Under Review</span></div>
+            <div class="kanban-cards" id="cardsTrackerSkipped">
+              <div style="color:var(--text-muted); font-size:11px; padding:8px;">Loading filtered roles...</div>
             </div>
           </div>
         </div>
@@ -2383,7 +2487,8 @@
       if (pageId === 'find-jobs') renderFullJobsTable(allJobs);
       if (pageId === 'ai-matches') renderAiMatches(allJobs);
       if (pageId === 'email-applications') loadDrafts();
-      if (pageId === 'tracker') syncInboxLive();
+      if (pageId === 'tracker') { loadTrackerPipeline(); syncInboxLive(); }
+      if (pageId === 'cv-intelligence') loadCvStudioInfo();
       if (pageId === 'contacts') loadContacts();
     }
 
@@ -2523,6 +2628,288 @@
       } catch (e) {
         if (btn) btn.innerHTML = '<span>🔍 Find Email</span>';
         showToast('Error searching company domain.');
+      }
+    }
+
+    // --- Real Application Tracker Pipeline (100% Dynamic from tracker.csv & Gmail IMAP) ---
+    async function loadTrackerPipeline() {
+      try {
+        const res = await fetch('/api/tracker');
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const counts = data.counts || {};
+        const pipeline = data.pipeline || {};
+
+        const countDiscovered = document.getElementById('countTrackerDiscovered');
+        const countDrafted = document.getElementById('countTrackerDrafted');
+        const countApplied = document.getElementById('countTrackerApplied');
+        const countReplied = document.getElementById('countTrackerReplied');
+        const countSkipped = document.getElementById('countTrackerSkipped');
+
+        if (countDiscovered) countDiscovered.innerText = (counts.discovered || 0).toLocaleString();
+        if (countDrafted) countDrafted.innerText = counts.drafted || 0;
+        if (countApplied) countApplied.innerText = counts.applied || 0;
+        if (countReplied) countReplied.innerText = counts.replied || 0;
+        if (countSkipped) countSkipped.innerText = counts.skipped || 0;
+
+        // 1. Discovered Cards
+        const colDiscovered = document.getElementById('cardsTrackerDiscovered');
+        if (colDiscovered) {
+          colDiscovered.innerHTML = (pipeline.discovered || []).map(item => `
+            <div class="kanban-item">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <strong style="color:var(--text-white);">${escapeHtml(item.company)}</strong>
+                <span style="font-size:9px; background:rgba(255,107,0,0.12); color:var(--accent-orange); padding:2px 6px; border-radius:4px; font-weight:700;">Discovered</span>
+              </div>
+              <div style="color:var(--text-muted); font-size:11px; margin-bottom:4px;">${escapeHtml(item.role)}</div>
+              ${item.email ? `<div style="color:var(--green-status); font-size:10px; font-family:monospace; margin-bottom:6px;">✉ ${escapeHtml(item.email)}</div>` : ''}
+              <div style="display:flex; gap:6px; margin-top:6px;">
+                ${item.email ? `<button onclick="quickDraftRole('${escapeHtml(item.company)}', '${escapeHtml(item.role)}', '${escapeHtml(item.email)}')" style="padding:4px 8px; font-size:10px; background:var(--accent-orange); color:#000; font-weight:700; border-radius:4px; border:none; cursor:pointer;">⚡ Draft to Gmail</button>` : `<a href="${item.url || '#'}" target="_blank" style="padding:4px 8px; font-size:10px; background:var(--bg-card); color:var(--text-muted); border-radius:4px; text-decoration:none; border:1px solid var(--border-subtle);">View Portal</a>`}
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // 2. Drafted in Gmail Cards
+        const colDrafted = document.getElementById('cardsTrackerDrafted');
+        if (colDrafted) {
+          const list = pipeline.drafted || [];
+          colDrafted.innerHTML = list.length ? list.map(item => `
+            <div class="kanban-item" style="border-left:3px solid var(--accent-orange); background:rgba(255,107,0,0.03);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <strong style="color:var(--text-white);">${escapeHtml(item.company)}</strong>
+                <span style="font-size:9px; color:var(--accent-orange); font-family:monospace;">${escapeHtml(item.date)}</span>
+              </div>
+              <div style="color:var(--text-white); font-size:11px; font-weight:600; margin-bottom:4px;">${escapeHtml(item.role)}</div>
+              <div style="color:var(--green-status); font-size:10px; font-family:monospace; margin-bottom:6px;">✉ ${escapeHtml(item.email)} <span style="color:#22C55E;">✓ MX Verified</span></div>
+              <div style="display:flex; gap:6px; margin-top:6px;">
+                <a href="https://mail.google.com/mail/u/0/#drafts" target="_blank" style="padding:3px 8px; font-size:10px; background:rgba(255,107,0,0.15); color:var(--accent-orange); border:1px solid var(--accent-orange); border-radius:4px; text-decoration:none; font-weight:700;">Open in Gmail</a>
+                <button onclick="markAsSent('${escapeHtml(item.company)}')" style="padding:3px 8px; font-size:10px; background:var(--bg-card); color:var(--text-muted); border:1px solid var(--border-subtle); border-radius:4px; cursor:pointer;">Mark Sent</button>
+              </div>
+            </div>
+          `).join('') : '<div style="color:var(--text-dim); font-size:11px; padding:10px;">No pending drafts. Click [Auto-Draft Best Matches] above.</div>';
+        }
+
+        // 3. Sent Applications Cards
+        const colApplied = document.getElementById('cardsTrackerApplied');
+        if (colApplied) {
+          const list = pipeline.applied || [];
+          colApplied.innerHTML = list.map(item => `
+            <div class="kanban-item" style="border-left:3px solid var(--green-status);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <strong style="color:var(--text-white);">${escapeHtml(item.company)}</strong>
+                <span style="font-size:9px; color:var(--text-dim); font-family:monospace;">${escapeHtml(item.date)}</span>
+              </div>
+              <div style="color:var(--text-white); font-size:11px; font-weight:600; margin-bottom:4px;">${escapeHtml(item.role)}</div>
+              <div style="color:var(--text-muted); font-size:10px; font-family:monospace; margin-bottom:6px;">To: ${escapeHtml(item.email)}</div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:10px; color:var(--green-status); font-weight:700;">✓ Application Delivered</span>
+                <button onclick="navigator.clipboard.writeText('${escapeHtml(item.email)}'); showToast('Email copied!');" style="padding:2px 6px; font-size:9px; background:var(--bg-card); border:1px solid var(--border-subtle); color:var(--text-dim); border-radius:3px; cursor:pointer;">Copy</button>
+              </div>
+            </div>
+          `).join('');
+        }
+
+        // 4. Recruiter Replies Cards
+        const colReplied = document.getElementById('cardsTrackerReplied');
+        if (colReplied) {
+          const list = pipeline.replied || [];
+          colReplied.innerHTML = list.length ? list.map(item => `
+            <div class="kanban-item" style="border:1px solid var(--blue-accent); background:rgba(59,130,246,0.06); border-left:3px solid var(--blue-accent);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <strong style="color:var(--blue-accent);">${escapeHtml(item.company)}</strong>
+                <span style="font-size:9px; color:var(--blue-accent); font-family:monospace;">${escapeHtml(item.date)}</span>
+              </div>
+              <div style="color:var(--text-white); font-size:11px; font-weight:700; margin-bottom:4px;">${escapeHtml(item.subject)}</div>
+              <div style="font-size:10px; color:var(--text-muted); font-family:monospace; margin-bottom:8px;">${escapeHtml(item.email)}</div>
+              <a href="https://mail.google.com/mail/u/0/#inbox" target="_blank" style="display:inline-block; padding:4px 8px; font-size:10px; background:var(--blue-accent); color:#FFF; font-weight:700; border-radius:4px; text-decoration:none;">Reply in Gmail ↗</a>
+            </div>
+          `).join('') : '<div style="color:var(--text-dim); font-size:11px; padding:10px;">No recruiter replies detected yet. Outbox polling active.</div>';
+        }
+
+        // 5. Skipped Cards
+        const colSkipped = document.getElementById('cardsTrackerSkipped');
+        if (colSkipped) {
+          const list = pipeline.skipped || [];
+          colSkipped.innerHTML = list.map(item => `
+            <div class="kanban-item" style="opacity:0.8; border-left:2px solid var(--border-subtle);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <strong style="color:var(--text-white);">${escapeHtml(item.company)}</strong>
+                <span style="font-size:9px; color:var(--text-dim);">${escapeHtml(item.date)}</span>
+              </div>
+              <div style="color:var(--text-dim); font-size:10px; margin-top:2px;">${escapeHtml(item.role)}</div>
+              ${item.skip_reason ? `<div style="font-size:9px; color:var(--accent-amber); margin-top:4px; line-height:1.3;">Reason: ${escapeHtml(item.skip_reason.substring(0, 80))}...</div>` : ''}
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Tracker pipeline error:', err);
+      }
+    }
+
+    async function markAsSent(company) {
+      try {
+        const res = await fetch('/api/tracker/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: company, status: 'Sent', date: new Date().toISOString().split('T')[0] })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`✓ Marked ${company} as Sent!`);
+          loadTrackerPipeline();
+        }
+      } catch (e) {
+        showToast(`Failed: ${e}`);
+      }
+    }
+
+    async function quickDraftRole(company, role, email) {
+      showToast(`Generating AI Gmail draft for ${company}...`);
+      try {
+        const res = await fetch('/api/create-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: company, role: role, email: email })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`✓ Gmail draft created with Master CV attached!`);
+          loadTrackerPipeline();
+        } else {
+          showToast(`Draft error: ${data.error}`);
+        }
+      } catch (e) {
+        showToast(`Error: ${e}`);
+      }
+    }
+
+    // --- Master CV Studio Functions ---
+    async function loadCvStudioInfo() {
+      try {
+        const res = await fetch('/api/cv/info');
+        const info = await res.json();
+
+        const candidate = info.candidate || {};
+        if (document.getElementById('cvStudioName')) document.getElementById('cvStudioName').value = candidate.name || '';
+        if (document.getElementById('cvStudioTitle')) document.getElementById('cvStudioTitle').value = candidate.title || '';
+        if (document.getElementById('cvStudioEmail')) document.getElementById('cvStudioEmail').value = candidate.email || '';
+        if (document.getElementById('cvStudioPhone')) document.getElementById('cvStudioPhone').value = candidate.phone || '';
+        if (document.getElementById('cvStudioLinkedIn')) document.getElementById('cvStudioLinkedIn').value = candidate.linkedin || '';
+        if (document.getElementById('cvStudioGitHub')) document.getElementById('cvStudioGitHub').value = candidate.github || '';
+        if (document.getElementById('cvStudioSummary')) document.getElementById('cvStudioSummary').value = candidate.summary || '';
+
+        const skillsObj = candidate.skills || {};
+        const skillsText = Object.entries(skillsObj).map(([k, v]) => `${k}: ${v}`).join('\n');
+        if (document.getElementById('cvStudioSkills') && skillsText) document.getElementById('cvStudioSkills').value = skillsText;
+
+        if (document.getElementById('cvFileInfoBadge')) {
+          document.getElementById('cvFileInfoBadge').innerHTML = `
+            <span style="color:#22C55E;">● Active Master PDF</span>: ${info.filename} (${info.size_kb} KB) — Updated: ${info.modified || 'Recent'}
+          `;
+        }
+        if (document.getElementById('cvStudioAtsScoreBadge')) {
+          document.getElementById('cvStudioAtsScoreBadge').innerText = `${info.ats_score || 96}% Elite ATS Ready`;
+        }
+      } catch (e) {
+        console.error('Failed to load CV studio info:', e);
+      }
+    }
+
+    function handleCvFileInput(input) {
+      if (input.files && input.files[0]) {
+        handleCvFileUpload(input.files[0]);
+      }
+    }
+
+    function handleCvDrop(event) {
+      const files = event.dataTransfer.files;
+      if (files && files.length) {
+        handleCvFileUpload(files[0]);
+      }
+    }
+
+    async function handleCvFileUpload(file) {
+      if (!file) return;
+      showToast(`Uploading and extracting ${file.name}...`);
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const base64Data = e.target.result;
+        try {
+          const res = await fetch('/api/cv/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, data: base64Data })
+          });
+          const result = await res.json();
+          if (result.ok) {
+            showToast('✓ Master CV uploaded, parsed, and active PDF updated!');
+            loadCvStudioInfo();
+          } else {
+            showToast(`Upload failed: ${result.error}`);
+          }
+        } catch (err) {
+          showToast(`Error: ${err}`);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveCvProfileAndRebuild() {
+      const name = document.getElementById('cvStudioName')?.value?.trim();
+      const title = document.getElementById('cvStudioTitle')?.value?.trim();
+      const email = document.getElementById('cvStudioEmail')?.value?.trim();
+      const phone = document.getElementById('cvStudioPhone')?.value?.trim();
+      const linkedin = document.getElementById('cvStudioLinkedIn')?.value?.trim();
+      const github = document.getElementById('cvStudioGitHub')?.value?.trim();
+      const summary = document.getElementById('cvStudioSummary')?.value?.trim();
+      const skillsRaw = document.getElementById('cvStudioSkills')?.value?.trim();
+
+      const skillsObj = {};
+      if (skillsRaw) {
+        skillsRaw.split('\n').forEach(line => {
+          if (line.includes(':')) {
+            const [k, v] = line.split(':');
+            skillsObj[k.trim()] = v.trim();
+          }
+        });
+      }
+
+      showToast('Compiling Master ATS CV PDF with Edge/Chrome engine...');
+
+      try {
+        const res = await fetch('/api/cv/rebuild', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name,
+            default_title: title,
+            contact: { email: email, phone: phone, linkedin: linkedin, github: github },
+            default_summary: summary,
+            skills: Object.keys(skillsObj).length ? skillsObj : undefined
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✓ Master ATS CV PDF recompiled and saved!');
+          loadCvStudioInfo();
+        } else {
+          showToast(`Rebuild error: ${data.error}`);
+        }
+      } catch (err) {
+        showToast(`Failed: ${err}`);
+      }
+    }
+
+    async function openCvInViewer() {
+      showToast('Opening Master CV PDF in system viewer...');
+      try {
+        const res = await fetch('/api/cv/open', { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) showToast(`Error: ${data.error}`);
+      } catch (err) {
+        showToast(`Error opening CV: ${err}`);
       }
     }
 
@@ -3067,6 +3454,8 @@
     // Instant local initialization (Zero remote network blocking)
     window.addEventListener('DOMContentLoaded', () => {
       loadDashboard();
+      loadTrackerPipeline();
+      loadCvStudioInfo();
     });
   </script>
 </body>

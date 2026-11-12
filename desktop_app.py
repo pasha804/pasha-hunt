@@ -116,7 +116,6 @@ class NativeVideoSplash(QtWidgets.QWidget):
         if hasattr(self, "cap") and self.cap:
             self.cap.release()
             self.cap = None
-        self.close()
         self.finished.emit()
 
 
@@ -127,8 +126,9 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.resize(1360, 880)
         self.setMinimumSize(1100, 720)
 
-        # Set dark background to prevent any white flash
-        self.setStyleSheet("background-color: #070A0E;")
+        # Set native dark background to eliminate any flicker or white flash
+        self.setAttribute(QtCore.Qt.WA_NativeWindow, True)
+        self.setStyleSheet("background-color: #070A0E; color: #FFFFFF;")
 
         # Set Application Icon
         icon_path = os.path.join(HERE, "installer", "icon.ico")
@@ -137,14 +137,8 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         if os.path.exists(icon_path):
             self.setWindowIcon(QtGui.QIcon(icon_path))
 
-        # Start Local IPC Server on 127.0.0.1:58241 if not already running
+        # Port for IPC Server
         self.port = 58241
-        self.server_thread = threading.Thread(
-            target=desktop_server.start_server,
-            args=(self.port,),
-            daemon=True
-        )
-        self.server_thread.start()
 
         # Connect replay callback
         desktop_server.set_replay_intro_callback(self.replay_intro)
@@ -155,33 +149,29 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.browser.page().setBackgroundColor(QtGui.QColor("#070A0E"))
         self.setCentralWidget(self.browser)
 
+        # Resilient auto-reload on load failure / ERR_EMPTY_RESPONSE
+        self._page_ready = False
+        self.browser.loadFinished.connect(self._on_load_finished)
+
         # Keyboard shortcuts
         self.refresh_shortcut = QtGui.QShortcut(QtGui.QKeySequence("F5"), self)
         self.refresh_shortcut.activated.connect(self.browser.reload)
         self.ctrl_r_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+R"), self)
         self.ctrl_r_shortcut.activated.connect(self.browser.reload)
 
-        # Active handshake waiting before loading URL to eliminate ERR_EMPTY_RESPONSE
-        self._wait_and_load_server()
+        # Initial URL load
+        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
 
         # Background Scraper Thread state
         self.is_scanning = False
 
-    def _wait_and_load_server(self):
-        """Polls server stats endpoint until 200 OK before loading URL."""
-        url = f"http://127.0.0.1:{self.port}/api/stats"
-        max_attempts = 30
-        for _ in range(max_attempts):
-            try:
-                req = urllib.request.Request(url)
-                with urllib.request.urlopen(req, timeout=0.5) as resp:
-                    if resp.status == 200:
-                        break
-            except Exception:
-                time.sleep(0.1)
-
-        # Load workstation UI
-        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
+    def _on_load_finished(self, success):
+        if success:
+            self._page_ready = True
+        else:
+            if not self._page_ready:
+                print(f"[Workstation] WebEngine load returned empty/failed. Retrying connection to http://127.0.0.1:{self.port}/...")
+                QtCore.QTimer.singleShot(400, lambda: self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/")))
 
     def replay_intro(self):
         """Replays cinematic intro splash natively upon user request."""
@@ -190,6 +180,7 @@ class WorkstationWindow(QtWidgets.QMainWindow):
             video_path = os.path.join(os.path.dirname(HERE), "intro.mp4")
         if os.path.exists(video_path):
             self.splash = NativeVideoSplash(video_path)
+            self.splash.finished.connect(self.splash.close)
             self.splash.show()
 
     def scan_jobs_async(self):
@@ -213,6 +204,31 @@ def main():
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     app.setApplicationName("Pasha Hunt 2.0")
 
+    # Set dark Fusion palette application-wide to prevent white flash
+    app.setStyle("Fusion")
+    palette = QtGui.QPalette()
+    palette.setColor(QtGui.QPalette.Window, QtGui.QColor("#070A0E"))
+    palette.setColor(QtGui.QPalette.WindowText, QtGui.QColor("#E2E8F0"))
+    palette.setColor(QtGui.QPalette.Base, QtGui.QColor("#070A0E"))
+    palette.setColor(QtGui.QPalette.AlternateBase, QtGui.QColor("#0E1318"))
+    palette.setColor(QtGui.QPalette.ToolTipBase, QtGui.QColor("#070A0E"))
+    palette.setColor(QtGui.QPalette.ToolTipText, QtGui.QColor("#FFFFFF"))
+    palette.setColor(QtGui.QPalette.Text, QtGui.QColor("#E2E8F0"))
+    palette.setColor(QtGui.QPalette.Button, QtGui.QColor("#0E1318"))
+    palette.setColor(QtGui.QPalette.ButtonText, QtGui.QColor("#FFFFFF"))
+    palette.setColor(QtGui.QPalette.Highlight, QtGui.QColor("#FF6B00"))
+    palette.setColor(QtGui.QPalette.HighlightedText, QtGui.QColor("#000000"))
+    app.setPalette(palette)
+
+    # Start Local IPC Server on 127.0.0.1:58241
+    port = 58241
+    server_thread = threading.Thread(
+        target=desktop_server.start_server,
+        args=(port,),
+        daemon=True
+    )
+    server_thread.start()
+
     # Locate intro.mp4
     video_path = os.path.join(HERE, "intro.mp4")
     if not os.path.exists(video_path):
@@ -224,14 +240,20 @@ def main():
     # If video exists, play Native Video Splash first
     if os.path.exists(video_path):
         splash = NativeVideoSplash(video_path)
-        splash.finished.connect(lambda: (
-            window.show(),
-            window.raise_(),
+        
+        def on_splash_done():
+            # Show and bring window to front FIRST before closing splash to ensure zero flicker
+            window.show()
+            window.raise_()
             window.activateWindow()
-        ))
+            QtCore.QTimer.singleShot(150, splash.close)
+
+        splash.finished.connect(on_splash_done)
         splash.show()
     else:
         window.show()
+        window.raise_()
+        window.activateWindow()
 
     sys.exit(app.exec())
 

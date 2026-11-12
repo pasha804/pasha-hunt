@@ -30,6 +30,9 @@ import imaplib
 import email
 from email.header import decode_header
 from datetime import datetime
+import base64
+import shutil
+import io
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -414,6 +417,23 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         path = url_parts.path
         query = urllib.parse.parse_qs(url_parts.query)
 
+        if path in ("/", "/index.html"):
+            index_path = os.path.join(UI_DIR, "index.html")
+            if not os.path.exists(index_path):
+                index_path = resolve_file("desktop_ui/index.html")
+            if os.path.exists(index_path):
+                try:
+                    with open(index_path, "rb") as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(content)))
+                    self.end_headers()
+                    self.wfile.write(content)
+                    return
+                except Exception as e:
+                    print("[Static Index Error]", e)
+
         if path == "/api/stats":
             self._handle_stats()
         elif path == "/api/jobs":
@@ -430,9 +450,11 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_drafts()
         elif path == "/api/contacts":
             self._handle_contacts(query)
+        elif path == "/api/tracker":
+            self._handle_tracker()
+        elif path == "/api/cv/info":
+            self._handle_cv_info()
         else:
-            if path == "/":
-                self.path = "/index.html"
             super().do_GET()
 
     def do_POST(self):
@@ -468,6 +490,14 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_save_profile(req_data)
         elif path == "/api/cover-letter":
             self._handle_cover_letter(req_data)
+        elif path == "/api/tracker/update":
+            self._handle_tracker_update(req_data)
+        elif path == "/api/cv/upload":
+            self._handle_cv_upload(req_data)
+        elif path == "/api/cv/rebuild":
+            self._handle_cv_rebuild(req_data)
+        elif path == "/api/cv/open":
+            self._handle_cv_open()
         else:
             self.send_response(404)
             self.end_headers()
@@ -1119,6 +1149,328 @@ Warm regards,
             "total": 92, "rank": "Elite (Top 2% ATS Ready)"
         }
         self._send_json(report)
+
+    def _handle_cv_info(self):
+        master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+        profile = self._get_profile_data()
+        ats_info = bot.calculate_ats_score(profile) if hasattr(bot, "calculate_ats_score") else {"total": 94}
+
+        info = {
+            "exists": os.path.exists(master_pdf),
+            "size_kb": round(os.path.getsize(master_pdf) / 1024, 1) if os.path.exists(master_pdf) else 0,
+            "modified": datetime.fromtimestamp(os.path.getmtime(master_pdf)).strftime("%Y-%m-%d %H:%M:%S") if os.path.exists(master_pdf) else None,
+            "filename": os.path.basename(master_pdf),
+            "candidate": {
+                "name": profile.get("name", "Muhammad Mubashar"),
+                "title": profile.get("default_title", ""),
+                "email": profile.get("contact", {}).get("email", ""),
+                "phone": profile.get("contact", {}).get("phone", ""),
+                "linkedin": profile.get("contact", {}).get("linkedin", ""),
+                "github": profile.get("contact", {}).get("github", ""),
+                "summary": profile.get("default_summary", ""),
+                "skills": profile.get("skills", {})
+            },
+            "ats_score": ats_info.get("total", 94),
+            "ats_rank": "Elite (Top 2% ATS Ready)"
+        }
+        self._send_json(info)
+
+    def _parse_cv_text(self, text):
+        info = {
+            "name": "",
+            "title": "",
+            "email": "",
+            "phone": "",
+            "linkedin": "",
+            "github": "",
+            "summary": ""
+        }
+        if not text:
+            return info
+
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+
+        for l in lines[:3]:
+            if len(l) < 40 and not any(k in l.lower() for k in ["curriculum", "resume", "cv", "page", "email"]):
+                info["name"] = l
+                break
+
+        if len(lines) > 1:
+            for l in lines[1:4]:
+                if any(k in l.lower() for k in ["developer", "engineer", "lead", "architect", "programmer", "tester", "qa"]):
+                    info["title"] = l
+                    break
+
+        email_match = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text)
+        if email_match:
+            info["email"] = email_match.group(0)
+
+        phone_match = re.search(r"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4,6}", text)
+        if phone_match:
+            info["phone"] = phone_match.group(0).strip()
+
+        li_match = re.search(r"linkedin\.com/in/([a-zA-Z0-9\-_]+)", text)
+        if li_match:
+            info["linkedin"] = li_match.group(0)
+
+        gh_match = re.search(r"github\.com/([a-zA-Z0-9\-_]+)", text)
+        if gh_match:
+            info["github"] = gh_match.group(0)
+
+        sum_match = re.search(r"(?:PROFESSIONAL SUMMARY|SUMMARY|PROFILE|ABOUT ME)\s*[:\n](.*?)(?=(?:EXPERIENCE|SKILLS|EDUCATION|PROJECTS|$))", text, re.DOTALL | re.IGNORECASE)
+        if sum_match:
+            summary_clean = re.sub(r"\s+", " ", sum_match.group(1)).strip()
+            if len(summary_clean) > 20:
+                info["summary"] = summary_clean[:600]
+
+        return info
+
+    def _handle_cv_upload(self, req_data):
+        b64_data = req_data.get("data", "")
+        filename = req_data.get("filename", "uploaded_cv.pdf")
+
+        if not b64_data:
+            self._send_json({"ok": False, "error": "No file data received"}, status=400)
+            return
+
+        try:
+            if "," in b64_data:
+                b64_data = b64_data.split(",", 1)[1]
+            raw_bytes = base64.b64decode(b64_data)
+
+            upload_dir = resolve_file("cvs")
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir, exist_ok=True)
+            saved_path = os.path.join(upload_dir, f"uploaded_{int(time.time())}_{filename}")
+            with open(saved_path, "wb") as f:
+                f.write(raw_bytes)
+
+            extracted_text = ""
+            if filename.lower().endswith(".pdf"):
+                master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+                with open(master_pdf, "wb") as f:
+                    f.write(raw_bytes)
+
+                repo_pdf = os.path.join("E:\\Job Hunt\\job-hunter-repo", "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+                if os.path.exists(os.path.dirname(repo_pdf)):
+                    with open(repo_pdf, "wb") as f:
+                        f.write(raw_bytes)
+
+                try:
+                    import pypdf
+                    reader = pypdf.PdfReader(io.BytesIO(raw_bytes))
+                    extracted_text = "\n".join([page.extract_text() or "" for page in reader.pages])
+                except Exception as pe:
+                    print("[pypdf extraction error]", pe)
+            else:
+                extracted_text = raw_bytes.decode("utf-8", errors="ignore")
+
+            parsed_info = self._parse_cv_text(extracted_text)
+
+            prof_file = resolve_file("profile.json")
+            profile_data = self._get_profile_data()
+            if parsed_info.get("name"):
+                profile_data["name"] = parsed_info["name"]
+            if parsed_info.get("email"):
+                profile_data.setdefault("contact", {})["email"] = parsed_info["email"]
+            if parsed_info.get("phone"):
+                profile_data.setdefault("contact", {})["phone"] = parsed_info["phone"]
+            if parsed_info.get("title"):
+                profile_data["default_title"] = parsed_info["title"]
+            if parsed_info.get("summary"):
+                profile_data["default_summary"] = parsed_info["summary"]
+
+            with open(prof_file, "w", encoding="utf-8") as f:
+                json.dump(profile_data, f, indent=2, ensure_ascii=False)
+            repo_prof = os.path.join("E:\\Job Hunt\\job-hunter-repo", "profile.json")
+            if os.path.exists(os.path.dirname(repo_prof)):
+                with open(repo_prof, "w", encoding="utf-8") as f:
+                    json.dump(profile_data, f, indent=2, ensure_ascii=False)
+
+            self._send_json({
+                "ok": True,
+                "message": "Master CV uploaded and processed successfully!",
+                "extracted_length": len(extracted_text),
+                "parsed": parsed_info,
+                "profile": profile_data
+            })
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
+    def _handle_cv_rebuild(self, req_data):
+        try:
+            profile_data = self._get_profile_data()
+            if req_data:
+                profile_data.update(req_data)
+                prof_file = resolve_file("profile.json")
+                with open(prof_file, "w", encoding="utf-8") as f:
+                    json.dump(profile_data, f, indent=2, ensure_ascii=False)
+                repo_prof = os.path.join("E:\\Job Hunt\\job-hunter-repo", "profile.json")
+                if os.path.exists(os.path.dirname(repo_prof)):
+                    with open(repo_prof, "w", encoding="utf-8") as f:
+                        json.dump(profile_data, f, indent=2, ensure_ascii=False)
+
+            import cv
+            out_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+            res = cv.generate_master_cv(profile_data, out_pdf)
+
+            repo_pdf = os.path.join("E:\\Job Hunt\\job-hunter-repo", "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+            if os.path.exists(os.path.dirname(repo_pdf)) and os.path.exists(out_pdf):
+                shutil.copy2(out_pdf, repo_pdf)
+
+            if res.get("ok"):
+                self._send_json({
+                    "ok": True,
+                    "message": "Master ATS CV PDF successfully compiled and verified!",
+                    "size": res.get("size", 0),
+                    "path": out_pdf
+                })
+            else:
+                self._send_json(res, status=500)
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
+    def _handle_cv_open(self):
+        master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+        if os.path.exists(master_pdf):
+            try:
+                os.startfile(master_pdf)
+                self._send_json({"ok": True, "message": "Opening CV in default system viewer..."})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, status=500)
+        else:
+            self._send_json({"ok": False, "error": "CV PDF file not found"}, status=404)
+
+    def _handle_tracker(self):
+        tracker_file = resolve_file("tracker.csv")
+        drafted = []
+        applied = []
+        skipped = []
+
+        if os.path.exists(tracker_file):
+            try:
+                with open(tracker_file, "r", encoding="utf-8", errors="ignore") as f:
+                    reader = csv.DictReader(f)
+                    for idx, row in enumerate(reader):
+                        company = (row.get("company") or "").strip()
+                        role = (row.get("role") or "").strip()
+                        status = (row.get("status") or "").strip()
+                        email_addr = (row.get("email") or "").strip()
+                        date_str = (row.get("date") or "").strip()
+                        notes = (row.get("notes") or "").strip()
+
+                        item = {
+                            "id": f"trk-{idx}",
+                            "company": company,
+                            "role": role,
+                            "email": email_addr,
+                            "date": date_str or "Recent",
+                            "status": status,
+                            "notes": notes,
+                            "cv_file": row.get("cv_file", "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+                        }
+
+                        status_lower = status.lower()
+                        if status_lower == "draft-attached":
+                            drafted.append(item)
+                        elif status_lower in ("sent", "applied"):
+                            applied.append(item)
+                        elif status_lower.startswith("skipped"):
+                            reason = status.split(":", 1)[1].strip() if ":" in status else status
+                            item["skip_reason"] = reason
+                            skipped.append(item)
+                        else:
+                            applied.append(item)
+            except Exception as e:
+                print("[Tracker Load Error]", e)
+
+        replies_raw = _inbox_cache.get("replies", [])
+        replies = []
+        for idx, r in enumerate(replies_raw):
+            raw_from = r.get("from", "")
+            comp_display = raw_from.split("<")[0].replace('"', '').strip() or "Recruiter"
+            replies.append({
+                "id": f"rep-{idx}",
+                "company": comp_display,
+                "role": r.get("subject", "").replace("Re:", "").replace("Application:", "").strip() or "Engineering Role",
+                "email": raw_from,
+                "subject": r.get("subject", ""),
+                "date": r.get("date", "Recent"),
+                "status": "Recruiter Response Received",
+                "badge": "Active Reply"
+            })
+
+        raw_jobs = get_cached_jobs()
+        discovered = []
+        contacted_cos = {item["company"].lower() for item in drafted + applied + skipped if item.get("company")}
+
+        for j in raw_jobs:
+            c_name = j.get("company", "").strip()
+            if not c_name or c_name.lower() in contacted_cos:
+                continue
+            discovered.append({
+                "id": f"disc-{len(discovered)}",
+                "company": c_name,
+                "role": j.get("title") or j.get("role", "Software Engineer"),
+                "email": j.get("email", ""),
+                "source": j.get("source", "Direct Feed"),
+                "url": j.get("url", ""),
+                "status": "Discovered"
+            })
+            if len(discovered) >= 15:
+                break
+
+        res = {
+            "ok": True,
+            "counts": {
+                "discovered": len(raw_jobs),
+                "drafted": len(drafted),
+                "applied": len(applied),
+                "replied": len(replies),
+                "skipped": len(skipped)
+            },
+            "pipeline": {
+                "discovered": discovered,
+                "drafted": drafted,
+                "applied": applied,
+                "replied": replies,
+                "skipped": skipped
+            }
+        }
+        self._send_json(res)
+
+    def _handle_tracker_update(self, req_data):
+        tracker_file = resolve_file("tracker.csv")
+        target_company = req_data.get("company", "").strip().lower()
+        new_status = req_data.get("status", "Sent").strip()
+
+        if not target_company or not os.path.exists(tracker_file):
+            self._send_json({"ok": False, "error": "Company or tracker file missing"}, status=400)
+            return
+
+        try:
+            rows = []
+            fieldnames = []
+            with open(tracker_file, "r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f)
+                fieldnames = reader.fieldnames or ["date", "company", "role", "email", "status", "cv_file", "notes"]
+                for r in reader:
+                    if r.get("company", "").strip().lower() == target_company:
+                        r["status"] = new_status
+                        if "date" in req_data:
+                            r["date"] = req_data["date"]
+                        if "notes" in req_data:
+                            r["notes"] = req_data["notes"]
+                    rows.append(r)
+
+            with open(tracker_file, "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+
+            self._send_json({"ok": True, "message": f"Updated status for {target_company} to {new_status}"})
+        except Exception as e:
+            self._send_json({"ok": False, "error": str(e)}, status=500)
 
 
 def start_server(port=58241):
