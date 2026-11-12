@@ -1,19 +1,31 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+
+ffmpeg_dll = r"C:\Users\USER\AppData\Local\Programs\Python\Python314\Lib\site-packages\cv2\opencv_videoio_ffmpeg500_64.dll"
+binaries = []
+if os.path.exists(ffmpeg_dll):
+    binaries.append((ffmpeg_dll, '.'))
+    binaries.append((ffmpeg_dll, '_internal'))
+
+datas = [
+    ('installer/icon.ico', '.'),
+    ('installer/icon.ico', 'installer'),
+    ('logo.png', '.'),
+    ('intro.mp4', '.'),
+    ('desktop_ui', 'desktop_ui'),
+    ('jobs.json', '.'),
+    ('profile.json', '.'),
+    ('config.json', '.'),
+    ('cv_history.json', '.'),
+    ('tracker.csv', '.'),
+    ('Muhammad_Mubashar_ATS_Master_CV_v2_.pdf', '.')
+]
 
 a = Analysis(
     ['jobhunter.py'],
     pathex=[],
-    binaries=[],
-    datas=[
-        ('installer/icon.ico', '.'),
-        ('installer/icon.ico', 'installer'),
-        ('logo.png', '.'),
-        ('intro.mp4', '.'),
-        ('desktop_ui', 'desktop_ui'),
-        ('jobs.json', '.'),
-        ('profile.json', '.'),
-        ('tracker.csv', '.')
-    ],
+    binaries=binaries,
+    datas=datas,
     hiddenimports=[
         'PySide6',
         'PySide6.QtCore',
@@ -29,7 +41,11 @@ a = Analysis(
         'imaplib',
         'email',
         'dns',
-        'dns.resolver'
+        'dns.resolver',
+        'desktop_app',
+        'desktop_server',
+        'bot',
+        'cv'
     ],
     hookspath=[],
     hooksconfig={},

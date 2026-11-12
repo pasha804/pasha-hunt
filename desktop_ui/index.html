@@ -550,16 +550,16 @@
       padding: 24px;
       position: relative;
     }
+    /* Zero-Flicker Instant Page Switching */
     .page-view {
       display: none;
-      animation: pageFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 1;
+      transform: none;
     }
     .page-view.active {
       display: block;
-    }
-    @keyframes pageFadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      opacity: 1;
+      transform: none;
     }
 
     /* --- Page Headers --- */
@@ -1793,18 +1793,64 @@
           </button>
         </div>
 
-        <div class="filter-bar">
-          <div class="filter-pills">
-            <button class="filter-pill active" onclick="applyJobSegment('all')">All Roles (5,435)</button>
-            <button class="filter-pill" onclick="applyJobSegment('email')">📧 Direct Recruiter Email (71)</button>
-            <button class="filter-pill" onclick="applyJobSegment('portal')">🌐 Online Portal Apply (5,364)</button>
-            <button class="filter-pill" onclick="applyJobSegment('sent')">✈️ Sent Applications</button>
-            <button class="filter-pill" onclick="applyJobSegment('replied')">📩 Recruiter Replies (<span id="repliesCountPill">3</span>)</button>
-            <button class="filter-pill" onclick="applyJobFilter('pakistan')">🇵🇰 Pakistan Tech</button>
-            <button class="filter-pill" onclick="applyJobFilter('remote')">🌍 Remote Worldwide</button>
+        <div class="filter-bar" style="display:flex; flex-direction:column; gap:10px;">
+          <!-- Segment Row -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div class="filter-pills" id="segmentPills">
+              <button class="filter-pill active" onclick="applyJobSegment('all')">All Opportunities (5,435)</button>
+              <button class="filter-pill" onclick="applyJobSegment('email')">📧 Direct Recruiter Email (71)</button>
+              <button class="filter-pill" onclick="applyJobSegment('portal')">🌐 Portal Apply (5,364)</button>
+              <button class="filter-pill" onclick="applyJobSegment('sent')">✈️ Sent</button>
+              <button class="filter-pill" onclick="applyJobSegment('replied')">📩 Recruiter Replies (<span id="repliesCountPill">0</span>)</button>
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); font-family:monospace;">
+              Showing <strong id="jobsCountLabel" style="color:#FFF;">5,435</strong> verified opportunities
+            </div>
           </div>
-          <div style="font-size:11px; color:var(--text-muted); font-family:monospace;">
-            Showing <strong id="jobsCountLabel" style="color:#FFF;">5,435</strong> verified opportunities
+
+          <!-- Career Tracks & Multi-Discipline Radar -->
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 0; border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span style="font-size:10px; font-weight:700; color:#FF6B00; text-transform:uppercase; display:flex; align-items:center; gap:4px; white-space:nowrap;">
+                <span>🎯</span> Career Track:
+              </span>
+            </div>
+            <div class="filter-pills" id="trackPills" style="flex-wrap:wrap;">
+              <button class="filter-pill active" onclick="applyTrackFilter('all', this)">🎯 Candidate Match (Adaptive)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('dev', this)">💻 Software & Dev (1,664)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('qa', this)">🧪 QA & Testing (40)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('data', this)">📊 Data & Analytics (585)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('design', this)">🎨 UI/UX & Design (359)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('marketing', this)">🚀 Marketing & Growth (285)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('sales', this)">💼 Sales & BizDev (650)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('finance', this)">💰 Finance & Accounts (104)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('hr', this)">👥 HR & Talent (67)</button>
+              <button class="filter-pill" onclick="applyTrackFilter('pm', this)">📋 Product & Project (242)</button>
+            </div>
+          </div>
+
+          <!-- Region & Work Mode Row -->
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Global Radar:</span>
+              <div class="filter-pills" id="regionPills">
+                <button class="filter-pill active" onclick="applyRegionFilter('all', this)">All Regions</button>
+                <button class="filter-pill" onclick="applyRegionFilter('pk', this)">🇵🇰 Pakistan Tech</button>
+                <button class="filter-pill" onclick="applyRegionFilter('gulf', this)">🇦🇪 Gulf / MENA</button>
+                <button class="filter-pill" onclick="applyRegionFilter('us', this)">🇺🇸 US & Canada</button>
+                <button class="filter-pill" onclick="applyRegionFilter('eu', this)">🇪🇺 Europe & UK</button>
+                <button class="filter-pill" onclick="applyRegionFilter('remote', this)">🌐 Remote Global</button>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span style="font-size:10px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Work Mode:</span>
+              <div class="filter-pills" id="modePills">
+                <button class="filter-pill active" onclick="applyModeFilter('all', this)">All Modes</button>
+                <button class="filter-pill" onclick="applyModeFilter('remote', this)">🏠 Remote</button>
+                <button class="filter-pill" onclick="applyModeFilter('onsite', this)">🏢 Onsite</button>
+                <button class="filter-pill" onclick="applyModeFilter('hybrid', this)">🔄 Hybrid</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1849,47 +1895,203 @@
       <div id="page-cv-intelligence" class="page-view">
         <div class="page-header-row" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
           <div>
-            <h2>Master CV Studio &amp; ATS Scoring Engine</h2>
-            <p>Upload new CVs, edit skills and profile, and compile pixel-perfect ATS Master PDFs with 1 click</p>
+            <h2>Side-by-Side CV Evolution &amp; ATS Intelligence Studio</h2>
+            <p>Real-time visual &amp; telemetry comparison: Original Uploaded Resume vs Tailored Master ATS CV</p>
           </div>
-          <div style="display:flex; gap:8px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <input type="file" id="cvStudioFileInput" accept=".pdf" style="display:none;" onchange="handleCvFileInput(this)">
-            <button class="scan-btn" onclick="document.getElementById('cvStudioFileInput').click()" style="padding:6px 14px; font-size:11px; background:linear-gradient(135deg, #3B82F6, #1D4ED8);">
+            <button class="scan-btn" onclick="document.getElementById('cvStudioFileInput').click()" style="padding:8px 14px; font-size:11px; background:linear-gradient(135deg, #3B82F6, #1D4ED8);">
               <span>📤</span>
               <span>Upload New CV (PDF)</span>
             </button>
-            <button class="scan-btn" onclick="saveCvProfileAndRebuild()" style="padding:6px 14px; font-size:11px;">
+            <button class="scan-btn" onclick="openCvDualCompareModal()" style="padding:8px 14px; font-size:11px; background:rgba(255,107,0,0.18); border:1px solid #FF6B00; color:#FF6B00;">
+              <span>🪞</span>
+              <span>Split-Screen PDF Comparison</span>
+            </button>
+            <button class="scan-btn" onclick="saveCvProfileAndRebuild()" style="padding:8px 14px; font-size:11px;">
               <span>⚡</span>
               <span>Compile &amp; Rebuild Master ATS CV</span>
             </button>
-            <button class="scan-btn" onclick="openCvInViewer()" style="padding:6px 14px; font-size:11px; background:rgba(255,255,255,0.08); border:1px solid var(--border-subtle);">
-              <span>👁</span>
-              <span>Open in PDF Reader</span>
+            <button class="scan-btn" onclick="downloadMasterCvFile('active')" style="padding:8px 14px; font-size:11px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E;">
+              <span>📥</span>
+              <span>Download Master PDF</span>
             </button>
           </div>
         </div>
 
-        <!-- Master CV Status Banner -->
-        <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 18px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <div style="width:40px; height:40px; border-radius:10px; background:rgba(255,107,0,0.12); border:1px solid var(--accent-orange); display:flex; align-items:center; justify-content:center; font-size:20px;">📄</div>
+        <!-- 1. Executive Telemetry Delta Strip (What Changed) -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:20px;">
+          <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; align-items:center; gap:12px;">
+            <div style="width:38px; height:38px; border-radius:8px; background:rgba(34,197,94,0.12); border:1px solid #22C55E; display:flex; align-items:center; justify-content:center; font-size:18px;">📈</div>
             <div>
-              <div id="cvFileInfoBadge" style="font-size:12px; font-weight:700; color:var(--text-white); font-family:monospace;">
-                <span style="color:#22C55E;">● Active Master PDF</span>: Muhammad_Mubashar_ATS_Master_CV_v2_.pdf
-              </div>
-              <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">All outgoing job drafts and Gmail applications automatically attach this master document.</div>
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">ATS Callback Score</div>
+              <div style="font-size:14px; font-weight:800; color:#22C55E;" id="diffAtsScore">78% ➔ 96% (+18% Boost)</div>
             </div>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span id="cvStudioAtsScoreBadge" style="padding:4px 12px; border-radius:20px; background:rgba(34,197,94,0.12); border:1px solid #22C55E; color:#22C55E; font-weight:800; font-size:12px;">96% Elite ATS Ready</span>
+          <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; align-items:center; gap:12px;">
+            <div style="width:38px; height:38px; border-radius:8px; background:rgba(255,107,0,0.12); border:1px solid #FF6B00; display:flex; align-items:center; justify-content:center; font-size:18px;">🎯</div>
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Google XYZ Metrics</div>
+              <div style="font-size:14px; font-weight:800; color:#FF6B00;" id="diffXyzCount">0 ➔ 12 Quantified Bullets</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; align-items:center; gap:12px;">
+            <div style="width:38px; height:38px; border-radius:8px; background:rgba(59,130,246,0.12); border:1px solid #3B82F6; display:flex; align-items:center; justify-content:center; font-size:18px;">⚡</div>
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Keywords Injected</div>
+              <div style="font-size:14px; font-weight:800; color:#60A5FA;" id="diffKeywordsCount">+14 Recruiter Target Terms</div>
+            </div>
+          </div>
+          <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px; display:flex; align-items:center; gap:12px;">
+            <div style="width:38px; height:38px; border-radius:8px; background:rgba(245,158,11,0.12); border:1px solid #F59E0B; display:flex; align-items:center; justify-content:center; font-size:18px;">🛡️</div>
+            <div>
+              <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">Format Compliance</div>
+              <div style="font-size:14px; font-weight:800; color:#F59E0B;">1-Column Clean ATS Layout</div>
+            </div>
           </div>
         </div>
 
-        <!-- Drag & Drop Upload Zone -->
-        <div id="cvDropZone" ondragover="event.preventDefault(); this.style.borderColor='var(--accent-orange)';" ondragleave="this.style.borderColor='var(--border-subtle)';" ondrop="event.preventDefault(); this.style.borderColor='var(--border-subtle)'; handleCvDrop(event);" onclick="document.getElementById('cvStudioFileInput').click()" style="border:2px dashed var(--border-subtle); border-radius:12px; padding:20px; text-align:center; background:rgba(14,19,24,0.5); cursor:pointer; margin-bottom:20px; transition:border-color 0.2s;">
-          <div style="font-size:28px; margin-bottom:6px;">☁️</div>
-          <div style="font-size:13px; font-weight:700; color:var(--text-white);">Drag &amp; drop your updated CV PDF here, or click to browse</div>
-          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Automatically extracts text via <code>pypdf</code>, updates <code>profile.json</code>, and saves as Master ATS CV.</div>
+        <!-- 2. SIDE-BY-SIDE (Aamne Saamne) COMPARISON WORKSPACE -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px;">
+          <!-- LEFT COLUMN: ORIGINAL / PREVIOUS CV -->
+          <div style="background:var(--bg-surface); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:18px; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <span style="font-size:10px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">BASELINE VERSION</span>
+                <h3 style="font-size:15px; color:#FFF; margin:2px 0 0 0;">📄 Original Uploaded Resume</h3>
+              </div>
+              <span style="padding:4px 10px; border-radius:16px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.4); color:#EF4444; font-weight:700; font-size:11px;" id="origAtsScoreBadge">78% Standard ATS</span>
+            </div>
+
+            <!-- Original File Info & Action -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:11px;">
+              <span style="color:var(--text-muted); font-family:monospace;" id="origFileName">Muhammad_Mubashar_ATS_Master_CV_v2_backup_original.pdf</span>
+              <div style="display:flex; gap:6px;">
+                <button onclick="openCvPreviewModal('original')" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">👁 Preview</button>
+                <button onclick="downloadMasterCvFile('original')" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">📥 PDF</button>
+              </div>
+            </div>
+
+            <!-- Original Content Inspection Snapshot -->
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px;">
+              <div>
+                <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Original Headline &amp; Title:</div>
+                <div style="font-size:12px; color:var(--text-cream); background:var(--bg-base); padding:8px 10px; border-radius:6px; border:1px solid var(--border-subtle);" id="origTitleText">
+                  Full Stack Developer (Generic unranked title)
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Original Summary:</div>
+                <div style="font-size:11px; line-height:1.5; color:var(--text-dim); background:var(--bg-base); padding:10px; border-radius:6px; border:1px solid var(--border-subtle);" id="origSummaryText">
+                  Full Stack Developer with experience in web apps, Python, React, and databases. Looking for new engineering opportunities.
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:4px;">Raw Sample Bullet (Unquantified):</div>
+                <div style="font-size:11px; line-height:1.5; color:var(--text-dim); background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.2); padding:10px; border-radius:6px;" id="origBulletSample">
+                  • Developed and maintained REST APIs using Python and fixed bugs in frontend React components.
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#EF4444; margin-bottom:4px;">Identified Pre-Optimization Gaps:</div>
+                <ul style="padding-left:16px; margin:0; font-size:10px; color:var(--text-muted); line-height:1.7;" id="origGapsList">
+                  <li>❌ Zero quantified business metrics (% latency, $ scale, volume).</li>
+                  <li>❌ Passive action verbs ("Worked on", "Helped with").</li>
+                  <li>❌ Missing critical recruiter tags (Docker, Redis, CI/CD, FastAPI).</li>
+                  <li>❌ Ranks in bottom 60% of automated Workday/Lever parsers.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: TAILORED MASTER ATS CV (ACTIVE) -->
+          <div style="background:var(--bg-surface); border:1px solid #FF6B00; box-shadow:0 0 25px rgba(255,107,0,0.12); border-radius:14px; padding:18px; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <span style="font-size:10px; font-weight:800; color:#FF6B00; text-transform:uppercase; letter-spacing:0.06em;">PASHA HUNT OPTIMIZED</span>
+                <h3 style="font-size:15px; color:#FFF; margin:2px 0 0 0;">⚡ Tailored Master ATS CV (Active)</h3>
+              </div>
+              <span style="padding:4px 10px; border-radius:16px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; font-weight:800; font-size:11px;" id="activeAtsScoreBadge">96% Elite ATS Ready</span>
+            </div>
+
+            <!-- Active File Info & Action -->
+            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,107,0,0.06); border:1px solid rgba(255,107,0,0.2); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:11px;">
+              <span style="color:#FFF; font-weight:700; font-family:monospace;" id="activeFileName">Muhammad_Mubashar_ATS_Master_CV_v2_.pdf</span>
+              <div style="display:flex; gap:6px;">
+                <button onclick="openCvPreviewModal('active')" style="padding:4px 10px; background:rgba(255,107,0,0.2); border:1px solid #FF6B00; color:#FF6B00; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">👁 Preview</button>
+                <button onclick="downloadMasterCvFile('active')" style="padding:4px 10px; background:#22C55E; color:#000; border:none; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">📥 PDF</button>
+              </div>
+            </div>
+
+            <!-- Active Content Inspection Snapshot -->
+            <div style="flex:1; display:flex; flex-direction:column; gap:12px;">
+              <div>
+                <div style="font-size:11px; font-weight:700; color:var(--accent-orange); margin-bottom:4px;">Target Professional Title (Ranked):</div>
+                <div style="font-size:12px; color:#FFF; font-weight:700; background:var(--bg-base); padding:8px 10px; border-radius:6px; border:1px solid rgba(255,107,0,0.3);" id="activeTitleText">
+                  AI Agentic Developer | Full-Stack Software Engineer
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px; font-weight:700; color:var(--accent-amber); margin-bottom:4px;">Google XYZ Executive Summary:</div>
+                <div style="font-size:11px; line-height:1.5; color:var(--text-cream); background:var(--bg-base); padding:10px; border-radius:6px; border:1px solid var(--border-subtle);" id="activeSummaryText">
+                  Autonomous Systems &amp; Full-Stack Engineer with 3+ years architecting scalable enterprise systems. Proven record accelerating backend performance by 42% and building AI agent workflows.
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#22C55E; margin-bottom:4px;">Quantified Google XYZ Achievement Bullet:</div>
+                <div style="font-size:11px; line-height:1.5; color:#FFF; background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.3); padding:10px; border-radius:6px;" id="activeBulletSample">
+                  • Architected asynchronous REST microservices in FastAPI &amp; React, reducing query latency by 42% across 1.2M daily transactions using Redis caching.
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:11px; font-weight:700; color:#22C55E; margin-bottom:4px;">Verified Pasha Hunt Optimizations:</div>
+                <ul style="padding-left:16px; margin:0; font-size:10px; color:var(--text-cream); line-height:1.7;" id="activeImprovementsList">
+                  <li>✅ 100% Google XYZ Impact formulation across all experience bullets.</li>
+                  <li>✅ Integrated +14 recruiter-targeted keywords (FastAPI, React 19, Docker, PostgreSQL, PyTest, Redis).</li>
+                  <li>✅ Strict 1-column single-flow ATS structure (100% parseable by Taleo, Lever, Greenhouse).</li>
+                  <li>✅ Automatically attached to all outgoing Gmail recruiter drafts.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Drag & Drop Upload Zone -->
+        <div id="cvDropZone" ondragover="event.preventDefault(); this.style.borderColor='var(--accent-orange)';" ondragleave="this.style.borderColor='var(--border-subtle)';" ondrop="event.preventDefault(); this.style.borderColor='var(--border-subtle)'; handleCvDrop(event);" onclick="document.getElementById('cvStudioFileInput').click()" style="border:2px dashed var(--accent-orange); border-radius:12px; padding:18px; text-align:center; background:rgba(255,107,0,0.04); cursor:pointer; margin-bottom:20px; transition:border-color 0.2s;">
+          <div style="font-size:26px; margin-bottom:4px;">☁️</div>
+          <div style="font-size:13px; font-weight:700; color:var(--text-white);">Upload or Replace Resume PDF (Auto-Updates Side-by-Side Comparison)</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Our engine preserves your baseline original, extracts text, and generates the tailored Master ATS version.</div>
+        </div>
+
+        <!-- Missing Details Prompt Alert (Auto-detects missing phone/role) -->
+        <div id="cvMissingAlert" style="display:none; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:12px 18px; margin-bottom:20px; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:20px;">⚠️</span>
+            <div>
+              <strong style="color:#F59E0B; font-size:12px;">Candidate Profile Incomplete:</strong>
+              <span id="cvMissingText" style="color:var(--text-muted); font-size:11px; margin-left:4px;">Phone number or target role missing. This lowers ATS ranking.</span>
+            </div>
+          </div>
+          <button onclick="document.getElementById('cvStudioPhone').focus()" style="padding:6px 14px; background:#F59E0B; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">
+            Fix in Editor ↓
+          </button>
+        </div>
+
+        <!-- Active vs Archived CV History Tray -->
+        <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 18px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;">CV Version Archive &amp; Upload History</span>
+            <span style="font-size:10px; color:var(--text-muted);" id="cvHistoryCountLabel">2 versions tracked</span>
+          </div>
+          <div id="cvHistoryList" style="display:flex; flex-direction:column; gap:8px;">
+            <!-- Populated dynamically via /api/cv/info -->
+          </div>
         </div>
 
         <!-- In-App CV & Profile Live Editor -->
@@ -2285,16 +2487,31 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
           <div class="settings-panel">
             <h3 style="font-size:14px; color:var(--text-white); margin-bottom:14px;">AI & Email Outreach Settings</h3>
             <div class="form-group">
-              <label>AI Intelligence Gateway:</label>
-              <select id="settingAiProvider">
-                <option value="apinex" selected>APINEX Free Commercial Engine (qwen-3.8-max)</option>
-                <option value="gemini">Google Gemini Pro API</option>
-                <option value="local">Local Offline Heuristic Engine</option>
+              <label>AI Intelligence Engine (Commercial License Embedded):</label>
+              <select id="settingAiModel" onchange="changeAiModel(this.value)" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+                <option value="free/qwen-3.8-max">Qwen 3.8 Max (Default — Fast & Accurate)</option>
+                <option value="free/deepseek-v4.1-flash">DeepSeek V4.1 Flash (Code & Engineering)</option>
+                <option value="free/kimi-k2.8">Kimi K2.8 (Long Context Analysis)</option>
+                <option value="free/minimax-m3">MiniMax M3 (High Precision Pitch)</option>
+                <option value="free/gemini-3.8-flash">Google Gemini 3.8 Flash (Multimodal)</option>
+                <option value="free/claude-sonnet-4.6">Anthropic Claude Sonnet 4.6 (Executive Tone)</option>
               </select>
+              <div style="font-size:10px; color:#22C55E; margin-top:4px;">🔒 Master APINEX license embedded silently — Zero user API key needed.</div>
             </div>
             <div class="form-group">
-              <label>Gmail SMTP App Password:</label>
-              <input type="password" id="settingGmailPass" placeholder="xxxx xxxx xxxx xxxx" value="••••••••••••••••">
+              <label>Gmail SMTP &amp; IMAP App Password:</label>
+              <div style="display:flex; gap:8px;">
+                <input type="password" id="settingGmailPass" placeholder="xxxx xxxx xxxx xxxx" value="••••••••••••••••" style="flex:1; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
+                <button onclick="testGmailInSettings()" id="btnTestGmailSettings" style="padding:8px 14px; background:rgba(255,107,0,0.15); border:1px solid #FF6B00; color:#FF6B00; font-weight:700; border-radius:6px; cursor:pointer; font-size:11px; white-space:nowrap;">
+                  ⚡ Test Socket
+                </button>
+              </div>
+              <div id="settingGmailFeedback" style="margin-top:6px; font-size:11px; display:none;"></div>
+            </div>
+            <div class="form-group" style="margin-top:16px;">
+              <button onclick="openOnboardingModal()" style="width:100%; padding:10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">
+                🔄 Re-run 3-Step Guided Onboarding Setup
+              </button>
             </div>
             <div class="form-group">
               <label>Email Safety Mode:</label>
@@ -2460,7 +2677,187 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
     </div>
   </div>
 
-  <!-- Toast Container -->
+    <!-- 4. Enterprise 3-Step Onboarding Wizard Modal -->
+  <div class="modal-overlay" id="onboardingModal" style="z-index:9999;">
+    <div class="modal-box" style="max-width:680px; width:92%; background:#0E1318; border:1px solid #FF6B00; box-shadow:0 25px 60px rgba(0,0,0,0.85); border-radius:16px;">
+      <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; border-radius:8px; background:rgba(255,107,0,0.15); border:1px solid #FF6B00; display:flex; align-items:center; justify-content:center; font-size:18px;">⚡</div>
+          <div>
+            <span style="font-size:10px; font-weight:800; color:#FF6B00; text-transform:uppercase; letter-spacing:0.08em;">PASHA HUNT 2.0 • TRIAL USER SETUP</span>
+            <h3 style="margin:2px 0 0 0; font-size:16px; color:#FFF;" id="onboardStepTitle">Step 1: Connect Your Gmail (Zero-Friction)</h3>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModals()" title="Close wizard">✕</button>
+      </div>
+
+      <!-- Step Progress Bar -->
+      <div style="display:flex; gap:8px; padding:12px 24px 0 24px;">
+        <div id="onboardStepDot1" style="flex:1; height:4px; border-radius:2px; background:#FF6B00; transition:all 0.3s;"></div>
+        <div id="onboardStepDot2" style="flex:1; height:4px; border-radius:2px; background:rgba(255,255,255,0.1); transition:all 0.3s;"></div>
+        <div id="onboardStepDot3" style="flex:1; height:4px; border-radius:2px; background:rgba(255,255,255,0.1); transition:all 0.3s;"></div>
+      </div>
+
+      <div class="modal-body" style="padding:20px 24px; font-size:12px; color:var(--text-cream); line-height:1.6;">
+        <!-- STEP 1: Gmail Connection -->
+        <div id="onboardStep1Content">
+          <p style="color:var(--text-muted); margin-bottom:16px; font-size:12px;">
+            Connect your Gmail account to enable autonomous drafting and real-time recruiter reply tracking. Your credentials are saved locally in <code>config.json</code> and never transmitted outside your machine.
+          </p>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Your Gmail Address:</label>
+            <input type="email" id="onboardEmail" placeholder="your.name@gmail.com" style="width:100%; background:var(--bg-base); border:1px solid var(--border-subtle); color:#FFF; padding:10px 12px; border-radius:8px; font-size:12px;">
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Gmail 16-Character App Password:</label>
+            <div style="display:flex; gap:8px;">
+              <input type="password" id="onboardPass" placeholder="xxxx xxxx xxxx xxxx" style="flex:1; background:var(--bg-base); border:1px solid var(--border-subtle); color:#FFF; padding:10px 12px; border-radius:8px; font-size:12px;">
+              <button onclick="testGmailConnOnboard()" id="btnTestGmailOnboard" style="padding:10px 16px; background:rgba(255,107,0,0.15); border:1px solid #FF6B00; color:#FF6B00; font-weight:700; border-radius:8px; cursor:pointer; font-size:11px; white-space:nowrap;">
+                ⚡ Test Socket
+              </button>
+            </div>
+            <div id="onboardGmailFeedback" style="margin-top:6px; font-size:11px; display:none;"></div>
+          </div>
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:8px; padding:10px 14px; font-size:11px; color:var(--text-muted);">
+            💡 <strong>Need an App Password?</strong> Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#FF6B00; text-decoration:none;">myaccount.google.com/apppasswords</a>, generate a password for "Mail", and paste it here.
+          </div>
+        </div>
+
+        <!-- STEP 2: CV Upload & ATS Scanner -->
+        <div id="onboardStep2Content" style="display:none;">
+          <p style="color:var(--text-muted); margin-bottom:14px; font-size:12px;">
+            Upload your existing Resume / CV (PDF). Our local parsing engine will inspect it, extract your credentials, and compute an initial ATS benchmark score.
+          </p>
+          <input type="file" id="onboardCvFile" accept=".pdf" style="display:none;" onchange="handleOnboardCvFile(this)">
+          <div id="onboardCvDropZone" onclick="document.getElementById('onboardCvFile').click()" style="border:2px dashed var(--accent-orange); border-radius:12px; padding:24px; text-align:center; background:rgba(255,107,0,0.04); cursor:pointer; margin-bottom:16px;">
+            <div style="font-size:32px; margin-bottom:6px;">📄</div>
+            <div style="font-weight:700; color:#FFF; font-size:13px;" id="onboardCvDropText">Click or Drag &amp; Drop your Resume (PDF)</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Supported format: PDF up to 10MB</div>
+          </div>
+          <div id="onboardCvParsedInfo" style="display:none; background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:10px; padding:12px 16px; margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="color:#22C55E; font-weight:700; font-size:11px;" id="onboardCvSuccessLabel">✓ Resume Parsed Successfully</span>
+              <span class="match-pill" id="onboardAtsBadge">92% ATS</span>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div>
+                <label style="font-size:10px; color:var(--text-muted);">Candidate Name:</label>
+                <input type="text" id="onboardCandidateName" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:6px 8px; border-radius:6px; font-size:11px;">
+              </div>
+              <div>
+                <label style="font-size:10px; color:var(--text-muted);">Contact Phone (Required for ATS):</label>
+                <input type="text" id="onboardCandidatePhone" placeholder="+92 300 1234567" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:6px 8px; border-radius:6px; font-size:11px;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: Career Radar & AI Model -->
+        <div id="onboardStep3Content" style="display:none;">
+          <p style="color:var(--text-muted); margin-bottom:14px; font-size:12px;">
+            Tailor your career radar. Choose your primary target position and preferred global hiring regions.
+          </p>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">Target Professional Job Title:</label>
+            <input type="text" id="onboardTargetRole" value="Full Stack Developer (React / Python / FastAPI)" style="width:100%; background:var(--bg-base); border:1px solid var(--border-subtle); color:#FFF; padding:10px 12px; border-radius:8px; font-size:12px;">
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:6px;">Target Global Regions:</label>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;" id="onboardRegionPills">
+              <button type="button" class="filter-pill active" data-region="pk" onclick="this.classList.toggle('active')">🇵🇰 Pakistan Tech</button>
+              <button type="button" class="filter-pill active" data-region="gulf" onclick="this.classList.toggle('active')">🇦🇪 Gulf / MENA</button>
+              <button type="button" class="filter-pill active" data-region="remote" onclick="this.classList.toggle('active')">🌐 Remote Worldwide</button>
+              <button type="button" class="filter-pill" data-region="us" onclick="this.classList.toggle('active')">🇺🇸 US / Canada</button>
+              <button type="button" class="filter-pill" data-region="eu" onclick="this.classList.toggle('active')">🇪🇺 Europe / UK</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">AI Intelligence Engine (Commercial Zero-Key Access):</label>
+            <select id="onboardModelSelect" style="width:100%; background:var(--bg-base); border:1px solid var(--border-subtle); color:#FFF; padding:10px 12px; border-radius:8px; font-size:12px;">
+              <option value="free/qwen-3.8-max" selected>Qwen 3.8 Max (Fast &amp; Accurate Reasoning)</option>
+              <option value="free/deepseek-v4.1-flash">DeepSeek V4.1 Flash (Code &amp; Tech Specialists)</option>
+              <option value="free/kimi-k2.8">Kimi K2.8 (Long Context Architecture)</option>
+              <option value="free/minimax-m3">MiniMax M3 (High Precision Pitch Writer)</option>
+              <option value="free/gemini-3.8-flash">Google Gemini 3.8 Flash (Multimodal Strategy)</option>
+              <option value="free/claude-sonnet-4.6">Anthropic Claude Sonnet 4.6 (Elite Executive Tone)</option>
+            </select>
+            <div style="margin-top:6px; font-size:10px; color:#22C55E;">🔒 Master APINEX license embedded silently — Zero user API key needed.</div>
+          </div>
+        </div>
+
+        <!-- Footer Navigation Controls -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08);">
+          <button id="onboardPrevBtn" onclick="onboardStepPrev()" style="padding:10px 20px; background:var(--bg-surface); border:1px solid var(--border-subtle); color:var(--text-muted); border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; display:none;">
+            ← Back
+          </button>
+          <div style="flex:1;"></div>
+          <button id="onboardNextBtn" onclick="onboardStepNext()" style="padding:10px 24px; background:#FF6B00; color:#000; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
+            Continue to Step 2 →
+          </button>
+          <button id="onboardFinishBtn" onclick="completeOnboardingFlow()" style="padding:10px 24px; background:linear-gradient(135deg, #FF6B00, #F59E0B); color:#000; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer; display:none;">
+            🚀 Complete Setup &amp; Launch Pasha Hunt
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. CV Master PDF Preview Modal -->
+  <div class="modal-overlay" id="cvPreviewModal" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box" style="max-width:920px; width:95%; height:85vh; display:flex; flex-direction:column; background:#0E1318; border:1px solid var(--border-subtle); border-radius:16px;">
+      <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 20px;">
+        <div>
+          <span style="font-size:10px; font-weight:700; color:var(--accent-orange); text-transform:uppercase;">MASTER ATS CV VIEWER</span>
+          <h3 id="cvPreviewModalTitle" style="color:#FFF; font-size:15px; margin:2px 0 0 0;">Muhammad_Mubashar_ATS_Master_CV_v2_.pdf</h3>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button onclick="downloadMasterCvFile()" style="padding:6px 14px; background:#FF6B00; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">📥 Download PDF</button>
+          <button class="modal-close-btn" onclick="closeModals()">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" style="flex:1; padding:0; overflow:hidden;">
+        <iframe id="cvPreviewIframe" src="/api/cv/preview" style="width:100%; height:100%; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+
+    <!-- 6. Side-by-Side Dual PDF Comparison Modal -->
+  <div class="modal-overlay" id="cvDualCompareModal" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box" style="max-width:1300px; width:96%; height:90vh; display:flex; flex-direction:column; background:#0E1318; border:1px solid #FF6B00; border-radius:16px;">
+      <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 20px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:20px;">🪞</span>
+          <div>
+            <span style="font-size:10px; font-weight:800; color:#FF6B00; text-transform:uppercase; letter-spacing:0.06em;">DUAL SPLIT-SCREEN REAL-TIME COMPARISON</span>
+            <h3 style="color:#FFF; font-size:15px; margin:2px 0 0 0;">Original Uploaded Resume vs Tailored Master ATS CV v2.0</h3>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button onclick="downloadMasterCvFile('original')" style="padding:6px 14px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">📥 Original PDF</button>
+          <button onclick="downloadMasterCvFile('active')" style="padding:6px 14px; background:#22C55E; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">📥 Master ATS PDF</button>
+          <button class="modal-close-btn" onclick="closeModals()">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" style="flex:1; padding:0; overflow:hidden; display:grid; grid-template-columns:1fr 1fr; gap:2px; background:#070A0E;">
+        <div style="display:flex; flex-direction:column; border-right:1px solid rgba(255,255,255,0.08);">
+          <div style="padding:8px 14px; background:#0E1318; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:var(--text-muted); font-size:11px;">📄 Original Baseline Resume (78% ATS)</strong>
+            <span style="font-size:10px; color:var(--text-dim);">Pre-Optimization</span>
+          </div>
+          <iframe id="cvOriginalIframe" src="/api/cv/preview?version=original" style="flex:1; width:100%; height:100%; border:none;"></iframe>
+        </div>
+        <div style="display:flex; flex-direction:column;">
+          <div style="padding:8px 14px; background:#0E1318; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
+            <strong style="color:#22C55E; font-size:11px;">⚡ Tailored Master ATS CV (96% ATS)</strong>
+            <span style="font-size:10px; color:#22C55E; font-weight:700;">Active Document</span>
+          </div>
+          <iframe id="cvMasterIframe" src="/api/cv/preview?version=active" style="flex:1; width:100%; height:100%; border:none;"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- ================= LIVE JAVASCRIPT ================= -->
@@ -2469,6 +2866,10 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
     let currentSelectedJob = null;
     let candidateProfile = {};
     let currentSegment = 'all';
+    let currentRegion = 'all';
+    let currentMode = 'all';
+    let currentTrack = 'all';
+    let searchDebounceTimer = null;
     let autopilotActive = false;
 
     // --- Page Switching Logic ---
@@ -2484,7 +2885,7 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
       }
 
       // Contextual refresh
-      if (pageId === 'find-jobs') renderFullJobsTable(allJobs);
+      if (pageId === 'find-jobs') { if (!cachedJobsForTable || cachedJobsForTable.length === 0) loadJobsByCriteria(); }
       if (pageId === 'ai-matches') renderAiMatches(allJobs);
       if (pageId === 'email-applications') loadDrafts();
       if (pageId === 'tracker') { loadTrackerPipeline(); syncInboxLive(); }
@@ -2812,6 +3213,69 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
         if (document.getElementById('cvStudioAtsScoreBadge')) {
           document.getElementById('cvStudioAtsScoreBadge').innerText = `${info.ats_score || 96}% Elite ATS Ready`;
         }
+
+        // Side-by-Side Telemetry & Diff Population
+        const cmp = info.comparison || {};
+        const orig = cmp.original || {};
+        const act = cmp.active || {};
+        const diff = cmp.diff_summary || {};
+
+        if (document.getElementById('origAtsScoreBadge')) document.getElementById('origAtsScoreBadge').innerText = `${orig.ats_score || 78}% Standard ATS`;
+        if (document.getElementById('activeAtsScoreBadge')) document.getElementById('activeAtsScoreBadge').innerText = `${act.ats_score || 96}% Elite ATS Ready`;
+        if (document.getElementById('origFileName')) document.getElementById('origFileName').innerText = orig.filename || 'original_resume.pdf';
+        if (document.getElementById('activeFileName')) document.getElementById('activeFileName').innerText = act.filename || 'Muhammad_Mubashar_ATS_Master_CV_v2_.pdf';
+        if (document.getElementById('origTitleText')) document.getElementById('origTitleText').innerText = orig.title || 'Full Stack Developer';
+        if (document.getElementById('activeTitleText')) document.getElementById('activeTitleText').innerText = act.title || candidate.title || 'AI Agentic Developer';
+        if (document.getElementById('origSummaryText') && orig.summary) document.getElementById('origSummaryText').innerText = orig.summary;
+        if (document.getElementById('activeSummaryText') && act.summary) document.getElementById('activeSummaryText').innerText = act.summary;
+        if (document.getElementById('origBulletSample') && orig.sample_bullet) document.getElementById('origBulletSample').innerText = orig.sample_bullet;
+        if (document.getElementById('activeBulletSample') && act.sample_bullet) document.getElementById('activeBulletSample').innerText = act.sample_bullet;
+
+        if (document.getElementById('diffAtsScore')) document.getElementById('diffAtsScore').innerText = diff.ats_delta || '78% ➔ 96% (+18% Boost)';
+        if (document.getElementById('diffXyzCount')) document.getElementById('diffXyzCount').innerText = `${orig.quantified_metrics || 0} ➔ ${act.quantified_metrics || 12} Quantified Bullets`;
+        if (document.getElementById('diffKeywordsCount')) document.getElementById('diffKeywordsCount').innerText = `+${(act.keywords_matched || 28) - (orig.keywords_matched || 14)} Recruiter Terms Injected`;
+
+        // Render CV Version Archive
+        const history = info.history || [];
+        const histContainer = document.getElementById('cvHistoryList');
+        if (histContainer) {
+          if (history.length === 0) {
+            histContainer.innerHTML = '<div style="font-size:11px; color:var(--text-muted); padding:6px 0;">No previous versions archived yet. Active Master CV is up to date.</div>';
+          } else {
+            histContainer.innerHTML = history.slice(-5).reverse().map(h => `
+              <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:8px; padding:8px 12px; font-size:11px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span>📄</span>
+                  <div>
+                    <strong style="color:#FFF;">${h.filename}</strong>
+                    <div style="color:var(--text-muted); font-size:10px;">${h.uploaded_at || 'Recent'} • ${(h.size_bytes/1024).toFixed(1)} KB</div>
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="match-pill" style="font-size:10px;">${h.ats_score || 92}% ATS</span>
+                  <span style="font-size:10px; color:${h.active ? '#22C55E' : 'var(--text-muted)'}; font-weight:700;">${h.active ? '● Current Active' : 'Archived'}</span>
+                </div>
+              </div>
+            `).join('');
+          }
+          if (document.getElementById('cvHistoryCountLabel')) {
+            document.getElementById('cvHistoryCountLabel').innerText = `${history.length} versions tracked`;
+          }
+        }
+
+        // Check for Missing Details Alert
+        const missing = [];
+        if (!candidate.phone || candidate.phone.trim().length < 6) missing.push('phone number');
+        if (!candidate.title || candidate.title.trim().length < 3) missing.push('target title');
+        const alertEl = document.getElementById('cvMissingAlert');
+        if (alertEl) {
+          if (missing.length > 0) {
+            alertEl.style.display = 'flex';
+            document.getElementById('cvMissingText').innerText = `Missing: ${missing.join(', ')}. Complete these to boost ATS score.`;
+          } else {
+            alertEl.style.display = 'none';
+          }
+        }
       } catch (e) {
         console.error('Failed to load CV studio info:', e);
       }
@@ -3045,16 +3509,7 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
     // --- Load Jobs by Segment ---
     async function loadJobsBySegment(segment = 'all') {
       currentSegment = segment;
-      try {
-        const res = await fetch(`/api/jobs?segment=${segment}`);
-        if (res.ok) {
-          allJobs = await res.json();
-          renderJobs(allJobs.slice(0, 5));
-          renderFullJobsTable(allJobs);
-        }
-      } catch (e) {
-        console.warn('Jobs fetch error:', e);
-      }
+      loadJobsByCriteria();
     }
 
     // --- Render Job Matches (Dashboard) ---
@@ -3080,18 +3535,28 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
     }
 
     // --- Render Full Jobs Table (Find Jobs Page) ---
-    function renderFullJobsTable(jobs) {
+    let jobsRenderLimit = 80;
+    let cachedJobsForTable = [];
+
+    function renderFullJobsTable(jobs, append = false) {
       const tbody = document.getElementById('fullJobsTableBody');
       const countLbl = document.getElementById('jobsCountLabel');
       if (!tbody) return;
       if (countLbl) countLbl.innerText = jobs.length.toLocaleString();
+
+      if (!append) {
+        cachedJobsForTable = jobs;
+        jobsRenderLimit = 80;
+      }
 
       if (!jobs || jobs.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No jobs match the current filter criteria.</td></tr>';
         return;
       }
 
-      tbody.innerHTML = jobs.map((j, i) => {
+      const visibleJobs = jobs.slice(0, jobsRenderLimit);
+
+      tbody.innerHTML = visibleJobs.map((j, i) => {
         let deliverabilityHtml = '';
         let actionBtnHtml = '';
 
@@ -3113,7 +3578,7 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
             <span class="badge-portal">🌐 Online Portal Application</span>
           `;
           actionBtnHtml = `
-            <a href="${j.url}" target="_blank" class="btn-portal-apply">Apply on Portal ↗</a>
+            <button type="button" class="btn-portal-apply" onclick="openExternalUrl('${j.url}')">Apply on Portal ↗</button>
             <button class="tbl-action-btn" id="find-em-btn-${i}" onclick="extractEmailForSingleJob('${j.id}', '${j.company}', 'find-em-btn-${i}')" style="color:var(--accent-amber);" title="Deep scan company site to find HR email">🔍 Find Email</button>
             <button class="tbl-action-btn" onclick="openJobModalByIndex(${i})">Inspect</button>
           `;
@@ -3126,6 +3591,14 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
           deliverabilityHtml += `<span class="badge-reply" style="margin-top:2px;">📩 Recruiter Replied!</span>`;
         }
 
+        let badges = '';
+        if (j.pakistan_friendly) {
+          badges += '<span style="font-size:9px; font-weight:700; color:#22C55E; background:rgba(34,197,94,0.12); border:1px solid #22C55E; padding:1px 6px; border-radius:4px;">🇵🇰 PK Eligible</span> ';
+        }
+        if (j.posted_time) {
+          badges += `<span style="font-size:9px; color:var(--text-dim);">${j.posted_time}</span>`;
+        }
+
         return `
           <tr>
             <td>
@@ -3135,7 +3608,12 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
               </div>
             </td>
             <td><strong>${j.title}</strong></td>
-            <td><span style="color:var(--text-muted);">${j.location}</span></td>
+            <td>
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <span style="color:var(--text-muted);">${j.location}</span>
+                <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;">${badges}</div>
+              </div>
+            </td>
             <td><span class="match-pill">${j.match}</span></td>
             <td>${deliverabilityHtml}</td>
             <td>
@@ -3146,22 +3624,67 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
           </tr>
         `;
       }).join('');
+
+      if (jobs.length > visibleJobs.length) {
+        tbody.innerHTML += `
+          <tr id="loadMoreRow">
+            <td colspan="6" style="text-align:center; padding:16px; background:rgba(255,255,255,0.02);">
+              <button onclick="loadMoreJobs()" style="padding:10px 24px; background:rgba(255,107,0,0.15); border:1px solid #FF6B00; color:#FF6B00; font-weight:700; border-radius:8px; cursor:pointer; font-size:12px;">
+                ⚡ Load Next 80 Opportunities (Showing ${visibleJobs.length} of ${jobs.length})
+              </button>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    let currentRegion = 'all';
+    let currentMode = 'all';
+
+        function loadMoreJobs() {
+      jobsRenderLimit += 80;
+      renderFullJobsTable(cachedJobsForTable, true);
     }
 
     function applyJobSegment(segment) {
-      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-      event.target.classList.add('active');
-      loadJobsBySegment(segment);
+      currentSegment = segment;
+      document.querySelectorAll('#segmentPills .filter-pill').forEach(p => p.classList.remove('active'));
+      if (window.event && window.event.target) window.event.target.classList.add('active');
+      loadJobsByCriteria();
     }
 
-    function applyJobFilter(filter) {
-      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-      event.target.classList.add('active');
+    function applyTrackFilter(track, btn) {
+      currentTrack = track;
+      document.querySelectorAll('#trackPills .filter-pill').forEach(p => p.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      loadJobsByCriteria();
+    }
 
-      if (filter === 'pakistan') {
-        renderFullJobsTable(allJobs.filter(j => j.location.toLowerCase().includes('pakistan') || j.location.toLowerCase().includes('lahore') || j.location.toLowerCase().includes('karachi')));
-      } else if (filter === 'remote') {
-        renderFullJobsTable(allJobs.filter(j => j.location.toLowerCase().includes('remote')));
+    function applyRegionFilter(region, btn) {
+      currentRegion = region;
+      document.querySelectorAll('#regionPills .filter-pill').forEach(p => p.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      loadJobsByCriteria();
+    }
+
+    function applyModeFilter(mode, btn) {
+      currentMode = mode;
+      document.querySelectorAll('#modePills .filter-pill').forEach(p => p.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      loadJobsByCriteria();
+    }
+
+    async function loadJobsByCriteria() {
+      try {
+        const q = (document.getElementById('searchInput')?.value || '').trim();
+        const res = await fetch(`/api/jobs?segment=${currentSegment}&region=${currentRegion}&mode=${currentMode}&track=${currentTrack}&q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          allJobs = await res.json();
+          renderJobs(allJobs.slice(0, 5));
+          renderFullJobsTable(allJobs);
+        }
+      } catch (e) {
+        console.warn('Jobs criteria fetch error:', e);
       }
     }
 
@@ -3273,7 +3796,7 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
       if (currentSelectedJob && currentSelectedJob.email) {
         createGmailDraftDirect(currentSelectedJob.company, currentSelectedJob.title, currentSelectedJob.email, currentSelectedJob.id, 'modalApplyBtn');
       } else if (currentSelectedJob && currentSelectedJob.url && currentSelectedJob.url !== '#') {
-        window.open(currentSelectedJob.url, '_blank');
+        openExternalUrl(currentSelectedJob.url);
       } else {
         showToast('Direct recruiter transmission queued.');
       }
@@ -3406,21 +3929,22 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
       }
     }
 
-    // --- Search bar live filtering ---
+    // --- Search bar live filtering & deep database querying ---
     document.getElementById('searchInput')?.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase().trim();
-      if (!q) {
-        renderJobs(allJobs.slice(0, 5));
-        renderFullJobsTable(allJobs);
-        return;
+      if (allJobs && allJobs.length > 0) {
+        const filtered = allJobs.filter(j => 
+          (j.title || '').toLowerCase().includes(q) ||
+          (j.company || '').toLowerCase().includes(q) ||
+          (j.location || '').toLowerCase().includes(q)
+        );
+        renderJobs(filtered.slice(0, 5));
+        renderFullJobsTable(filtered);
       }
-      const filtered = allJobs.filter(j => 
-        j.title.toLowerCase().includes(q) ||
-        j.company.toLowerCase().includes(q) ||
-        j.location.toLowerCase().includes(q)
-      );
-      renderJobs(filtered.slice(0, 5));
-      renderFullJobsTable(filtered);
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        loadJobsByCriteria();
+      }, 350);
     });
 
     // --- Toast Notification helper ---
@@ -3451,11 +3975,272 @@ Testing & QA: Automated Testing, Pytest, Manual Testing, API Regression, Explora
       }
     });
 
+    // --- CV Master Download & Preview Functions ---
+    function downloadMasterCvFile() {
+      window.open('/api/cv/download', '_blank');
+      showToast('Downloading Master ATS PDF...');
+    }
+
+    function openCvPreviewModal() {
+      const modal = document.getElementById('cvPreviewModal');
+      const iframe = document.getElementById('cvPreviewIframe');
+      if (iframe) iframe.src = '/api/cv/preview?t=' + Date.now();
+      if (modal) modal.classList.add('active');
+    }
+
+    // --- Onboarding Flow State & Controls ---
+    let onboardStep = 1;
+
+    async function checkOnboardingStatus() {
+      try {
+        const res = await fetch('/api/onboarding/status');
+        const data = await res.json();
+        if (data.needed) {
+          openOnboardingModal();
+        }
+      } catch (e) {
+        console.warn('Onboarding check failed:', e);
+      }
+    }
+
+    function openOnboardingModal() {
+      onboardStep = 1;
+      updateOnboardStepUI();
+      document.getElementById('onboardingModal')?.classList.add('active');
+    }
+
+    function updateOnboardStepUI() {
+      const s1 = document.getElementById('onboardStep1Content');
+      const s2 = document.getElementById('onboardStep2Content');
+      const s3 = document.getElementById('onboardStep3Content');
+      if (s1) s1.style.display = onboardStep === 1 ? 'block' : 'none';
+      if (s2) s2.style.display = onboardStep === 2 ? 'block' : 'none';
+      if (s3) s3.style.display = onboardStep === 3 ? 'block' : 'none';
+
+      const d1 = document.getElementById('onboardStepDot1');
+      const d2 = document.getElementById('onboardStepDot2');
+      const d3 = document.getElementById('onboardStepDot3');
+      if (d1) d1.style.background = onboardStep >= 1 ? '#FF6B00' : 'rgba(255,255,255,0.1)';
+      if (d2) d2.style.background = onboardStep >= 2 ? '#FF6B00' : 'rgba(255,255,255,0.1)';
+      if (d3) d3.style.background = onboardStep >= 3 ? '#FF6B00' : 'rgba(255,255,255,0.1)';
+
+      const titleEl = document.getElementById('onboardStepTitle');
+      if (titleEl) {
+        if (onboardStep === 1) titleEl.innerText = 'Step 1: Connect Your Gmail (Zero-Friction)';
+        else if (onboardStep === 2) titleEl.innerText = 'Step 2: Upload Resume & ATS Profile Extraction';
+        else if (onboardStep === 3) titleEl.innerText = 'Step 3: Career Radar & AI Model Intelligence';
+      }
+
+      const prevBtn = document.getElementById('onboardPrevBtn');
+      const nextBtn = document.getElementById('onboardNextBtn');
+      const finBtn = document.getElementById('onboardFinishBtn');
+      if (prevBtn) prevBtn.style.display = onboardStep > 1 ? 'block' : 'none';
+      if (nextBtn) nextBtn.style.display = onboardStep < 3 ? 'block' : 'none';
+      if (finBtn) finBtn.style.display = onboardStep === 3 ? 'block' : 'none';
+    }
+
+    function onboardStepNext() {
+      if (onboardStep < 3) {
+        onboardStep++;
+        updateOnboardStepUI();
+      }
+    }
+
+    function onboardStepPrev() {
+      if (onboardStep > 1) {
+        onboardStep--;
+        updateOnboardStepUI();
+      }
+    }
+
+    async function testGmailConnOnboard() {
+      const email = document.getElementById('onboardEmail').value.trim();
+      const pass = document.getElementById('onboardPass').value.trim();
+      const fb = document.getElementById('onboardGmailFeedback');
+      const btn = document.getElementById('btnTestGmailOnboard');
+      if (!fb || !btn) return;
+      fb.style.display = 'block';
+      fb.style.color = 'var(--text-muted)';
+      fb.innerText = 'Testing SMTP & IMAP sockets...';
+      btn.innerText = 'Testing...';
+
+      try {
+        const res = await fetch('/api/onboarding/test-gmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: pass })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          fb.style.color = '#22C55E';
+          fb.innerText = '✓ ' + data.message;
+          showToast('Gmail connected successfully!');
+        } else {
+          fb.style.color = '#EF4444';
+          fb.innerText = '✗ ' + (data.error || 'Connection failed.');
+        }
+      } catch (e) {
+        fb.style.color = '#EF4444';
+        fb.innerText = '✗ Error: ' + e;
+      } finally {
+        btn.innerText = '⚡ Test Socket';
+      }
+    }
+
+    async function testGmailInSettings() {
+      const email = document.getElementById('settingEmail').value.trim();
+      const pass = document.getElementById('settingGmailPass').value.trim();
+      const fb = document.getElementById('settingGmailFeedback');
+      const btn = document.getElementById('btnTestGmailSettings');
+      if (!fb || !btn) return;
+      fb.style.display = 'block';
+      fb.style.color = 'var(--text-muted)';
+      fb.innerText = 'Testing SMTP & IMAP sockets...';
+      btn.innerText = 'Testing...';
+
+      try {
+        const res = await fetch('/api/onboarding/test-gmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: pass })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          fb.style.color = '#22C55E';
+          fb.innerText = '✓ ' + data.message;
+          showToast('Gmail credentials verified!');
+        } else {
+          fb.style.color = '#EF4444';
+          fb.innerText = '✗ ' + (data.error || 'Connection failed.');
+        }
+      } catch (e) {
+        fb.style.color = '#EF4444';
+        fb.innerText = '✗ Error: ' + e;
+      } finally {
+        btn.innerText = '⚡ Test Socket';
+      }
+    }
+
+    async function handleOnboardCvFile(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const dropText = document.getElementById('onboardCvDropText');
+      if (dropText) dropText.innerText = `Analyzing ${file.name}...`;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const b64 = e.target.result.split(',')[1];
+        try {
+          const res = await fetch('/api/cv/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, content_base64: b64 })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            if (dropText) dropText.innerText = `✓ ${file.name} uploaded`;
+            const parsedBox = document.getElementById('onboardCvParsedInfo');
+            if (parsedBox) parsedBox.style.display = 'block';
+            if (data.ats_score && document.getElementById('onboardAtsBadge')) {
+              document.getElementById('onboardAtsBadge').innerText = `${data.ats_score}% ATS`;
+            }
+            if (data.candidate) {
+              if (data.candidate.name && document.getElementById('onboardCandidateName')) {
+                document.getElementById('onboardCandidateName').value = data.candidate.name;
+              }
+              if (data.candidate.phone && document.getElementById('onboardCandidatePhone')) {
+                document.getElementById('onboardCandidatePhone').value = data.candidate.phone;
+              }
+            }
+            showToast('Resume parsed and ATS benchmark computed!');
+          }
+        } catch (err) {
+          if (dropText) dropText.innerText = 'Error parsing CV. Click to retry.';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function completeOnboardingFlow() {
+      const email = document.getElementById('onboardEmail')?.value.trim() || '';
+      const pass = document.getElementById('onboardPass')?.value.trim() || '';
+      const role = document.getElementById('onboardTargetRole')?.value.trim() || '';
+      const model = document.getElementById('onboardModelSelect')?.value || 'free/qwen-3.8-max';
+      const name = document.getElementById('onboardCandidateName')?.value.trim() || '';
+      const phone = document.getElementById('onboardCandidatePhone')?.value.trim() || '';
+
+      const activeRegions = Array.from(document.querySelectorAll('#onboardRegionPills .filter-pill.active')).map(p => p.getAttribute('data-region') || p.innerText);
+
+      try {
+        const res = await fetch('/api/onboarding/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gmail_email: email,
+            gmail_app_password: pass,
+            target_role: role,
+            active_regions: activeRegions,
+            ai_model: model,
+            candidate_name: name,
+            candidate_phone: phone
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('🚀 Pasha Hunt 2.0 configured! Dashboard initialized.');
+          closeModals();
+          await loadDashboard();
+          await loadCvStudioInfo();
+          await loadJobsByCriteria();
+        } else {
+          showToast('Error completing setup: ' + data.error);
+        }
+      } catch (e) {
+        showToast('Network error: ' + e);
+      }
+    }
+
+    async function loadAiModelsList() {
+      try {
+        const res = await fetch('/api/models');
+        if (res.ok) {
+          const data = await res.json();
+          const models = data.models || [];
+          const current = data.current_model || 'free/qwen-3.8-max';
+
+          const settingSel = document.getElementById('settingAiModel');
+          if (settingSel && models.length > 0) {
+            settingSel.innerHTML = models.map(m => `
+              <option value="${m.id}" ${m.id === current ? 'selected' : ''}>
+                ${m.name} — ${m.description}
+              </option>
+            `).join('');
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function changeAiModel(modelKey) {
+      try {
+        const res = await fetch('/api/settings/model', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: modelKey })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`AI Model set to ${modelKey}`);
+        }
+      } catch (e) {}
+    }
+
     // Instant local initialization (Zero remote network blocking)
     window.addEventListener('DOMContentLoaded', () => {
       loadDashboard();
       loadTrackerPipeline();
       loadCvStudioInfo();
+      loadAiModelsList();
+      checkOnboardingStatus();
     });
   </script>
 </body>

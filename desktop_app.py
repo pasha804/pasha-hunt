@@ -10,8 +10,9 @@ import json
 import threading
 import time
 import urllib.request
+import webbrowser
 import cv2
-from PySide6 import QtCore, QtGui, QtWidgets, QtWebEngineWidgets
+from PySide6 import QtCore, QtGui, QtWidgets, QtWebEngineWidgets, QtWebEngineCore
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -33,6 +34,37 @@ elif len(sys.argv) > 1 and sys.argv[1] == "--cv":
     sys.exit(0)
 
 
+def resolve_video_path():
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, "intro.mp4"))
+        if hasattr(sys, '_MEIPASS'):
+            candidates.append(os.path.join(sys._MEIPASS, "intro.mp4"))
+    candidates.append(os.path.join(HERE, "intro.mp4"))
+    candidates.append(os.path.join(os.path.dirname(HERE), "intro.mp4"))
+    local_app_data = os.environ.get("LOCALAPPDATA", "")
+    if local_app_data:
+        candidates.append(os.path.join(local_app_data, "Programs", "Pasha Hunt", "intro.mp4"))
+        candidates.append(os.path.join(local_app_data, "Programs", "Job Hunter", "intro.mp4"))
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return None
+
+
+def wait_for_server(port=58241, timeout=4.0):
+    import socket
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.2):
+                return True
+        except Exception:
+            time.sleep(0.05)
+    return False
+
+
 class NativeVideoSplash(QtWidgets.QWidget):
     finished = QtCore.Signal()
 
@@ -44,6 +76,10 @@ class NativeVideoSplash(QtWidgets.QWidget):
         
         self.video_path = video_path
         self.cap = cv2.VideoCapture(self.video_path)
+        if not self.cap or not self.cap.isOpened():
+            print(f"[Splash] Notice: OpenCV could not decode {self.video_path}. Proceeding directly.")
+            QtCore.QTimer.singleShot(0, self.close_and_finish)
+            return
         
         # 16:9 cinematic aspect ratio centered
         self.video_w = 960
@@ -119,6 +155,26 @@ class NativeVideoSplash(QtWidgets.QWidget):
         self.finished.emit()
 
 
+class CustomWebEnginePage(QtWebEngineCore.QWebEnginePage):
+    """Intercepts external job portal and website links and opens them in default OS browser."""
+    def acceptNavigationRequest(self, url, nav_type, is_main_frame):
+        url_str = url.toString()
+        if nav_type == QtWebEngineCore.QWebEnginePage.NavigationType.NavigationTypeLinkClicked:
+            if not url_str.startswith("http://127.0.0.1") and not url_str.startswith("http://localhost"):
+                webbrowser.open(url_str)
+                return False
+        return super().acceptNavigationRequest(url, nav_type, is_main_frame)
+
+    def createWindow(self, type_):
+        class ExternalRedirectPage(QtWebEngineCore.QWebEnginePage):
+            def acceptNavigationRequest(self, url, nav_type, is_main_frame):
+                url_str = url.toString()
+                if not url_str.startswith("http://127.0.0.1") and not url_str.startswith("http://localhost") and url_str != "about:blank":
+                    webbrowser.open(url_str)
+                return False
+        return ExternalRedirectPage(self.parent())
+
+
 class WorkstationWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -143,13 +199,15 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         # Connect replay callback
         desktop_server.set_replay_intro_callback(self.replay_intro)
 
-        # WebEngine View with dark background
+        # WebEngine View with dark background and native external link delegation
         self.browser = QtWebEngineWidgets.QWebEngineView(self)
+        self.custom_page = CustomWebEnginePage(self.browser)
+        self.browser.setPage(self.custom_page)
         self.browser.setStyleSheet("background-color: #070A0E;")
         self.browser.page().setBackgroundColor(QtGui.QColor("#070A0E"))
         self.setCentralWidget(self.browser)
 
-        # Resilient auto-reload on load failure / ERR_EMPTY_RESPONSE
+        # Initial URL load with delay & resilient reload
         self._page_ready = False
         self.browser.loadFinished.connect(self._on_load_finished)
 
@@ -159,11 +217,14 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.ctrl_r_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+R"), self)
         self.ctrl_r_shortcut.activated.connect(self.browser.reload)
 
-        # Initial URL load
-        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
+        # Trigger load after small event loop spin
+        QtCore.QTimer.singleShot(60, self._load_initial_url)
 
         # Background Scraper Thread state
         self.is_scanning = False
+
+    def _load_initial_url(self):
+        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
 
     def _on_load_finished(self, success):
         if success:
@@ -171,14 +232,12 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         else:
             if not self._page_ready:
                 print(f"[Workstation] WebEngine load returned empty/failed. Retrying connection to http://127.0.0.1:{self.port}/...")
-                QtCore.QTimer.singleShot(400, lambda: self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/")))
+                QtCore.QTimer.singleShot(400, self.browser.reload)
 
     def replay_intro(self):
         """Replays cinematic intro splash natively upon user request."""
-        video_path = os.path.join(HERE, "intro.mp4")
-        if not os.path.exists(video_path):
-            video_path = os.path.join(os.path.dirname(HERE), "intro.mp4")
-        if os.path.exists(video_path):
+        video_path = resolve_video_path()
+        if video_path and os.path.exists(video_path):
             self.splash = NativeVideoSplash(video_path)
             self.splash.finished.connect(self.splash.close)
             self.splash.show()
@@ -229,16 +288,17 @@ def main():
     )
     server_thread.start()
 
-    # Locate intro.mp4
-    video_path = os.path.join(HERE, "intro.mp4")
-    if not os.path.exists(video_path):
-        video_path = os.path.join(os.path.dirname(HERE), "intro.mp4")
+    # Pre-verify server socket is actively listening before navigating UI
+    wait_for_server(port, timeout=3.0)
+
+    # Locate intro.mp4 reliably across paths
+    video_path = resolve_video_path()
 
     # Initialize main window
     window = WorkstationWindow()
 
     # If video exists, play Native Video Splash first
-    if os.path.exists(video_path):
+    if video_path and os.path.exists(video_path):
         splash = NativeVideoSplash(video_path)
         
         def on_splash_done():
