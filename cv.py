@@ -124,32 +124,66 @@ def build_letter(profile, letter):
 
 def print_pdf(html_file, out_pdf):
     """Print the page to PDF with the first browser that manages it. Returns the error when none does."""
-    error = "Microsoft Edge not found. Install it from https://www.microsoft.com/edge"
+    error = "Microsoft Edge or Chrome not found. Install it from https://www.microsoft.com/edge"
+    out_pdf = os.path.abspath(out_pdf)
+    os.makedirs(os.path.dirname(out_pdf), exist_ok=True)
+
     for exe in BROWSERS:
         if not os.path.exists(exe):
             continue
-        profile_dir = tempfile.mkdtemp(prefix="pashahunt_pdf_")
-        try:
-            r = subprocess.run([
-                exe, "--headless", "--disable-gpu", "--no-pdf-header-footer",
-                "--disable-crash-reporter", "--no-first-run", "--no-default-browser-check",
-                "--disable-background-networking", "--disable-sync", "--disable-extensions",
-                f"--user-data-dir={profile_dir}", f"--print-to-pdf={out_pdf}",
-                pathlib.Path(html_file).as_uri()
-            ], timeout=120, capture_output=True)
-        except (OSError, subprocess.TimeoutExpired) as e:
-            error = f"{os.path.basename(exe)} could not make the PDF ({e.__class__.__name__})"
-            continue
-        finally:
+        for flag in ["--headless=new", "--headless"]:
+            profile_dir = tempfile.mkdtemp(prefix="pashahunt_pdf_")
             try:
-                shutil.rmtree(profile_dir, ignore_errors=True)
-            except Exception:
-                pass
-        if os.path.exists(out_pdf):
+                cmd = [
+                    exe, flag, "--disable-gpu", "--no-pdf-header-footer",
+                    "--disable-crash-reporter", "--no-first-run", "--no-default-browser-check",
+                    "--disable-background-networking", "--disable-sync", "--disable-extensions",
+                    f"--user-data-dir={profile_dir}", f"--print-to-pdf={out_pdf}",
+                    pathlib.Path(html_file).as_uri()
+                ]
+                r = subprocess.run(cmd, timeout=30, capture_output=True)
+                if os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 500:
+                    return None
+            except (OSError, subprocess.TimeoutExpired) as e:
+                error = f"{os.path.basename(exe)} could not make the PDF ({e.__class__.__name__})"
+                continue
+            finally:
+                try:
+                    shutil.rmtree(profile_dir, ignore_errors=True)
+                except Exception:
+                    pass
+        if os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 500:
             return None
-        error = (f"{os.path.basename(exe)} made no PDF (exit code {r.returncode}). Restart Windows to finish any "
+        error = (f"{os.path.basename(exe)} made no PDF. Restart Windows to finish any "
                  "Edge update, or update Edge in edge://settings/help")
     return error
+
+
+def generate_master_cv(profile_dict=None, out_pdf=None):
+    """Programmatic helper to build and compile the ATS Master CV PDF."""
+    if profile_dict is None:
+        prof_file = os.path.join(HERE, "profile.json")
+        if not os.path.exists(prof_file):
+            prof_file = os.path.join(os.path.dirname(HERE), "profile.json")
+        with open(prof_file, "r", encoding="utf-8-sig") as f:
+            profile_dict = json.load(f)
+    if out_pdf is None:
+        out_pdf = os.path.join(HERE, "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+
+    html_content = build(profile_dict, {})
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as tmp:
+        tmp.write(html_content)
+        tmp_path = tmp.name
+    try:
+        err = print_pdf(tmp_path, out_pdf)
+        if err:
+            return {"ok": False, "error": err}
+        return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
+    finally:
+        try:
+            os.remove(tmp_path)
+        except Exception:
+            pass
 
 
 def main():
