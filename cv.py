@@ -169,7 +169,7 @@ def generate_master_cv(profile_dict=None, out_pdf=None):
         with open(prof_file, "r", encoding="utf-8-sig") as f:
             profile_dict = json.load(f)
     if out_pdf is None:
-        out_pdf = os.path.join(HERE, "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+        out_pdf = os.path.join(HERE, "active_user_cv.pdf")
 
     html_content = build(profile_dict, {})
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as tmp:

@@ -83,7 +83,6 @@ def resolve_file(filename, for_write=False):
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     if local_app_data:
         candidates.append(os.path.join(local_app_data, "Programs", "Pasha Hunt", filename))
-        candidates.append(os.path.join(local_app_data, "Programs", "Job Hunter", filename))
     for c in candidates:
         if os.path.exists(c):
             return c
@@ -1622,27 +1621,47 @@ Sincerely,
             "imap_host": "imap.gmail.com"
         }
 
-        created = []
+        cand_disc = profile.get("discipline") or "other"
+        cand_disc = str(cand_disc).lower().strip()
+        prof_kw = extract_candidate_matching_profile(profile)
+
+        candidate_jobs = []
         for j in raw_jobs:
-            if len(created) >= count_limit:
-                break
             email_addr = (j.get("email") or "").strip()
             if not email_addr or "@" not in email_addr:
                 continue
             company = j.get("company", "Company")
-            title = j.get("title", "Software Engineer")
+            title = j.get("title", "Job Title")
             key = (company.strip().lower(), title.strip().lower())
             if key in sent_map:
                 continue
+
+            j_disc = get_job_discipline(title, j.get("text", ""))
+            if cand_disc and cand_disc != "other" and cand_disc not in j_disc:
+                continue
+
+            match_pct = calculate_dynamic_job_match(j, prof_kw)
+            candidate_jobs.append((match_pct, j))
+
+        # Sort candidate jobs: highest match score first
+        candidate_jobs.sort(key=lambda x: x[0], reverse=True)
+
+        created = []
+        for match_pct, j in candidate_jobs:
+            if len(created) >= count_limit:
+                break
+            email_addr = (j.get("email") or "").strip()
+            company = j.get("company", "Company")
+            title = j.get("title", "Specialist")
             
             subject = f"Application: {title} — {name}"
-            phone_line = f"\n{cand_phone}" if cand_phone else ""
+            phone_line = f"\nPhone: {cand_phone}" if cand_phone else ""
             summary_snippet = profile.get("default_summary") or f"With extensive background as a {cand_title}, I am confident in delivering high impact for your team."
-            body = f"""Dear {company} Talent Acquisition,
+            body = f"""Dear {company} Talent Acquisition Team,
 
 I am applying for the {title} position. {summary_snippet}
 
-Attached is my resume ({os.path.basename(pdf_path)}) detailing my professional background and quantified impact.
+Attached is my verified ATS Master CV ({os.path.basename(pdf_path)}) detailing my portfolio, competencies, and quantified achievements.
 
 Sincerely,
 {name}
@@ -2579,9 +2598,9 @@ Warm regards,
                 "education": "Bachelor of Design — National College of Arts (NCA)"
             },
             "dev": {
-                "name": "Muhammad Mubashar",
-                "default_title": "AI Agentic Developer | Full-Stack Software Engineer",
-                "contact": {"email": "pashadev804@gmail.com", "phone": "+92 308 4453846", "location": "Lahore, Pakistan", "linkedin": "linkedin.com/in/pasha-dev", "github": "github.com/pasha804"},
+                "name": "Bilal Ahmed",
+                "default_title": "Full-Stack Software Engineer & AI Systems Developer",
+                "contact": {"email": "bilal.ahmed.dev@gmail.com", "phone": "+92 301 4453846", "location": "Lahore, Pakistan", "linkedin": "linkedin.com/in/bilal-dev", "github": "github.com/bilal-dev"},
                 "location": "Lahore, Pakistan",
                 "years": 3,
                 "default_summary": "Autonomous Systems & Full-Stack Engineer with 3+ years architecting scalable enterprise systems. Proven record accelerating backend performance by 42% and building AI agentic workflows.",
@@ -2725,15 +2744,18 @@ Warm regards,
         query = query or {}
         version = query.get("version", ["active"])[0].lower()
         if version in ("original", "previous", "old"):
-            master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_backup_original.pdf")
-            if not os.path.exists(master_pdf):
-                master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV.pdf")
+            cvs_dir = os.path.join(get_user_data_dir(), "cvs")
+            orig_pdf = None
+            if os.path.exists(cvs_dir):
+                files = sorted(os.listdir(cvs_dir), reverse=True)
+                pdf_files = [os.path.join(cvs_dir, f) for f in files if f.lower().endswith(".pdf")]
+                if pdf_files:
+                    orig_pdf = pdf_files[0]
+            master_pdf = orig_pdf or get_active_cv_path()
         else:
-            master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
-            if not os.path.exists(master_pdf):
-                master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV.pdf")
+            master_pdf = get_active_cv_path()
 
-        if not os.path.exists(master_pdf):
+        if not master_pdf or not os.path.exists(master_pdf):
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b'{"error": "Requested CV PDF not found"}')
@@ -2756,15 +2778,18 @@ Warm regards,
         query = query or {}
         version = query.get("version", ["active"])[0].lower()
         if version in ("original", "previous", "old"):
-            master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_backup_original.pdf")
-            if not os.path.exists(master_pdf):
-                master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV.pdf")
+            cvs_dir = os.path.join(get_user_data_dir(), "cvs")
+            orig_pdf = None
+            if os.path.exists(cvs_dir):
+                files = sorted(os.listdir(cvs_dir), reverse=True)
+                pdf_files = [os.path.join(cvs_dir, f) for f in files if f.lower().endswith(".pdf")]
+                if pdf_files:
+                    orig_pdf = pdf_files[0]
+            master_pdf = orig_pdf or get_active_cv_path()
         else:
-            master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
-            if not os.path.exists(master_pdf):
-                master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV.pdf")
+            master_pdf = get_active_cv_path()
 
-        if not os.path.exists(master_pdf):
+        if not master_pdf or not os.path.exists(master_pdf):
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b'{"error": "Requested CV PDF not found"}')
@@ -2979,9 +3004,10 @@ Warm regards,
             out_pdf = resolve_file("active_user_cv.pdf", for_write=True)
             res = cv.generate_master_cv(profile_data, out_pdf)
 
-            repo_pdf = os.path.join("E:\\Job Hunt\\job-hunter-repo", "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
-            if os.path.exists(os.path.dirname(repo_pdf)) and os.path.exists(out_pdf):
-                shutil.copy2(out_pdf, repo_pdf)
+            clean_cand_name = re.sub(r'[^a-zA-Z0-9_-]', '_', profile_data.get("name") or "Candidate")
+            cand_pdf = resolve_file(f"{clean_cand_name}_ATS_Master_CV.pdf", for_write=True)
+            if os.path.exists(out_pdf):
+                shutil.copy2(out_pdf, cand_pdf)
 
             if res.get("ok"):
                 self._send_json({
@@ -2996,8 +3022,8 @@ Warm regards,
             self._send_json({"ok": False, "error": str(e)}, status=500)
 
     def _handle_cv_open(self):
-        master_pdf = resolve_file("Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
-        if os.path.exists(master_pdf):
+        master_pdf = get_active_cv_path()
+        if master_pdf and os.path.exists(master_pdf):
             try:
                 os.startfile(master_pdf)
                 self._send_json({"ok": True, "message": "Opening CV in default system viewer..."})
@@ -3032,7 +3058,7 @@ Warm regards,
                             "date": date_str or "Recent",
                             "status": status,
                             "notes": notes,
-                            "cv_file": row.get("cv_file", "Muhammad_Mubashar_ATS_Master_CV_v2_.pdf")
+                            "cv_file": row.get("cv_file") or os.path.basename(get_active_cv_path())
                         }
 
                         status_lower = status.lower()
