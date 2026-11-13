@@ -15,8 +15,7 @@ import cv2
 
 # Windows Rendering Stabilization & Zero-Flicker Flags for Chromium QWebEngine
 os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
-    "--enable-gpu-rasterization "
-    "--enable-accelerated-2d-canvas "
+    "--disable-gpu-rasterization "
     "--disable-background-timer-throttling "
     "--disable-renderer-backgrounding "
     "--no-sandbox"

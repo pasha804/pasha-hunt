@@ -1343,39 +1343,30 @@
       transform: scale(1.02);
     }
 
-    /* --- Modals & Overlays --- */
+    /* --- Modals & Overlays (Rock-Solid Zero-Flicker Hardware Accelerated) --- */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(7, 10, 14, 0.85);
-      backdrop-filter: blur(8px);
+      background: rgba(7, 10, 14, 0.95);
       z-index: 1000;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
     }
     .modal-overlay.active {
-      opacity: 1;
-      pointer-events: auto;
+      display: flex !important;
     }
     .modal-box {
-      background: var(--bg-card);
+      background: #0E1318;
       border: 1px solid var(--border-subtle);
       border-radius: 16px;
       width: 90%;
-      max-width: 620px;
-      max-height: 85vh;
+      max-width: 660px;
+      max-height: 88vh;
       overflow-y: auto;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(255,107,0,0.15);
-      transform: scale(0.95) translateY(10px);
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.85);
       padding: 24px;
-    }
-    .modal-overlay.active .modal-box {
-      transform: scale(1) translateY(0);
+      contain: paint;
     }
     .modal-header {
       display: flex;
