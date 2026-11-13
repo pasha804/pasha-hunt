@@ -18,7 +18,8 @@ datas = [
     ('config.json', '.'),
     ('cv_history.json', '.'),
     ('tracker.csv', '.'),
-    ('Muhammad_Mubashar_ATS_Master_CV_v2_.pdf', '.')
+    ('desktop_app.py', '.'),
+    ('desktop_server.py', '.'),
 ]
 
 a = Analysis(
@@ -49,7 +50,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtimehooks=[],
     excludes=[],
     noarchive=False,
     optimize=0,

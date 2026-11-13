@@ -12,6 +12,16 @@ import time
 import urllib.request
 import webbrowser
 import cv2
+
+# Windows Rendering Stabilization & Zero-Flicker Flags for Chromium QWebEngine
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+    "--enable-gpu-rasterization "
+    "--enable-accelerated-2d-canvas "
+    "--disable-background-timer-throttling "
+    "--disable-renderer-backgrounding "
+    "--no-sandbox"
+)
+
 from PySide6 import QtCore, QtGui, QtWidgets, QtWebEngineWidgets, QtWebEngineCore
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -182,9 +192,8 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.resize(1360, 880)
         self.setMinimumSize(1100, 720)
 
-        # Set native dark background to eliminate any flicker or white flash
-        self.setAttribute(QtCore.Qt.WA_NativeWindow, True)
-        self.setStyleSheet("background-color: #070A0E; color: #FFFFFF;")
+        # Clean background without WA_NativeWindow (prevents WM_ERASEBKGND flicker)
+        self.setStyleSheet("background-color: #070A0E;")
 
         # Set Application Icon
         icon_path = os.path.join(HERE, "installer", "icon.ico")
@@ -199,16 +208,16 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         # Connect replay callback
         desktop_server.set_replay_intro_callback(self.replay_intro)
 
-        # WebEngine View with dark background and native external link delegation
+        # WebEngine View with dark background (NO QSS on QWebEngineView to prevent repaint loops)
         self.browser = QtWebEngineWidgets.QWebEngineView(self)
         self.custom_page = CustomWebEnginePage(self.browser)
         self.browser.setPage(self.custom_page)
-        self.browser.setStyleSheet("background-color: #070A0E;")
         self.browser.page().setBackgroundColor(QtGui.QColor("#070A0E"))
         self.setCentralWidget(self.browser)
 
-        # Initial URL load with delay & resilient reload
+        # Initial URL load with single-attempt guard
         self._page_ready = False
+        self._reload_count = 0
         self.browser.loadFinished.connect(self._on_load_finished)
 
         # Keyboard shortcuts
@@ -217,22 +226,23 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.ctrl_r_shortcut = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+R"), self)
         self.ctrl_r_shortcut.activated.connect(self.browser.reload)
 
-        # Trigger load after small event loop spin
-        QtCore.QTimer.singleShot(60, self._load_initial_url)
+        # Load IPC Server UI URL immediately
+        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
 
         # Background Scraper Thread state
         self.is_scanning = False
 
-    def _load_initial_url(self):
-        self.browser.setUrl(QtCore.QUrl(f"http://127.0.0.1:{self.port}/"))
-
     def _on_load_finished(self, success):
         if success:
             self._page_ready = True
+            self._reload_count = 0
         else:
-            if not self._page_ready:
-                print(f"[Workstation] WebEngine load returned empty/failed. Retrying connection to http://127.0.0.1:{self.port}/...")
-                QtCore.QTimer.singleShot(400, self.browser.reload)
+            if not self._page_ready and self._reload_count < 1:
+                self._reload_count += 1
+                print(f"[Workstation] WebEngine load failed (attempt {self._reload_count}). Retrying...")
+                QtCore.QTimer.singleShot(600, self.browser.reload)
+            else:
+                print("[Workstation] Load failed — not retrying to avoid flicker loop.")
 
     def replay_intro(self):
         """Replays cinematic intro splash natively upon user request."""
@@ -258,12 +268,16 @@ class WorkstationWindow(QtWidgets.QMainWindow):
             self.is_scanning = False
 
 
+# Global workstation reference to prevent garbage collection
+workstation_instance = None
+
+
 def main():
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
     app.setApplicationName("Pasha Hunt 2.0")
 
-    # Set dark Fusion palette application-wide to prevent white flash
+    # Dark Fusion palette application-wide to prevent white flashes
     app.setStyle("Fusion")
     palette = QtGui.QPalette()
     palette.setColor(QtGui.QPalette.Window, QtGui.QColor("#070A0E"))
@@ -294,26 +308,27 @@ def main():
     # Locate intro.mp4 reliably across paths
     video_path = resolve_video_path()
 
-    # Initialize main window
-    window = WorkstationWindow()
+    def launch_main_workstation():
+        global workstation_instance
+        workstation_instance = WorkstationWindow()
+        workstation_instance.show()
+        workstation_instance.raise_()
+        workstation_instance.activateWindow()
 
-    # If video exists, play Native Video Splash first
+    # If video exists, play Native Video Splash FIRST, then launch Workstation separately
     if video_path and os.path.exists(video_path):
         splash = NativeVideoSplash(video_path)
-        
+
         def on_splash_done():
-            # Show and bring window to front FIRST before closing splash to ensure zero flicker
-            window.show()
-            window.raise_()
-            window.activateWindow()
-            QtCore.QTimer.singleShot(150, splash.close)
+            # Close splash first
+            splash.close()
+            # Launch workstation cleanly — 100% separated screens, zero overlap
+            QtCore.QTimer.singleShot(100, launch_main_workstation)
 
         splash.finished.connect(on_splash_done)
         splash.show()
     else:
-        window.show()
-        window.raise_()
-        window.activateWindow()
+        launch_main_workstation()
 
     sys.exit(app.exec())
 

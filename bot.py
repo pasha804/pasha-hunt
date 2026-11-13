@@ -1547,26 +1547,30 @@ def _generate_master_cv_fallback(prompt_text):
 
     prompt_lower = prompt_text.lower()
     fit_score = 85
-    matched_skills = []
-    if any(k in prompt_lower for k in ["python", "fastapi", "django", "backend"]):
-        matched_skills.extend(["Python", "FastAPI"])
-    if any(k in prompt_lower for k in ["react", "next.js", "nextjs", "frontend", "typescript"]):
-        matched_skills.extend(["React", "Next.js", "TypeScript"])
-    if any(k in prompt_lower for k in ["ai", "llm", "agent", "automation"]):
-        matched_skills.extend(["AI Engineering", "LLM Integration", "Agentic Systems"])
-    if any(k in prompt_lower for k in ["sql", "postgres", "database"]):
-        matched_skills.extend(["PostgreSQL", "SQLAlchemy"])
+    
+    prof = load_profile() if "load_profile" in globals() else {}
+    cand_name = prof.get("name") or "Applicant"
+    cand_title = prof.get("default_title") or job_title
+    cand_loc = prof.get("location") or "Worldwide Remote"
+    cand_summary = prof.get("default_summary") or f"Dedicated {cand_title} with proven expertise delivering high impact for ambitious teams."
 
+    # Extract dynamic skills from candidate's profile
+    cand_skills_list = []
+    skills_obj = prof.get("skills", {})
+    if isinstance(skills_obj, dict):
+        for k, v in skills_obj.items():
+            if isinstance(v, list): cand_skills_list.extend(v)
+            elif isinstance(v, str): cand_skills_list.extend([s.strip() for s in v.split(",") if s.strip()])
+    elif isinstance(skills_obj, list):
+        cand_skills_list.extend([str(s).strip() for s in skills_obj if str(s).strip()])
+
+    matched_skills = [s for s in cand_skills_list if s.lower() in prompt_lower]
     if not matched_skills:
-        matched_skills = ["Python", "FastAPI", "React", "Next.js", "AI Full-Stack Development"]
+        matched_skills = cand_skills_list[:5] if cand_skills_list else [cand_title]
 
+    skills_str = ", ".join(matched_skills[:4])
     tailor_title = f"{job_title} | " + " | ".join(matched_skills[:3])
-    summary = (
-        f"AI Full-Stack Developer with hands-on expertise building scalable backends with Python and FastAPI, "
-        f"paired with modern reactive frontends in React and Next.js. Experienced delivering production-ready web "
-        f"applications, automated microservice pipelines, and robust database architectures with PostgreSQL. "
-        f"Focused on clean system design, maintainable test coverage, and high-impact engineering execution."
-    )
+    summary = cand_summary
 
     bullets = {
         "exp_0": [0, 1, 2],
@@ -1575,36 +1579,34 @@ def _generate_master_cv_fallback(prompt_text):
     }
     rewrites = {
         "exp_0": {
-            "0": "Architected and delivered scalable full-stack web applications and microservices using Python, FastAPI, and Next.js.",
-            "1": "Engineered automated data pipelines, RESTful APIs, and background job processors with PostgreSQL and Redis."
+            "0": f"Spearheaded key deliverables in {cand_title}, achieving measurable quality and team productivity gains.",
+            "1": f"Collaborated across cross-functional teams utilizing {skills_str} to streamline client execution."
         }
     }
-    projects = ["proj_ai_engine", "proj_fullstack_crm", "proj_rag_pipeline"]
+    projects = ["proj_key_initiative", "proj_client_deliverable", "proj_portfolio"]
 
-    subject = f"Application: {job_title} – Muhammad Mubashar"
+    subject = f"Application: {job_title} – {cand_name}"
     body = (
-        f"Hi {company} Team,\n\n"
+        f"Hi {company} Hiring Team,\n\n"
         f"I came across your opening for the {job_title} role and wanted to apply.\n\n"
-        f"As an AI Full-Stack Developer proficient in Python, FastAPI, React, and Next.js, "
-        f"I specialize in building reliable web applications and scalable API backends backed by PostgreSQL. "
-        f"I have delivered responsive frontends, automated pipelines, and modular cloud architectures that optimize performance.\n\n"
-        f"I am available to start immediately for remote work. My CV is attached for your review. "
-        f"I would welcome the opportunity to discuss how my technical background can benefit {company}.\n\n"
-        f"Best regards,\nMuhammad Mubashar\nLahore, Pakistan (Worldwide Remote)"
+        f"As a {cand_title} proficient in {skills_str}, "
+        f"I specialize in delivering high-impact solutions that drive measurable business results.\n\n"
+        f"{cand_summary}\n\n"
+        f"I am available to start immediately for remote work. My tailored ATS CV is attached for your review. "
+        f"I would welcome the opportunity to discuss how my background can benefit {company}.\n\n"
+        f"Best regards,\n{cand_name}\n{cand_loc}"
     )
 
     cover_letter = (
         f"Dear {company} Hiring Team,\n\n"
         f"I am writing to express my strong interest in the {job_title} position at {company}. "
-        f"With hands-on experience designing and deploying end-to-end full-stack software using Python, FastAPI, React, "
-        f"and Next.js, I am excited about the opportunity to contribute to your engineering initiatives.\n\n"
-        f"In my software development work, I have focused on engineering resilient backend services, optimizing relational "
-        f"database schemas with PostgreSQL, and developing clean client interfaces. My approach emphasizes rigorous code quality, "
-        f"structured API contracts, and scalable microservice architectures.\n\n"
-        f"My background spans full-lifecycle engineering from initial system architecture to production deployment and automated "
-        f"workflows. I thrive in autonomous remote team settings where engineering discipline and rapid iteration drive business impact.\n\n"
-        f"Thank you for considering my application. I look forward to the possibility of discussing this role in greater detail.\n\n"
-        f"Sincerely,\nMuhammad Mubashar"
+        f"With hands-on experience as a {cand_title} specializing in {skills_str}, "
+        f"I am excited about the opportunity to contribute to your team's success.\n\n"
+        f"{cand_summary}\n\n"
+        f"My background emphasizes end-to-end execution, rigorous quality standards, and consistent turnaround on high-priority deliverables. "
+        f"I thrive in collaborative, fast-paced environments where disciplined focus and clear communication create measurable impact.\n\n"
+        f"Thank you for considering my application. I look forward to discussing how my experience aligns with your goals.\n\n"
+        f"Sincerely,\n{cand_name}"
     )
 
     return {
@@ -2696,7 +2698,7 @@ def _parse_cv_text_to_profile(text, path):
                     data = json.load(f)
                 if isinstance(data, dict) and data.get("name"):
                     cand_name = str(data["name"]).lower()
-                    if (text and (cand_name in text.lower() or "mubashar" in text.lower() or "pashadev" in text.lower())) or "mubashar" in path.lower():
+                    if text and cand_name in text.lower():
                         return data
             except Exception:
                 pass
