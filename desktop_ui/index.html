@@ -1662,14 +1662,14 @@
               <div class="ats-circle">
                 <svg viewBox="0 0 90 90">
                   <circle class="ats-bg" cx="45" cy="45" r="39" />
-                  <circle class="ats-fill" cx="45" cy="45" r="39" />
+                  <circle class="ats-fill" id="dashAtsCircleFill" cx="45" cy="45" r="39" />
                 </svg>
                 <div class="ats-center">
-                  <h3>87%</h3>
-                  <span>ATS Score</span>
+                  <h3 id="dashAtsScoreNum">--%</h3>
+                  <span id="dashAtsScoreLabel">ATS Score</span>
                 </div>
               </div>
-              <div class="ats-checklist">
+              <div class="ats-checklist" id="dashAtsChecklist">
                 <div class="ats-check-item"><span class="check">✓</span> <span>Contact Info (15/15)</span></div>
                 <div class="ats-check-item"><span class="check">✓</span> <span>Skills Match (20/20)</span></div>
                 <div class="ats-check-item"><span class="check">✓</span> <span>Experience Metrics (35/35)</span></div>
@@ -1677,9 +1677,10 @@
                 <div class="ats-check-item"><span class="check">✓</span> <span>Action Verbs Verified</span></div>
               </div>
             </div>
-            <div class="ats-tip">
+            <div id="dashAtsBoostContainer"></div>
+            <div class="ats-tip" id="dashAtsTip">
               <span>💡</span>
-              <span>Tip: All bullets meet Google XYZ format ('Accomplished X measured by Y doing Z').</span>
+              <span id="dashAtsTipText">Tip: All bullets meet Google XYZ format ('Accomplished X measured by Y doing Z').</span>
             </div>
           </div>
 
@@ -1925,6 +1926,10 @@
               <span>⚡</span>
               <span>Compile &amp; Rebuild Master ATS CV</span>
             </button>
+            <button class="scan-btn" onclick="enhanceCvWithGemini()" style="padding:8px 14px; font-size:11px; background:linear-gradient(135deg, #FF6B00 0%, #FF8800 100%); color:#000; font-weight:800; border:none;">
+              <span>🚀</span>
+              <span>Boost to 96% (Google XYZ)</span>
+            </button>
             <button class="scan-btn" onclick="downloadMasterCvFile('active')" style="padding:8px 14px; font-size:11px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E;">
               <span>📥</span>
               <span>Download Master PDF</span>
@@ -1987,7 +1992,7 @@
 
             <!-- Live Rendered Document View -->
             <div style="height:380px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.12); margin-bottom:14px; background:#FFFFFF;">
-              <iframe id="origCvInlineIframe" src="/api/cv/render-html?version=original" style="width:100%; height:100%; border:none;"></iframe>
+              <iframe id="origCvInlineIframe" src="/api/cv/view-original" style="width:100%; height:100%; border:none;"></iframe>
             </div>
 
             <!-- Original Content Inspection Snapshot -->
@@ -2317,6 +2322,23 @@
               Generated Cover Letter Preview:
             </label>
             <textarea id="clOutput" rows="16" placeholder="Your tailored cover letter will generate here directly via APINEX..." style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; font-size:11px; font-family:monospace; line-height:1.5; color:var(--text-white); resize:none;"></textarea>
+          </div>
+        </div>
+
+        <!-- Recent Application Cover Letters History -->
+        <div style="margin-top:24px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">📁</span>
+              <h3 style="font-size:14px; color:var(--text-white); margin:0;">Application Cover Letters History</h3>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span style="font-size:11px; color:var(--text-muted);" id="coverLettersCountBadge">0 Letters Saved</span>
+              <button onclick="loadCoverLetters()" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">🔄 Refresh</button>
+            </div>
+          </div>
+          <div id="coverLettersList" style="display:flex; flex-direction:column; gap:10px;">
+            <!-- Populated by JavaScript -->
           </div>
         </div>
       </div>
@@ -3045,6 +3067,7 @@
             posEl.value = candidateProfile.title;
           }
         }
+        loadCoverLetters();
       }
       if (pageId === 'cv-tailoring') {
         const inp = document.getElementById('pageTailorInput');
@@ -3349,7 +3372,7 @@
     }
 
     // --- Master CV Studio Functions ---
-    async function loadCvStudioInfo() {
+    async function loadCvStudioInfo(forceReload = false) {
       try {
         const res = await fetch('/api/cv/info');
         const info = await res.json();
@@ -3416,11 +3439,21 @@
         if (document.getElementById('diffXyzCount')) document.getElementById('diffXyzCount').innerText = `${orig.quantified_metrics || 0} ➔ ${act.quantified_metrics || 12} Quantified Bullets`;
         if (document.getElementById('diffKeywordsCount')) document.getElementById('diffKeywordsCount').innerText = `+${(act.keywords_matched || 28) - (orig.keywords_matched || 14)} Recruiter Terms Injected`;
 
-        // Refresh live inline split-screen CV document iframes
+        // Refresh live inline split-screen CV document iframes (only on initial load or explicit reload to eliminate flicker)
         const origIframe = document.getElementById('origCvInlineIframe');
-        if (origIframe) origIframe.src = '/api/cv/render-html?version=original&t=' + Date.now();
+        if (origIframe) {
+          const currentSrc = origIframe.getAttribute('src') || '';
+          if (forceReload || !currentSrc || currentSrc === 'about:blank' || currentSrc.includes('render-html?version=original')) {
+            origIframe.src = '/api/cv/view-original?t=' + Date.now();
+          }
+        }
         const activeIframe = document.getElementById('activeCvInlineIframe');
-        if (activeIframe) activeIframe.src = '/api/cv/render-html?version=active&t=' + Date.now();
+        if (activeIframe) {
+          const currentSrc = activeIframe.getAttribute('src') || '';
+          if (forceReload || !currentSrc || currentSrc === 'about:blank') {
+            activeIframe.src = '/api/cv/render-html?version=active&t=' + Date.now();
+          }
+        }
 
         // Render CV Version Archive
         const history = info.history || [];
@@ -3634,6 +3667,53 @@
           document.getElementById('statInterviews').innerHTML = `${stats.interviews} <span class="kpi-trend">↑ +0</span>`;
           document.getElementById('statMatchRate').innerHTML = `${stats.match_rate}% <span class="kpi-trend">↑ +2%</span>`;
           document.getElementById('dashboardAtsScore').innerText = `${stats.career_score}%`;
+          
+          // Col 2: ATS Analysis dynamic card
+          const atsScore = stats.ats_score || stats.career_score || 74;
+          const isEnhanced = !!stats.is_enhanced;
+          const atsNumEl = document.getElementById('dashAtsScoreNum');
+          if (atsNumEl) atsNumEl.innerText = `${atsScore}%`;
+
+          const atsCircleFill = document.getElementById('dashAtsCircleFill');
+          if (atsCircleFill) {
+            const offset = 245 - (245 * atsScore / 100);
+            atsCircleFill.style.strokeDashoffset = offset;
+            atsCircleFill.style.stroke = isEnhanced ? '#22C55E' : '#FF6B00';
+          }
+
+          const atsChecklistEl = document.getElementById('dashAtsChecklist');
+          if (atsChecklistEl && stats.ats_checklist) {
+            atsChecklistEl.innerHTML = stats.ats_checklist.map(item => `
+              <div class="ats-check-item">
+                <span class="${item.ok ? 'check' : 'check-warn'}" style="color:${item.ok ? '#22C55E' : '#FF6B00'}; font-weight:800;">${item.ok ? '✓' : '⚠️'}</span>
+                <span style="color:${item.ok ? 'var(--text-white)' : 'var(--text-muted)'};">${item.label} (${item.score})</span>
+              </div>
+            `).join('');
+          }
+
+          const boostBtnContainer = document.getElementById('dashAtsBoostContainer');
+          if (boostBtnContainer) {
+            if (!isEnhanced) {
+              boostBtnContainer.innerHTML = `
+                <button onclick="triggerBoostFromDashboard()" style="width:100%; margin-top:10px; margin-bottom:10px; padding:10px; border-radius:8px; background:linear-gradient(135deg, #FF6B00 0%, #FF8800 100%); color:#000; font-weight:800; border:none; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow: 0 4px 15px rgba(255,107,0,0.35);">
+                  <span>⚡</span> Boost to 96% Elite Master ATS CV
+                </button>
+              `;
+            } else {
+              boostBtnContainer.innerHTML = `
+                <div style="margin-top:10px; margin-bottom:8px; padding:8px 12px; border-radius:8px; background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.3); color:#22C55E; font-size:11px; font-weight:700; display:flex; align-items:center; gap:6px;">
+                  <span>✓</span> Google XYZ Impact Metrics Verified (96% ATS)
+                </div>
+              `;
+            }
+          }
+
+          const tipTextEl = document.getElementById('dashAtsTipText');
+          if (tipTextEl) {
+            tipTextEl.innerText = isEnhanced ? 
+              "Verified: All bullets meet Google XYZ format ('Accomplished X measured by Y doing Z')." :
+              "Notice: Experience bullets lack Google XYZ quantified metrics. Click Boost to optimize.";
+          }
           
           if (stats.first_name) {
             document.getElementById('heroWelcomeName').innerText = `Welcome back, ${stats.first_name}!`;
@@ -4271,6 +4351,7 @@
         const data = await res.json();
         output.value = data.letter;
         showToast(`Cover letter generated for ${company}!`);
+        loadCoverLetters();
       } catch (e) {
         output.value = 'Error generating letter.';
       }
@@ -4280,6 +4361,101 @@
       const text = document.getElementById('clOutput').value;
       navigator.clipboard.writeText(text);
       showToast('Cover letter copied to clipboard!');
+    }
+
+    let _allCoverLetters = [];
+
+    async function loadCoverLetters() {
+      const container = document.getElementById('coverLettersList');
+      const countBadge = document.getElementById('coverLettersCountBadge');
+      if (!container) return;
+      try {
+        const res = await fetch('/api/cover-letters');
+        const letters = await res.json();
+        _allCoverLetters = Array.isArray(letters) ? letters : [];
+        if (countBadge) {
+          countBadge.innerText = `${_allCoverLetters.length} Letter${_allCoverLetters.length === 1 ? '' : 's'} Saved`;
+        }
+        if (_allCoverLetters.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">
+              No application cover letters saved yet. Generate one above or create a draft in Email Applications!
+            </div>
+          `;
+          return;
+        }
+        container.innerHTML = _allCoverLetters.map(cl => `
+          <div style="background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:8px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+                <strong style="color:var(--text-white); font-size:13px;">${escapeHtml(cl.company || 'Enterprise')}</strong>
+                <span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(255,107,0,0.12); color:#FF6B00; font-weight:700;">${escapeHtml(cl.role || 'Role')}</span>
+                <span style="font-size:10px; color:var(--text-muted);">${escapeHtml(cl.date || '')}</span>
+                ${cl.recipient ? `<span style="font-size:10px; color:var(--green-status); font-family:monospace;">To: ${escapeHtml(cl.recipient)}</span>` : ''}
+              </div>
+              <div style="font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                ${escapeHtml((cl.body || '').substring(0, 130))}...
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; flex-shrink:0;">
+              <button onclick="viewCoverLetter('${cl.id}')" style="padding:6px 12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:6px; font-size:11px; cursor:pointer;">
+                👁 View
+              </button>
+              <button onclick="copySpecificCoverLetter('${cl.id}')" style="padding:6px 12px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">
+                📋 Copy
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.warn('loadCoverLetters error:', e);
+      }
+    }
+
+    function viewCoverLetter(id) {
+      const found = _allCoverLetters.find(l => l.id === id);
+      if (!found) return;
+      if (document.getElementById('clCompany')) document.getElementById('clCompany').value = found.company || '';
+      if (document.getElementById('clPosition')) document.getElementById('clPosition').value = found.role || '';
+      if (document.getElementById('clOutput')) document.getElementById('clOutput').value = found.body || '';
+      showToast(`Loaded cover letter for ${found.company} into editor!`);
+      document.getElementById('clOutput')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function copySpecificCoverLetter(id) {
+      const found = _allCoverLetters.find(l => l.id === id);
+      if (!found) return;
+      navigator.clipboard.writeText(found.body || '');
+      showToast(`Copied cover letter for ${found.company} to clipboard!`);
+    }
+
+    async function enhanceCvWithGemini() {
+      showToast('⚡ Rewriting CV with Google XYZ quantified metrics via Gemini AI...');
+      try {
+        const res = await fetch('/api/cv/enhance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✅ CV successfully enhanced to 96% Elite ATS with Google XYZ formula!');
+          await loadCvStudioInfo(true);
+          await loadDashboard();
+        } else {
+          showToast('Enhancement error: ' + (data.error || 'Server error'));
+        }
+      } catch (e) {
+        showToast('Error connecting to AI engine: ' + e);
+      }
+    }
+
+    function triggerBoostFromDashboard() {
+      switchPage('cv-intelligence');
+      showToast('⚡ Initiating Google XYZ ATS boost with Gemini AI...');
+      setTimeout(() => {
+        enhanceCvWithGemini();
+      }, 350);
     }
 
     // --- Live Scan Trigger ---
@@ -4392,7 +4568,9 @@
         titleEl.textContent = (version === 'original') ? 'Original Baseline Resume (Unoptimized)' : 'Tailored Master ATS CV (Pasha Hunt Optimized)';
       }
       if (iframe) {
-        iframe.src = '/api/cv/render-html?version=' + encodeURIComponent(version) + '&t=' + Date.now();
+        iframe.src = (version === 'original') ? 
+          ('/api/cv/view-original?t=' + Date.now()) : 
+          ('/api/cv/render-html?version=active&t=' + Date.now());
       }
       if (modal) modal.classList.add('active');
     }
@@ -4401,7 +4579,7 @@
       const modal = document.getElementById('cvDualCompareModal');
       const origFrame = document.getElementById('cvOriginalIframe');
       const masterFrame = document.getElementById('cvMasterIframe');
-      if (origFrame) origFrame.src = '/api/cv/render-html?version=original&t=' + Date.now();
+      if (origFrame) origFrame.src = '/api/cv/view-original?t=' + Date.now();
       if (masterFrame) masterFrame.src = '/api/cv/render-html?version=active&t=' + Date.now();
       if (modal) modal.classList.add('active');
     }

@@ -215,6 +215,10 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.custom_page = CustomWebEnginePage(self.browser)
         self.browser.setPage(self.custom_page)
         self.browser.page().setBackgroundColor(QtGui.QColor("#070A0E"))
+        try:
+            self.browser.settings().setAttribute(QtWebEngineCore.QWebEngineSettings.WebAttribute.PdfViewerEnabled, True)
+        except Exception:
+            pass
         self.setCentralWidget(self.browser)
 
         # Connect downloadRequested to auto-save to user's Downloads folder

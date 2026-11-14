@@ -20,6 +20,7 @@ datas = [
     ('tracker.csv', '.'),
     ('desktop_app.py', '.'),
     ('desktop_server.py', '.'),
+    ('scrapling_adapter.py', '.'),
 ]
 
 a = Analysis(
@@ -39,14 +40,18 @@ a = Analysis(
         'PIL.Image',
         'PIL.ImageTk',
         'pypdf',
+        'fitz',
+        'pymupdf',
         'imaplib',
         'email',
         'dns',
         'dns.resolver',
         'desktop_app',
         'desktop_server',
+        'scrapling_adapter',
         'bot',
-        'cv'
+        'cv',
+        'docx'
     ],
     hookspath=[],
     hooksconfig={},
