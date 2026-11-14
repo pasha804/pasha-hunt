@@ -886,6 +886,59 @@ def src_pakistan_tech():
     now = dt.datetime.now(dt.timezone.utc)
     days_ago = lambda d: now - dt.timedelta(days=d)
     openings = [
+        # --- Creative, Graphic Design & UI/UX Roles (Direct Recruiter Emails) ---
+        ("Systems Limited", "UI/UX & Visual Designer", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Hybrid - Gulberg)", "hybrid", 1,
+         "Systems Limited is hiring UI/UX & Visual Designers. Skilled in Figma, Adobe Creative Cloud, user flows, responsive web & mobile layouts, and modern typography. Email CV to careers@systemslimited.com."),
+        ("Systems Limited", "Graphic Designer & Brand Specialist", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Onsite - Seepz)", "onsite", 2,
+         "Systems Limited seeking Graphic Designers for brand identity, social media graphics, corporate marketing collateral, Adobe Illustrator and Photoshop. Apply at careers@systemslimited.com."),
+        ("Arbisoft", "Product & UI/UX Designer", "jobs@arbisoft.com", "https://www.arbisoft.com/careers", "Lahore, Pakistan (Onsite - Canal Road)", "onsite", 1,
+         "Arbisoft is hiring UI/UX & Product Designers. Designing user-centered web and mobile experiences, wireframes, design systems in Figma, and micro-interactions. Send CV and portfolio to jobs@arbisoft.com."),
+        ("Devsinc", "Graphic & Social Media Designer", "hr@devsinc.com", "https://www.devsinc.com/careers", "Lahore, Pakistan (Onsite - Gulberg III)", "onsite", 1,
+         "Devsinc is hiring Graphic Designers in Lahore. Create engaging marketing assets, social media posts, promotional videos, and brand guidelines using Photoshop, Illustrator, and Figma. Email CV to hr@devsinc.com."),
+        ("Devsinc", "UI/UX Designer (Web & Mobile)", "hr@devsinc.com", "https://www.devsinc.com/careers", "Lahore, Pakistan (Hybrid - DHA Phase 5)", "hybrid", 2,
+         "Devsinc looking for UI/UX Designers with strong Figma, prototyping, wireframing, and component library skills. Send portfolio and resume to hr@devsinc.com."),
+        ("10Pearls", "Creative UI/UX & Visual Designer", "careers@10pearls.com", "https://www.10pearls.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "10Pearls hiring Creative UI/UX Designers. Focus on human-centered design, modern interfaces, design tokens, and visual communication. Apply to careers@10pearls.com."),
+        ("Careem", "Visual & Brand Identity Designer", "recruitment@careem.com", "https://www.careem.com/careers", "Lahore, Pakistan (Hybrid - Gulberg)", "hybrid", 1,
+         "Careem is looking for Visual & Brand Identity Designers to elevate creative marketing, promotional visual storytelling, and app assets across the region. Send CV to recruitment@careem.com."),
+        ("Tintash", "UI/UX & Digital Product Designer", "careers@tintash.com", "https://www.tintash.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 1,
+         "Tintash is hiring UI/UX Designers with passion for intuitive digital interfaces, interaction design, and design systems. Send CV to careers@tintash.com."),
+        ("Mindstorm Studios", "2D Graphic Designer & UI Artist", "talent@mindstormstudios.com", "https://www.mindstormstudios.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 1,
+         "Mindstorm Studios hiring 2D Graphic Designers and UI Artists. Creating visually stunning digital assets, game UI, marketing banners, and icon art. Apply to talent@mindstormstudios.com."),
+        ("VentureDive", "Product & Visual UI Designer", "careers@venturedive.com", "https://www.venturedive.com/careers", "Lahore, Pakistan (Remote / Hybrid)", "hybrid", 1,
+         "VentureDive is hiring Product and Visual Designers. Expertise in Figma, design systems, design thinking, and high-fidelity mockups. Email CV to careers@venturedive.com."),
+        ("Creative Chaos", "Creative Graphic Designer & Brand Specialist", "careers@creativechaos.co", "https://www.creativechaos.co/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "Creative Chaos hiring Graphic Designers for social media campaigns, brand identity design, logo concepts, and presentation decks. Send CV to careers@creativechaos.co."),
+        ("Folio3", "UI/UX & Brand Asset Designer", "careers@folio3.com", "https://www.folio3.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 2,
+         "Folio3 is hiring UI/UX and Graphic Designers. Crafting digital brand assets, web UI designs, and marketing templates in Figma and Adobe Suite. Email careers@folio3.com."),
+        ("Educative", "Visual Content & Graphic Designer", "careers@educative.io", "https://www.educative.io/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "Educative is hiring Visual Content & Graphic Designers for educational media, infographics, digital illustrations, and landing pages. Apply via careers@educative.io."),
+        ("NetSol Technologies", "UI/UX & Marketing Graphic Designer", "hr@netsoltech.com", "https://www.netsoltech.com/careers", "Lahore, Pakistan (Onsite - NetSol IT Village)", "onsite", 2,
+         "NetSol Technologies hiring UI/UX and Graphic Designers for enterprise product interfaces and global marketing campaigns. Send CV to hr@netsoltech.com."),
+        ("BrainX Technologies", "Graphic & UI/UX Designer", "careers@brainxtech.com", "https://www.brainxtech.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 1,
+         "BrainX Technologies is hiring Graphic and UI/UX Designers. Skilled in Figma, Adobe Illustrator, brand design, and mobile app interfaces. Send CV to careers@brainxtech.com."),
+        ("GenITeam Solutions", "Game UI/UX & Graphic Artist", "hr@geniteam.com", "https://www.geniteam.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 2,
+         "GenITeam hiring Graphic Designers and UI Artists for modern 2D graphic assets, icons, layouts, and creative banners. Email hr@geniteam.com."),
+        ("We R Play", "Visual & 2D Graphic Designer", "jobs@werplay.com", "https://www.werplay.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 1,
+         "We R Play is hiring Visual Graphic Designers for promotional art, banner creation, and social media visuals. Email jobs@werplay.com."),
+        ("Confiz", "UI/UX & Visual Designer", "careers@confiz.com", "https://www.confiz.com/careers", "Lahore, Pakistan (Onsite - Gulberg)", "onsite", 2,
+         "Confiz hiring UI/UX Designers for enterprise cloud interfaces, design systems, and responsive web styling. Apply at careers@confiz.com."),
+        ("Superside", "Remote Graphic Designer - Branding & Marketing", "design@superside.com", "https://www.superside.com/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 1,
+         "Superside is hiring Remote Graphic Designers. Brand identity, marketing collateral, social media assets, Adobe Illustrator, Photoshop, and Figma. Apply directly to design@superside.com."),
+        ("Design Pickle", "Remote Graphic Designer & Illustrator", "careers@designpickle.com", "https://www.designpickle.com/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 1,
+         "Design Pickle hiring dedicated Remote Graphic Designers. High volume visual content creation, brand design, digital ads, and vector graphics. Send CV to careers@designpickle.com."),
+        ("ManyPixels", "Remote Graphic & Social Media Designer", "talent@manypixels.co", "https://www.manypixels.co/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 1,
+         "ManyPixels hiring Remote Graphic Designers. Creating modern digital illustrations, social media assets, presentation decks, and brand styling. Email CV to talent@manypixels.co."),
+        ("Deer Designer", "Remote Graphic & Web Designer", "jobs@deerdesigner.com", "https://www.deerdesigner.com/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 1,
+         "Deer Designer hiring Remote Graphic Designers. Figma, web design mockups, brand assets, social banners, and clean modern aesthetics. Send portfolio to jobs@deerdesigner.com."),
+        ("RemoteBase", "Senior UI/UX & Graphic Designer", "careers@remotebase.com", "https://www.remotebase.com/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 1,
+         "RemoteBase is hiring Senior UI/UX and Graphic Designers for global tech clients. High-converting landing pages, user flows, and brand design. Apply to careers@remotebase.com."),
+        ("Canva", "Visual Designer (Templates & Brand Marketing)", "careers@canva.com", "https://www.canva.com/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 2,
+         "Canva is hiring Remote Visual Designers. Producing world-class social media templates, typography, and brand assets. Apply at careers@canva.com."),
+        ("Motiff", "AI Design Systems & UI Designer", "jobs@motiff.com", "https://www.motiff.com/careers", "Remote (Worldwide / Pakistan Friendly)", "remote", 1,
+         "Motiff is hiring UI Designers and Design System specialists. Modern web & app layout design, component architectures, and visual polish. Send CV to jobs@motiff.com."),
+
+        # --- Engineering, QA & Tech Roles ---
         ("Systems Limited", "Full Stack Developer (React / Python / FastAPI)", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Onsite - Seepz)", "onsite", 1,
          "Systems Limited is actively seeking a Full Stack Developer in Lahore. Required stack includes Python, FastAPI, React, Next.js, PostgreSQL, Docker, and REST APIs. Send your CV to careers@systemslimited.com."),
         ("Systems Limited", "Python / Backend Developer", "careers@systemslimited.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Hybrid - Gulberg)", "hybrid", 2,
@@ -950,7 +1003,7 @@ def src_pakistan_tech():
         jobs.append(dict(
             source="pakistan_tech", id=f"pk-{cid}-{tid[:20]}", title=title,
             company=comp, url=url, location=loc, text=desc, email=email,
-            email_src=url, date=days_ago(d_ago), mode=mode
+            email_src=url, date=days_ago(d_ago).isoformat(), mode=mode
         ))
     return jobs
 
@@ -992,7 +1045,7 @@ def src_facebook_community():
         jobs.append(dict(
             source="facebook_community", id=f"fb-{cid}-{tid[:20]}", title=title,
             company=comp, url=url, location=loc, text=desc, email=email,
-            email_src=url, date=days_ago(d_ago), mode=mode
+            email_src=url, date=days_ago(d_ago).isoformat(), mode=mode
         ))
     return jobs
 
@@ -2084,16 +2137,34 @@ def drafts_folder(imap):
     return "[Gmail]/Drafts"
 
 
-def save_draft(cfg, to, subject, body, pdf):
+def save_draft(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None):
+    prof = profile_data or {}
+    if not prof:
+        try:
+            prof = load_profile()
+        except Exception:
+            prof = {}
+    candidate_name = (prof.get("name") or "").strip()
+    clean_prefix = re.sub(r"[^A-Za-z0-9]+", "-", candidate_name).strip("-") if candidate_name else ""
+
+    if pdf_filename:
+        attach_name = pdf_filename
+    elif clean_prefix:
+        attach_name = f"{clean_prefix}-ATS-CV.pdf"
+    elif pdf and os.path.basename(pdf).lower() not in ("active_user_cv.pdf", "master_cv.pdf", "cv.pdf"):
+        attach_name = os.path.basename(pdf)
+    else:
+        attach_name = "Tailored-ATS-CV.pdf"
+
     msg = email.message.EmailMessage()
-    msg["From"] = email.utils.formataddr((load_profile().get("name", ""), cfg["gmail_address"]))
+    msg["From"] = email.utils.formataddr((candidate_name or "Applicant", cfg["gmail_address"]))
     msg["To"] = to
     msg["Subject"] = subject
     msg["Date"] = email.utils.formatdate(time.time(), localtime=True)
     msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
     msg.set_content(body)
     with open(pdf, "rb") as f:
-        msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=f"{file_prefix()}-CV.pdf")
+        msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=attach_name)
     imap = imaplib.IMAP4_SSL(cfg["imap_host"], timeout=60)
     try:
         imap.login(cfg["gmail_address"], cfg["gmail_app_password"].replace(" ", ""))
@@ -2355,8 +2426,21 @@ def drop_lock():
 
 
 def load_profile():
-    path = os.path.join(HERE, "profile.json")
-    if not os.path.exists(path):
+    candidates = []
+    if os.environ.get("JOBHUNTER_HOME"):
+        candidates.append(os.path.join(os.environ.get("JOBHUNTER_HOME"), "profile.json"))
+    candidates.append(os.path.join(HERE, "profile.json"))
+    candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"))
+    if FROZEN:
+        candidates.append(os.path.join(os.path.dirname(sys.executable), "profile.json"))
+    
+    path = None
+    for c in candidates:
+        if c and os.path.exists(c):
+            path = c
+            break
+
+    if not path or not os.path.exists(path):
         raise RuntimeError("profile.json not found: copy profile.example.json to profile.json and fill it in, "
                            "or press Upload my CV in the window")
     try:
@@ -2396,9 +2480,10 @@ def file_prefix():
     """Your name for file names, e.g. "Jane Doe" -> cvs/Jane-Doe-CV-acme.pdf."""
     try:
         name = load_profile().get("name", "")
-    except (RuntimeError, ValueError):
+    except Exception:
         name = ""
-    return re.sub(r"[^A-Za-z0-9]+", "-", name).strip("-") or "My"
+    clean = re.sub(r"[^A-Za-z0-9]+", "-", name).strip("-")
+    return clean or "Candidate"
 
 
 def collect(rows, now, today, notes):

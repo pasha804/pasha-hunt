@@ -18,6 +18,7 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--disable-gpu-rasterization "
     "--disable-background-timer-throttling "
     "--disable-renderer-backgrounding "
+    "--disable-features=CalculateNativeWinOcclusion,D3D11DisableCoreWindowSwapChains "
     "--no-sandbox"
 )
 
@@ -180,6 +181,8 @@ class CustomWebEnginePage(QtWebEngineCore.QWebEnginePage):
                 url_str = url.toString()
                 if not url_str.startswith("http://127.0.0.1") and not url_str.startswith("http://localhost") and url_str != "about:blank":
                     webbrowser.open(url_str)
+                elif "/api/cv/download" in url_str:
+                    webbrowser.open(url_str)
                 return False
         return ExternalRedirectPage(self.parent())
 
@@ -213,6 +216,23 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         self.browser.setPage(self.custom_page)
         self.browser.page().setBackgroundColor(QtGui.QColor("#070A0E"))
         self.setCentralWidget(self.browser)
+
+        # Connect downloadRequested to auto-save to user's Downloads folder
+        try:
+            self.browser.page().profile().downloadRequested.connect(self._handle_download)
+        except Exception:
+            pass
+
+    def _handle_download(self, download_item):
+        try:
+            downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+            os.makedirs(downloads_dir, exist_ok=True)
+            suggested = download_item.suggestedFileName() or "Master_ATS_CV.pdf"
+            download_item.setDownloadDirectory(downloads_dir)
+            download_item.setDownloadFileName(suggested)
+            download_item.accept()
+        except Exception as e:
+            print("[Download Error]:", e)
 
         # Initial URL load with single-attempt guard
         self._page_ready = False

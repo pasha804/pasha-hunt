@@ -1972,9 +1972,14 @@
             <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:11px;">
               <span style="color:var(--text-muted); font-family:monospace;" id="origFileName">No CV uploaded yet</span>
               <div style="display:flex; gap:6px;">
-                <button onclick="openCvPreviewModal('original')" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">👁 Preview</button>
+                <button onclick="openCvPreviewModal('original')" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">👁 Fullscreen</button>
                 <button onclick="downloadMasterCvFile('original')" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:4px; font-size:10px; cursor:pointer;">📥 PDF</button>
               </div>
+            </div>
+
+            <!-- Live Rendered Document View -->
+            <div style="height:380px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.12); margin-bottom:14px; background:#FFFFFF;">
+              <iframe id="origCvInlineIframe" src="/api/cv/render-html?version=original" style="width:100%; height:100%; border:none;"></iframe>
             </div>
 
             <!-- Original Content Inspection Snapshot -->
@@ -2026,9 +2031,14 @@
             <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,107,0,0.06); border:1px solid rgba(255,107,0,0.2); border-radius:8px; padding:8px 12px; margin-bottom:14px; font-size:11px;">
               <span style="color:#FFF; font-weight:700; font-family:monospace;" id="activeFileName">active_user_cv.pdf</span>
               <div style="display:flex; gap:6px;">
-                <button onclick="openCvPreviewModal('active')" style="padding:4px 10px; background:rgba(255,107,0,0.2); border:1px solid #FF6B00; color:#FF6B00; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">👁 Preview</button>
+                <button onclick="openCvPreviewModal('active')" style="padding:4px 10px; background:rgba(255,107,0,0.2); border:1px solid #FF6B00; color:#FF6B00; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">👁 Fullscreen</button>
                 <button onclick="downloadMasterCvFile('active')" style="padding:4px 10px; background:#22C55E; color:#000; border:none; border-radius:4px; font-size:10px; font-weight:700; cursor:pointer;">📥 PDF</button>
               </div>
+            </div>
+
+            <!-- Live Rendered ATS Document View -->
+            <div style="height:380px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,107,0,0.3); margin-bottom:14px; background:#FFFFFF;">
+              <iframe id="activeCvInlineIframe" src="/api/cv/render-html?version=active" style="width:100%; height:100%; border:none;"></iframe>
             </div>
 
             <!-- Active Content Inspection Snapshot -->
@@ -2942,7 +2952,7 @@
           <h3 id="cvPreviewModalTitle" style="color:#FFF; font-size:15px; margin:2px 0 0 0;">No CV uploaded yet — Master_CV_v2_.pdf</h3>
         </div>
         <div style="display:flex; gap:8px;">
-          <button onclick="downloadMasterCvFile()" style="padding:6px 14px; background:#FF6B00; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">📥 Download PDF</button>
+          <button onclick="downloadMasterCvFile('active')" style="padding:6px 14px; background:#FF6B00; color:#000; border:none; border-radius:6px; font-weight:700; font-size:11px; cursor:pointer;">📥 Download PDF</button>
           <button class="modal-close-btn" onclick="closeModals()">✕</button>
         </div>
       </div>
@@ -2975,14 +2985,14 @@
             <strong style="color:var(--text-muted); font-size:11px;">📄 Original Baseline Resume (78% ATS)</strong>
             <span style="font-size:10px; color:var(--text-dim);">Pre-Optimization</span>
           </div>
-          <iframe id="cvOriginalIframe" src="/api/cv/preview?version=original" style="flex:1; width:100%; height:100%; border:none;"></iframe>
+          <iframe id="cvOriginalIframe" src="/api/cv/render-html?version=original" style="flex:1; width:100%; height:100%; border:none;"></iframe>
         </div>
         <div style="display:flex; flex-direction:column;">
           <div style="padding:8px 14px; background:#0E1318; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center;">
             <strong style="color:#22C55E; font-size:11px;">⚡ Tailored Master ATS CV (96% ATS)</strong>
             <span style="font-size:10px; color:#22C55E; font-weight:700;">Active Document</span>
           </div>
-          <iframe id="cvMasterIframe" src="/api/cv/preview?version=active" style="flex:1; width:100%; height:100%; border:none;"></iframe>
+          <iframe id="cvMasterIframe" src="/api/cv/render-html?version=active" style="flex:1; width:100%; height:100%; border:none;"></iframe>
         </div>
       </div>
     </div>
@@ -3399,6 +3409,12 @@
         }
         if (document.getElementById('diffXyzCount')) document.getElementById('diffXyzCount').innerText = `${orig.quantified_metrics || 0} ➔ ${act.quantified_metrics || 12} Quantified Bullets`;
         if (document.getElementById('diffKeywordsCount')) document.getElementById('diffKeywordsCount').innerText = `+${(act.keywords_matched || 28) - (orig.keywords_matched || 14)} Recruiter Terms Injected`;
+
+        // Refresh live inline split-screen CV document iframes
+        const origIframe = document.getElementById('origCvInlineIframe');
+        if (origIframe) origIframe.src = '/api/cv/render-html?version=original&t=' + Date.now();
+        const activeIframe = document.getElementById('activeCvInlineIframe');
+        if (activeIframe) activeIframe.src = '/api/cv/render-html?version=active&t=' + Date.now();
 
         // Render CV Version Archive
         const history = info.history || [];
@@ -4339,15 +4355,40 @@
     });
 
     // --- CV Master Download & Preview Functions ---
-    function downloadMasterCvFile() {
-      window.open('/api/cv/download', '_blank');
-      showToast('Downloading Master ATS PDF...');
+    async function downloadMasterCvFile(version = 'active') {
+      try {
+        showToast('📥 Preparing Master ATS CV for download...');
+        const res = await fetch('/api/cv/save-to-downloads?version=' + encodeURIComponent(version));
+        const data = await res.json();
+        if (data.ok) {
+          showToast('✅ Saved & Opened: ' + data.filename);
+        } else {
+          window.location.href = '/api/cv/download?version=' + encodeURIComponent(version);
+        }
+      } catch (err) {
+        window.location.href = '/api/cv/download?version=' + encodeURIComponent(version);
+      }
     }
 
-    function openCvPreviewModal() {
+    function openCvPreviewModal(version = 'active') {
       const modal = document.getElementById('cvPreviewModal');
       const iframe = document.getElementById('cvPreviewIframe');
-      if (iframe) iframe.src = '/api/cv/preview?t=' + Date.now();
+      const titleEl = document.getElementById('cvPreviewModalTitle');
+      if (titleEl) {
+        titleEl.textContent = (version === 'original') ? 'Original Baseline Resume (Unoptimized)' : 'Tailored Master ATS CV (Pasha Hunt Optimized)';
+      }
+      if (iframe) {
+        iframe.src = '/api/cv/render-html?version=' + encodeURIComponent(version) + '&t=' + Date.now();
+      }
+      if (modal) modal.classList.add('active');
+    }
+
+    function openCvDualCompareModal() {
+      const modal = document.getElementById('cvDualCompareModal');
+      const origFrame = document.getElementById('cvOriginalIframe');
+      const masterFrame = document.getElementById('cvMasterIframe');
+      if (origFrame) origFrame.src = '/api/cv/render-html?version=original&t=' + Date.now();
+      if (masterFrame) masterFrame.src = '/api/cv/render-html?version=active&t=' + Date.now();
       if (modal) modal.classList.add('active');
     }
 

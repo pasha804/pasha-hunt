@@ -1083,7 +1083,16 @@ def calculate_dynamic_job_match(job, prof_kw):
     fast_apply_score = 5 if has_email else 3
 
     total = title_score + skill_score + mode_score + fast_apply_score
-    return min(98, max(42, total))
+
+    # Heavy penalty for completely mismatching career disciplines (e.g., Graphic Designer vs Backend Engineer)
+    if cand_discs and "other" not in cand_discs:
+        if not common_disc:
+            if any(d in job_disc for d in ["dev", "qa", "data", "finance", "legal"]):
+                total = max(10, total - 40)
+            else:
+                total = max(15, total - 25)
+
+    return min(98, max(10, total))
 
 class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -1156,6 +1165,10 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_cv_download(query)
         elif path == "/api/cv/preview":
             self._handle_cv_preview(query)
+        elif path == "/api/cv/render-html":
+            self._handle_cv_render_html(query)
+        elif path == "/api/cv/save-to-downloads":
+            self._handle_cv_save_to_downloads(query)
         else:
             super().do_GET()
 
@@ -1210,6 +1223,8 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_cv_rebuild(req_data)
         elif path == "/api/cv/open":
             self._handle_cv_open()
+        elif path == "/api/cv/save-to-downloads":
+            self._handle_cv_save_to_downloads(req_data)
         elif path == "/api/onboarding/test-gmail":
             self._handle_test_gmail(req_data)
         elif path == "/api/onboarding/complete":
@@ -1554,6 +1569,9 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         cand_phone = profile.get("contact", {}).get("phone") or ""
         cand_summary = profile.get("default_summary") or f"With dedicated professional background as a {cand_title}, I am confident in delivering high impact for your team at {company}."
 
+        clean_cand_name = re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-') or "Candidate"
+        attach_filename = f"{clean_cand_name}-ATS-CV.pdf"
+
         if not subject:
             subject = f"Application: {role} — {name}"
 
@@ -1565,7 +1583,7 @@ I am writing to express my strong interest in the {role} position.
 
 {cand_summary}
 
-Please find attached my tailored CV ({os.path.basename(pdf_path)}) for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
+Please find attached my tailored CV for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
 
 Sincerely,
 
@@ -1581,22 +1599,23 @@ Sincerely,
         }
 
         try:
-            bot.save_draft(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path)
+            bot.save_draft(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile)
             
             # Record in tracker.csv
             tracker_file = resolve_file("tracker.csv")
             today_str = datetime.now().strftime("%Y-%m-%d")
             with open(tracker_file, "a", newline="", encoding="utf-8") as tf:
                 writer = csv.writer(tf)
-                writer.writerow([today_str, company, role, to_email, "PashaHunt Workstation", "", os.path.basename(pdf_path), job_id or f"draft-{int(time.time())}", "draft-attached"])
+                writer.writerow([today_str, company, role, to_email, "PashaHunt Workstation", "", attach_filename, job_id or f"draft-{int(time.time())}", "draft-attached"])
 
             self._send_json({
                 "ok": True,
-                "message": f"Draft for {company} created in your Gmail Drafts ({cfg['gmail_address']}) with attached CV!",
+                "message": f"Draft for {company} created in your Gmail Drafts ({cfg['gmail_address']}) with attached CV ({attach_filename})!",
                 "to": to_email,
                 "company": company,
                 "role": role,
-                "subject": subject
+                "subject": subject,
+                "attachment": attach_filename
             })
         except Exception as e:
             print("[Save Draft Error]", e)
@@ -1613,6 +1632,8 @@ Sincerely,
         cand_email = profile.get("contact", {}).get("email") or "applicant@example.com"
         cand_phone = profile.get("contact", {}).get("phone") or ""
         pdf_path = get_active_cv_path()
+        clean_cand_name = re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-') or "Candidate"
+        attach_filename = f"{clean_cand_name}-ATS-CV.pdf"
 
         user_cfg = get_config()
         cfg = {
@@ -1661,19 +1682,19 @@ Sincerely,
 
 I am applying for the {title} position. {summary_snippet}
 
-Attached is my verified ATS Master CV ({os.path.basename(pdf_path)}) detailing my portfolio, competencies, and quantified achievements.
+Please find attached my verified ATS Master CV detailing my competencies, quantified achievements, and portfolio.
 
 Sincerely,
 {name}
 {cand_email}{phone_line}
 """
             try:
-                bot.save_draft(cfg, to=email_addr, subject=subject, body=body, pdf=pdf_path)
+                bot.save_draft(cfg, to=email_addr, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile)
                 today_str = datetime.now().strftime("%Y-%m-%d")
                 tracker_file = resolve_file("tracker.csv")
                 with open(tracker_file, "a", newline="", encoding="utf-8") as tf:
                     writer = csv.writer(tf)
-                    writer.writerow([today_str, company, title, email_addr, "Auto-Draft", j.get("url", ""), os.path.basename(pdf_path), j.get("id", ""), "draft-attached"])
+                    writer.writerow([today_str, company, title, email_addr, "Auto-Draft", j.get("url", ""), attach_filename, j.get("id", ""), "draft-attached"])
                 created.append({"company": company, "title": title, "email": email_addr})
             except Exception as e:
                 print(f"[Auto-Draft Error for {company}]:", e)
@@ -1682,7 +1703,7 @@ Sincerely,
             "ok": True,
             "created_count": len(created),
             "created": created,
-            "message": f"Successfully created {len(created)} tailored drafts in your Gmail Drafts (pashadev804@gmail.com) with CV attached!"
+            "message": f"Successfully created {len(created)} tailored drafts in your Gmail Drafts ({cfg['gmail_address']}) with CV attached ({attach_filename})!"
         })
 
     def _handle_extract_email(self, req_data):
@@ -1718,9 +1739,33 @@ Sincerely,
                     extracted_email, src = bot.pick_email(target_job)
                 t = threading.Thread(target=worker, daemon=True)
                 t.start()
-                t.join(timeout=5.0)
+                t.join(timeout=10.0)
             except Exception:
                 pass
+
+        # Priority 4: Verified Domain MX Synthesis if direct extraction was empty
+        if not extracted_email:
+            comp_url = target_job.get("url") or ""
+            domain = ""
+            if "://" in comp_url:
+                try:
+                    parsed_host = urllib.parse.urlparse(comp_url).netloc
+                    domain = parsed_host.lower().replace("www.", "")
+                    if any(agg in domain for agg in ["arbeitnow", "himalayas", "remotework", "remoteok", "jobicy", "weworkremotely", "linkedin", "indeed"]):
+                        domain = ""
+                except Exception:
+                    domain = ""
+            if not domain and company:
+                clean_comp = re.sub(r'[^a-z0-9]', '', company.lower())
+                domain = f"{clean_comp}.com"
+
+            if domain:
+                for prefix in ("careers", "jobs", "hr", "talent", "recruitment", "hello"):
+                    cand_email = f"{prefix}@{domain}"
+                    if check_mx_record(domain):
+                        extracted_email = cand_email
+                        src = f"Verified {domain} MX Domain"
+                        break
 
         if extracted_email:
             target_job["email"] = extracted_email
@@ -2756,16 +2801,31 @@ Warm regards,
             master_pdf = get_active_cv_path()
 
         if not master_pdf or not os.path.exists(master_pdf):
+            prof = self._get_profile_data()
+            target_out = resolve_file("active_user_cv.pdf", for_write=True)
+            try:
+                import cv
+                cv.generate_master_cv(prof, target_out)
+                master_pdf = target_out
+            except Exception as ce:
+                print("Error generating CV on the fly:", ce)
+
+        if not master_pdf or not os.path.exists(master_pdf):
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b'{"error": "Requested CV PDF not found"}')
             return
+
+        prof = self._get_profile_data()
+        cand_name = re.sub(r'[^A-Za-z0-9]+', '-', prof.get("name", "Candidate")).strip('-') or "Candidate"
+        dl_filename = f"{cand_name}-ATS-Master-CV.pdf"
+
         try:
             with open(master_pdf, "rb") as f:
                 data = f.read()
             self.send_response(200)
             self.send_header("Content-Type", "application/pdf")
-            self.send_header("Content-Disposition", f'attachment; filename="{os.path.basename(master_pdf)}"')
+            self.send_header("Content-Disposition", f'attachment; filename="{dl_filename}"')
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
@@ -2790,6 +2850,16 @@ Warm regards,
             master_pdf = get_active_cv_path()
 
         if not master_pdf or not os.path.exists(master_pdf):
+            prof = self._get_profile_data()
+            target_out = resolve_file("active_user_cv.pdf", for_write=True)
+            try:
+                import cv
+                cv.generate_master_cv(prof, target_out)
+                master_pdf = target_out
+            except Exception as ce:
+                print("Error generating CV on the fly:", ce)
+
+        if not master_pdf or not os.path.exists(master_pdf):
             self.send_response(404)
             self.end_headers()
             self.wfile.write(b'{"error": "Requested CV PDF not found"}')
@@ -2807,6 +2877,177 @@ Warm regards,
             self.send_response(500)
             self.end_headers()
             self.wfile.write(str(e).encode("utf-8"))
+
+    def _handle_cv_render_html(self, query=None):
+        """Renders full side-by-side CV directly as clean, responsive HTML for iframe embedding."""
+        query = query or {}
+        version = query.get("version", ["active"])[0].lower()
+        profile = self._get_profile_data()
+
+        if version in ("original", "previous", "old"):
+            cv_hist_file = resolve_file("cv_history.json")
+            orig_data = None
+            if os.path.exists(cv_hist_file):
+                try:
+                    with open(cv_hist_file, "r", encoding="utf-8") as f:
+                        hist = json.load(f)
+                        orig_data = hist.get("original")
+                except Exception:
+                    pass
+            render_prof = orig_data or profile
+            badge_title = "Original Baseline Resume (Unoptimized)"
+            badge_color = "#EF4444"
+        else:
+            render_prof = profile
+            badge_title = "Tailored Master ATS CV (Pasha Hunt Optimized)"
+            badge_color = "#22C55E"
+
+        cand_name = render_prof.get("name") or "Applicant"
+        cand_title = render_prof.get("default_title") or "Professional"
+        cand_summary = render_prof.get("default_summary") or ""
+        contact = render_prof.get("contact") or {}
+        phone = contact.get("phone") or ""
+        email_addr = contact.get("email") or ""
+        location = render_prof.get("location") or ""
+        portfolio = contact.get("github") or contact.get("portfolio") or contact.get("linkedin") or ""
+
+        contact_parts = [p for p in [phone, email_addr, location, portfolio] if p]
+        contact_line = " · ".join(contact_parts)
+
+        skills_dict = render_prof.get("skills") or {}
+        skills_rows = []
+        for cat, sks in skills_dict.items():
+            if isinstance(sks, list):
+                sk_str = ", ".join(str(s) for s in sks)
+            else:
+                sk_str = str(sks)
+            skills_rows.append(f"<tr><td class='k'>{cat}:</td><td>{sk_str}</td></tr>")
+        skills_html = "".join(skills_rows)
+
+        exp_list = render_prof.get("experience") or []
+        exp_rows = []
+        for e in exp_list:
+            comp = e.get("company", "")
+            role = e.get("role") or e.get("title") or ""
+            dates = e.get("dates") or e.get("years") or ""
+            bullets = e.get("bullets") or []
+            bullets_html = "".join(f"<li>{b}</li>" for b in bullets)
+            exp_rows.append(f"""
+            <div class="exp-item">
+              <div class="role-header">
+                <div><strong>{comp}</strong> — {role}</div>
+                <div class="dates">{dates}</div>
+              </div>
+              <ul>{bullets_html}</ul>
+            </div>
+            """)
+        exp_html = "".join(exp_rows)
+
+        edu_str = render_prof.get("education") or ""
+
+        doc_html = f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{
+    background: #FFFFFF;
+    color: #0F172A;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+    margin: 0;
+    padding: 24px 30px;
+  }}
+  .badge {{
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 4px;
+    background: {badge_color}15;
+    color: {badge_color};
+    border: 1px solid {badge_color}40;
+    margin-bottom: 12px;
+  }}
+  h1 {{ font-size: 22pt; margin: 0 0 2px 0; color: #070A0E; font-weight: 800; }}
+  .title {{ font-size: 11.5pt; font-weight: 700; color: #0D9488; margin-bottom: 4px; }}
+  .contact {{ font-size: 9.5pt; color: #475569; margin-bottom: 14px; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; }}
+  h2 {{ font-size: 10.5pt; font-weight: 800; color: #0F172A; letter-spacing: 1.5px; text-transform: uppercase; border-bottom: 1px solid #CBD5E1; padding-bottom: 3px; margin: 14px 0 6px 0; }}
+  .summary-text {{ font-size: 10pt; color: #334155; line-height: 1.5; margin-bottom: 10px; }}
+  table {{ width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-top: 4px; }}
+  td.k {{ font-weight: 700; color: #0F172A; width: 140px; vertical-align: top; padding: 2px 8px 2px 0; }}
+  td {{ color: #334155; vertical-align: top; padding: 2px 0; }}
+  .exp-item {{ margin-bottom: 12px; }}
+  .role-header {{ display: flex; justify-content: space-between; font-size: 10pt; margin-top: 4px; }}
+  .dates {{ color: #64748B; font-size: 9pt; font-weight: 600; }}
+  ul {{ margin: 3px 0 6px 0; padding-left: 18px; }}
+  li {{ font-size: 9.5pt; color: #334155; margin-bottom: 3px; line-height: 1.4; }}
+  .edu-box {{ font-size: 10pt; color: #334155; font-weight: 600; margin-top: 4px; }}
+</style>
+</head>
+<body>
+  <div class="badge">{badge_title}</div>
+  <h1>{cand_name}</h1>
+  <div class="title">{cand_title}</div>
+  <div class="contact">{contact_line}</div>
+  
+  <h2>Professional Summary</h2>
+  <div class="summary-text">{cand_summary}</div>
+
+  <h2>Core Competencies &amp; Skills</h2>
+  <table>{skills_html}</table>
+
+  <h2>Professional Experience</h2>
+  {exp_html}
+
+  <h2>Education &amp; Credentials</h2>
+  <div class="edu-box">{edu_str}</div>
+</body>
+</html>"""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(doc_html.encode("utf-8"))))
+        self.end_headers()
+        self.wfile.write(doc_html.encode("utf-8"))
+
+    def _handle_cv_save_to_downloads(self, query=None):
+        """Copies the Master ATS CV to the user's OS Downloads folder and opens it."""
+        profile = self._get_profile_data()
+        name = profile.get("name") or "Candidate"
+        clean_name = re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-') or "Candidate"
+
+        pdf_path = get_active_cv_path()
+        if not pdf_path or not os.path.exists(pdf_path):
+            target_out = resolve_file("active_user_cv.pdf", for_write=True)
+            try:
+                import cv
+                cv.generate_master_cv(profile, target_out)
+                pdf_path = target_out
+            except Exception as e:
+                print("Error generating CV:", e)
+
+        user_downloads = os.path.join(os.path.expanduser("~"), "Downloads")
+        os.makedirs(user_downloads, exist_ok=True)
+        dest_filename = f"{clean_name}-ATS-Master-CV.pdf"
+        dest_path = os.path.join(user_downloads, dest_filename)
+
+        if pdf_path and os.path.exists(pdf_path):
+            shutil.copy2(pdf_path, dest_path)
+            try:
+                os.startfile(dest_path)
+            except Exception:
+                pass
+            self._send_json({
+                "ok": True,
+                "filename": dest_filename,
+                "saved_path": dest_path,
+                "message": f"Saved and opened Master CV: {dest_filename} in Downloads"
+            })
+        else:
+            self._send_json({"ok": False, "error": "CV PDF could not be found or generated."}, status=500)
 
     def _parse_cv_text(self, text):
         info = {
@@ -3023,10 +3264,19 @@ Warm regards,
 
     def _handle_cv_open(self):
         master_pdf = get_active_cv_path()
+        if not master_pdf or not os.path.exists(master_pdf):
+            target_out = resolve_file("active_user_cv.pdf", for_write=True)
+            try:
+                import cv
+                cv.generate_master_cv(self._get_profile_data(), target_out)
+                master_pdf = target_out
+            except Exception as e:
+                print("Error building master CV:", e)
+
         if master_pdf and os.path.exists(master_pdf):
             try:
                 os.startfile(master_pdf)
-                self._send_json({"ok": True, "message": "Opening CV in default system viewer..."})
+                self._send_json({"ok": True, "message": f"Opened {os.path.basename(master_pdf)} in default system viewer!"})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=500)
         else:
