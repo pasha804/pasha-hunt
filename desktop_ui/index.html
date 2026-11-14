@@ -725,7 +725,7 @@
     /* --- 5 KPI Cards Row --- */
     .kpi-row {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 14px;
       margin-bottom: 20px;
     }
@@ -1623,6 +1623,14 @@
               <p>Match Rate</p>
             </div>
           </div>
+
+          <div class="kpi-card" onclick="switchPage('settings')" style="cursor:pointer;" title="Apinex 25M Enterprise AI Gateway">
+            <div class="kpi-icon" style="background:rgba(255,107,0,0.15); color:#FF6B00;">⚡</div>
+            <div class="kpi-info">
+              <h3 id="statAiTokens">Active <span class="kpi-trend" style="color:#22C55E;">25M / Day</span></h3>
+              <p id="statAiTokensSub">Apinex AI Tokens</p>
+            </div>
+          </div>
         </section>
 
         <!-- MIDDLE GRID (3 COLUMNS) -->
@@ -2504,14 +2512,13 @@
             <div class="form-group">
               <label>AI Intelligence Engine (Commercial License Embedded):</label>
               <select id="settingAiModel" onchange="changeAiModel(this.value)" style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); color:#FFF; padding:8px 10px; border-radius:6px; font-size:12px;">
-                <option value="free/qwen-3.8-max">Qwen 3.8 Max (Default — Fast & Accurate)</option>
-                <option value="free/deepseek-v4.1-flash">DeepSeek V4.1 Flash (Code & Engineering)</option>
-                <option value="free/kimi-k2.8">Kimi K2.8 (Long Context Analysis)</option>
-                <option value="free/minimax-m3">MiniMax M3 (High Precision Pitch)</option>
-                <option value="free/gemini-3.8-flash">Google Gemini 3.8 Flash (Multimodal)</option>
-                <option value="free/claude-sonnet-4.6">Anthropic Claude Sonnet 4.6 (Executive Tone)</option>
+                <option value="free/deepseek-v4.1-flash" selected>DeepSeek V4.1 Flash (Elite ATS Reasoning &amp; Personalization)</option>
+                <option value="free/qwen-3.8-max">Qwen 3.8 Max (High Speed &amp; Technical Precision)</option>
+                <option value="free/gpt-6-luna">GPT-6 Luna (Executive Outreach &amp; Pitch Copywriter)</option>
+                <option value="free/gemini-3.8-flash">Google Gemini 3.8 Flash (Multimodal Strategy)</option>
+                <option value="free/kimi-k3">Kimi K3 (Long Context &amp; Career Architecture)</option>
               </select>
-              <div style="font-size:10px; color:#22C55E; margin-top:4px;">🔒 Master APINEX license embedded silently — Zero user API key needed.</div>
+              <div style="font-size:10px; color:#22C55E; margin-top:4px;">🔒 Master APINEX 25M Daily Enterprise Quota Active — Zero user API key needed.</div>
             </div>
             <!-- PROPER 1-CLICK GMAIL APP PASSWORD BUTTON IN SETTINGS -->
             <div style="background:rgba(255,107,0,0.08); border:1px solid rgba(255,107,0,0.25); border-radius:8px; padding:12px; margin-bottom:10px;">
@@ -2860,14 +2867,13 @@
           <div class="form-group" style="margin-bottom:14px;">
             <label style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:4px;">AI Intelligence Engine (Commercial Zero-Key Access):</label>
             <select id="onboardModelSelect" style="width:100%; background:var(--bg-base); border:1px solid var(--border-subtle); color:#FFF; padding:10px 12px; border-radius:8px; font-size:12px;">
-              <option value="free/qwen-3.8-max" selected>Qwen 3.8 Max (Fast &amp; Accurate Reasoning)</option>
-              <option value="free/deepseek-v4.1-flash">DeepSeek V4.1 Flash (Code &amp; Tech Specialists)</option>
-              <option value="free/kimi-k2.8">Kimi K2.8 (Long Context Architecture)</option>
-              <option value="free/minimax-m3">MiniMax M3 (High Precision Pitch Writer)</option>
+              <option value="free/deepseek-v4.1-flash" selected>DeepSeek V4.1 Flash (Elite ATS Reasoning &amp; Personalization)</option>
+              <option value="free/qwen-3.8-max">Qwen 3.8 Max (High Speed &amp; Technical Precision)</option>
+              <option value="free/gpt-6-luna">GPT-6 Luna (Executive Outreach &amp; Pitch Copywriter)</option>
               <option value="free/gemini-3.8-flash">Google Gemini 3.8 Flash (Multimodal Strategy)</option>
-              <option value="free/claude-sonnet-4.6">Anthropic Claude Sonnet 4.6 (Elite Executive Tone)</option>
+              <option value="free/kimi-k3">Kimi K3 (Long Context &amp; Career Architecture)</option>
             </select>
-            <div style="margin-top:6px; font-size:10px; color:#22C55E;">🔒 Master APINEX license embedded silently — Zero user API key needed.</div>
+            <div style="margin-top:6px; font-size:10px; color:#22C55E;">🔒 Master APINEX 25M Daily Enterprise Quota Active — Zero user API key needed.</div>
           </div>
         </div>
 
@@ -3633,6 +3639,14 @@
             document.getElementById('heroWelcomeName').innerText = `Welcome back, ${stats.first_name}!`;
             document.getElementById('sidebarUserName').innerText = stats.candidate;
             document.getElementById('sidebarUserInitial').innerText = stats.first_name[0];
+          }
+          if (stats.apinex_tokens_used !== undefined) {
+            const used = stats.apinex_tokens_used;
+            const usedStr = used > 0 ? (used >= 1000 ? (used / 1000).toFixed(1) + 'k' : used) + ' used' : 'Active';
+            const tokEl = document.getElementById('statAiTokens');
+            if (tokEl) tokEl.innerHTML = `${usedStr} <span class="kpi-trend" style="color:#22C55E;">25M / Day</span>`;
+            const tokSub = document.getElementById('statAiTokensSub');
+            if (tokSub) tokSub.innerText = stats.apinex_model ? stats.apinex_model.replace('free/', '') : 'Apinex AI Tokens';
           }
           if (stats.autopilot !== undefined) {
             updateAutopilotUI({ enabled: stats.autopilot });

@@ -193,18 +193,23 @@ def save_config(cfg_updates):
         print("[Config Write Error]", e)
     return data
 
-# Master APINEX Vault & Multi-Model Catalog
+# Master APINEX Vault & Multi-Model Catalog (25M Daily Tokens)
 APINEX_URL = "https://api.apinex.bond/v1/chat/completions"
 APINEX_TOKEN = "sk-apx4b84fd940ce37dfab861a3e5d0243b71c9f3d8112adc5df"
 APINEX_CATALOG = [
-    {"id": "free/qwen-3.8-max", "name": "Qwen 3.8 Max (High Speed & Code)", "badge": "Fastest"},
-    {"id": "free/deepseek-v4.1-flash", "name": "DeepSeek V4.1 Flash (Deep ATS & Gap Analysis)", "badge": "Smartest"},
-    {"id": "free/kimi-k2.8", "name": "Kimi K2.8 (Long Context Documents)", "badge": "High Context"},
-    {"id": "free/minimax-m3", "name": "MiniMax M3 (Real-Time Pitch Synthesis)", "badge": "Speed"},
-    {"id": "free/gemini-3.8-flash", "name": "Google Gemini 3.8 Flash (Multimodal)", "badge": "Popular"},
-    {"id": "free/claude-sonnet-4.6", "name": "Claude Sonnet 4.6 (Executive Pitch Writing)", "badge": "Executive"}
+    {"id": "free/deepseek-v4.1-flash", "name": "DeepSeek V4.1 Flash (Elite ATS Reasoning & Gap Analysis)", "badge": "Smartest"},
+    {"id": "free/qwen-3.8-max", "name": "Qwen 3.8 Max (High Speed & Technical Systems)", "badge": "Fastest"},
+    {"id": "free/gpt-6-luna", "name": "GPT-6 Luna (Executive Outreach & Pitch Writing)", "badge": "Flagship"},
+    {"id": "free/gemini-3.8-flash", "name": "Google Gemini 3.8 Flash (Multimodal & Fast)", "badge": "Popular"},
+    {"id": "free/kimi-k3", "name": "Kimi K3 (Long Context & Document Research)", "badge": "High Context"}
 ]
 APINEX_MODELS = [m["id"] for m in APINEX_CATALOG]
+APINEX_USAGE = {
+    "total_tokens": 0,
+    "calls_count": 0,
+    "last_model": "free/deepseek-v4.1-flash",
+    "daily_quota": 25000000
+}
 
 # CV Version History Manager
 def get_cv_history():
@@ -340,9 +345,9 @@ def call_ai_engine(prompt, system_prompt="You are Pasha Hunt 2.0 AI Career Intel
 
 
 def call_apinex(prompt, system_prompt="You are Pasha Hunt 2.0 AI Career Intelligence Assistant.", model=None, timeout=8):
-    """Priority APINEX caller with user-selected model and automatic fallback cascade."""
+    """Priority APINEX caller with user-selected model, automatic fallback cascade, and token tracking."""
     cfg = get_config()
-    preferred_model = model or cfg.get("selected_model") or "free/qwen-3.8-max"
+    preferred_model = model or cfg.get("selected_model") or "free/deepseek-v4.1-flash"
     models_to_try = [preferred_model] + [m for m in APINEX_MODELS if m != preferred_model]
 
     for m in models_to_try:
@@ -366,6 +371,11 @@ def call_apinex(prompt, system_prompt="You are Pasha Hunt 2.0 AI Career Intellig
                 choice = data.get("choices", [{}])[0]
                 text = choice.get("message", {}).get("content", "").strip()
                 if text:
+                    usage = data.get("usage", {})
+                    tokens = usage.get("total_tokens", 0)
+                    APINEX_USAGE["total_tokens"] += tokens
+                    APINEX_USAGE["calls_count"] += 1
+                    APINEX_USAGE["last_model"] = m
                     return text
         except Exception:
             continue
@@ -1523,7 +1533,11 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             "email": profile_data.get("contact", {}).get("email") or profile_data.get("email", ""),
             "target_title": profile_data.get("default_title") or "Professional Specialist",
             "autopilot": AUTOPILOT_STATE["enabled"],
-            "replies_count": replies_count
+            "replies_count": replies_count,
+            "apinex_tokens_used": APINEX_USAGE["total_tokens"],
+            "apinex_daily_quota": APINEX_USAGE["daily_quota"],
+            "apinex_calls": APINEX_USAGE["calls_count"],
+            "apinex_model": APINEX_USAGE["last_model"]
         }
         self._send_json(stats)
 
@@ -1737,7 +1751,27 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         if not body:
             phone_part = f" | {cand_phone}" if cand_phone else ""
-            body = f"""Dear Hiring Team at {company},
+            prompt = f"""Write a professional, compelling, and customized 2-paragraph job application email for:
+Role: {role}
+Company: {company}
+
+Candidate Name: {name}
+Candidate Background: {cand_title}
+Candidate Summary: {cand_summary}
+Contact: {cand_email}{phone_part}
+
+Requirements:
+- 2 concise, impactful paragraphs tailored directly to {company}.
+- Highlight candidate's quantifiable achievements and immediate value.
+- Mention attached Tailored ATS Master CV ({attach_filename}).
+- Professional closing with candidate name and contact.
+- Return ONLY the final email body text ready to send (no placeholders, no subject line, no markdown backticks).
+"""
+            ai_draft = call_apinex(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.")
+            if ai_draft and len(ai_draft.strip()) > 80:
+                body = ai_draft.strip()
+            else:
+                body = f"""Dear Hiring Team at {company},
 
 I am writing to express my strong interest in the {role} position.
 
@@ -1838,7 +1872,25 @@ Sincerely,
             subject = f"Application: {title} — {name}"
             phone_line = f"\nPhone: {cand_phone}" if cand_phone else ""
             summary_snippet = profile.get("default_summary") or f"With extensive background as a {cand_title}, I am confident in delivering high impact for your team."
-            body = f"""Dear {company} Talent Acquisition Team,
+            
+            prompt = f"""Write an executive, compelling 2-paragraph job application email for:
+Role: {title}
+Company: {company}
+Candidate: {name} ({cand_title})
+Summary: {summary_snippet}
+Contact: {cand_email}{phone_line}
+
+Requirements:
+- 2 concise, confident paragraphs customized for {company}.
+- State clearly that the candidate's Tailored ATS Master CV ({attach_filename}) is attached.
+- Professional sign-off.
+- Return ONLY the final email body ready to send.
+"""
+            ai_body = call_apinex(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.")
+            if ai_body and len(ai_body.strip()) > 80:
+                body = ai_body.strip()
+            else:
+                body = f"""Dear {company} Talent Acquisition Team,
 
 I am applying for the {title} position. {summary_snippet}
 
