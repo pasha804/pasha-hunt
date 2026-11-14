@@ -223,17 +223,6 @@ class WorkstationWindow(QtWidgets.QMainWindow):
         except Exception:
             pass
 
-    def _handle_download(self, download_item):
-        try:
-            downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
-            os.makedirs(downloads_dir, exist_ok=True)
-            suggested = download_item.suggestedFileName() or "Master_ATS_CV.pdf"
-            download_item.setDownloadDirectory(downloads_dir)
-            download_item.setDownloadFileName(suggested)
-            download_item.accept()
-        except Exception as e:
-            print("[Download Error]:", e)
-
         # Initial URL load with single-attempt guard
         self._page_ready = False
         self._reload_count = 0
@@ -250,6 +239,17 @@ class WorkstationWindow(QtWidgets.QMainWindow):
 
         # Background Scraper Thread state
         self.is_scanning = False
+
+    def _handle_download(self, download_item):
+        try:
+            downloads_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+            os.makedirs(downloads_dir, exist_ok=True)
+            suggested = download_item.suggestedFileName() or "Master_ATS_CV.pdf"
+            download_item.setDownloadDirectory(downloads_dir)
+            download_item.setDownloadFileName(suggested)
+            download_item.accept()
+        except Exception as e:
+            print("[Download Error]:", e)
 
     def _on_load_finished(self, success):
         if success:

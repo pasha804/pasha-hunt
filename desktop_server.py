@@ -40,15 +40,6 @@ sys.path.insert(0, HERE)
 
 def get_user_data_dir():
     """Returns guaranteed writable directory for application state, configs, and CVs."""
-    here = os.path.dirname(os.path.abspath(__file__))
-    try:
-        test_file = os.path.join(here, ".perm_test")
-        with open(test_file, "w") as f:
-            f.write("1")
-        os.remove(test_file)
-        return here
-    except Exception:
-        pass
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     if local_app_data:
         target = os.path.join(local_app_data, "Pasha Hunt", "User Data")
@@ -70,38 +61,32 @@ def resolve_file(filename, for_write=False):
     if os.path.exists(user_target):
         return user_target
 
+    # Fallback to bundled defaults inside app package if not yet created in user_data_dir
     candidates = []
     if getattr(sys, 'frozen', False):
-        exe_dir = os.path.dirname(sys.executable)
-        candidates.append(os.path.join(exe_dir, filename))
         if hasattr(sys, '_MEIPASS'):
             candidates.append(os.path.join(sys._MEIPASS, filename))
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, filename))
+        candidates.append(os.path.join(exe_dir, "_internal", filename))
     here = os.path.dirname(os.path.abspath(__file__))
     candidates.append(os.path.join(here, filename))
-    candidates.append(os.path.join("E:\\Job Hunt", filename))
-    candidates.append(os.path.join("E:\\Job Hunt\\job-hunter-repo", filename))
-    local_app_data = os.environ.get("LOCALAPPDATA", "")
-    if local_app_data:
-        candidates.append(os.path.join(local_app_data, "Programs", "Pasha Hunt", filename))
+
     for c in candidates:
-        if os.path.exists(c):
+        if os.path.exists(c) and os.path.isfile(c):
             return c
     return user_target
 
 def resolve_ui_dir():
     candidates = []
     if getattr(sys, 'frozen', False):
-        exe_dir = os.path.dirname(sys.executable)
-        candidates.append(os.path.join(exe_dir, "desktop_ui"))
         if hasattr(sys, '_MEIPASS'):
             candidates.append(os.path.join(sys._MEIPASS, "desktop_ui"))
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, "desktop_ui"))
+        candidates.append(os.path.join(exe_dir, "_internal", "desktop_ui"))
     here = os.path.dirname(os.path.abspath(__file__))
     candidates.append(os.path.join(here, "desktop_ui"))
-    candidates.append(os.path.join("E:\\Job Hunt", "desktop_ui"))
-    local_app_data = os.environ.get("LOCALAPPDATA", "")
-    if local_app_data:
-        candidates.append(os.path.join(local_app_data, "Programs", "Pasha Hunt", "desktop_ui"))
-        candidates.append(os.path.join(local_app_data, "Programs", "Job Hunter", "desktop_ui"))
     for c in candidates:
         if os.path.exists(c) and os.path.isdir(c):
             return c
@@ -2957,9 +2942,6 @@ Warm regards,
         try:
             with open(prof_file, "w", encoding="utf-8") as f:
                 json.dump(prof, f, indent=2, ensure_ascii=False)
-            if os.path.exists("E:\\Job Hunt\\profile.json"):
-                with open("E:\\Job Hunt\\profile.json", "w", encoding="utf-8") as f:
-                    json.dump(prof, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
@@ -3384,13 +3366,6 @@ Warm regards,
             with open(prof_file, "w", encoding="utf-8") as f:
                 json.dump(parsed_info, f, indent=2, ensure_ascii=False)
 
-            if os.path.exists("E:\\Job Hunt\\profile.json") and user_data_dir != "E:\\Job Hunt":
-                try:
-                    with open("E:\\Job Hunt\\profile.json", "w", encoding="utf-8") as f:
-                        json.dump(parsed_info, f, indent=2, ensure_ascii=False)
-                except Exception:
-                    pass
-
             # Update keywords in config.json to match candidate's actual domain
             keywords = [cand_title]
             if cand_disc == "design":
@@ -3455,14 +3430,6 @@ Warm regards,
             with open(prof_file, "w", encoding="utf-8") as pf:
                 json.dump(enhanced, pf, indent=2, ensure_ascii=False)
 
-            user_data_dir = get_user_data_dir()
-            if os.path.exists("E:\\Job Hunt\\profile.json") and user_data_dir != "E:\\Job Hunt":
-                try:
-                    with open("E:\\Job Hunt\\profile.json", "w", encoding="utf-8") as pf:
-                        json.dump(enhanced, pf, indent=2, ensure_ascii=False)
-                except Exception:
-                    pass
-
             # Recompile active_user_cv.pdf
             active_pdf = resolve_file("active_user_cv.pdf", for_write=True)
             try:
@@ -3500,10 +3467,6 @@ Warm regards,
                 prof_file = resolve_file("profile.json", for_write=True)
                 with open(prof_file, "w", encoding="utf-8") as f:
                     json.dump(profile_data, f, indent=2, ensure_ascii=False)
-                repo_prof = os.path.join("E:\\Job Hunt\\job-hunter-repo", "profile.json")
-                if os.path.exists(os.path.dirname(repo_prof)):
-                    with open(repo_prof, "w", encoding="utf-8") as f:
-                        json.dump(profile_data, f, indent=2, ensure_ascii=False)
 
             import cv
             out_pdf = resolve_file("active_user_cv.pdf", for_write=True)
