@@ -1,0 +1,82 @@
+"""Scrapling Stealth Engine Adapter for Pasha Hunt 2.0
+Integrates D4Vinci/Scrapling (https://github.com/D4Vinci/Scrapling)
+Undetectable, powerful, and adaptive web scraping to bypass Cloudflare,
+Akamai, and anti-bot systems when crawling company career portals and finding recruiter emails.
+"""
+import re
+import urllib.request
+import urllib.error
+
+HAS_SCRAPLING = False
+try:
+    from scrapling import Fetcher
+    HAS_SCRAPLING = True
+except Exception:
+    HAS_SCRAPLING = False
+
+
+def is_scrapling_available():
+    """Returns True if D4Vinci/Scrapling engine is initialized and ready."""
+    return HAS_SCRAPLING
+
+
+def stealth_fetch(url, timeout=10):
+    """Fetches URL using D4Vinci/Scrapling stealth engine if available,
+    falling back to hardened modern browser headers with anti-bot resistance.
+    """
+    if HAS_SCRAPLING:
+        try:
+            page = Fetcher.get(url, timeout=timeout)
+            if page:
+                if hasattr(page, 'html_content') and page.html_content:
+                    return page.html_content
+                if hasattr(page, 'body') and page.body:
+                    if isinstance(page.body, bytes):
+                        return page.body.decode('utf-8', errors='ignore')
+                    return str(page.body)
+        except Exception:
+            pass
+
+    # Hardened modern browser headers (Bypasses basic anti-bot & 403 blocks)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": '"Windows"',
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
+        "Upgrade-Insecure-Requests": "1"
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="ignore")
+
+
+def extract_emails_from_url(url, timeout=10):
+    """Deep crawl a target company careers or contact page to discover hidden recruiter emails."""
+    try:
+        content = stealth_fetch(url, timeout=timeout)
+        if not content:
+            return []
+        
+        # Regex matching standard and obfuscated emails
+        raw_emails = set(re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", content))
+        
+        # Obfuscated emails: e.g., careers [at] company [dot] com
+        obf = re.findall(r"([a-zA-Z0-9_.+-]+)\s*(?:\[at\]|\(at\)|@)\s*([a-zA-Z0-9-]+)\s*(?:\[dot\]|\(dot\)|\.)\s*([a-zA-Z0-9-.]+)", content, re.IGNORECASE)
+        for a, b, c in obf:
+            raw_emails.add(f"{a}@{b}.{c}")
+
+        valid = []
+        for e in raw_emails:
+            e_clean = e.strip(".").lower()
+            if not any(bad in e_clean for bad in [".png", ".jpg", ".jpeg", ".webp", ".svg", "example.com", "domain.com", "sentry.io"]):
+                valid.append(e_clean)
+
+        return valid
+    except Exception:
+        return []

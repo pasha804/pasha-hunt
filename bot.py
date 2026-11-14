@@ -1425,19 +1425,28 @@ _site_email = {}  # site -> (email, page) or (None, None): each company site is 
 def site_email(site):
     base = "https://" + site
     for path in ("/careers", "/jobs", "/join-us", "/contact", "/"):
+        url = base + path
         try:
-            if not allowed(base + path):
+            if not allowed(url):
                 continue
-            page = fetch(base + path, timeout=10, tries=1)
+            page = None
+            try:
+                import scrapling_adapter
+                page = scrapling_adapter.stealth_fetch(url, timeout=8)
+            except Exception:
+                pass
+            if not page:
+                page = fetch(url, timeout=8, tries=1)
         except urllib.error.HTTPError:
             continue  # this page is missing; the site is up, so try the next one
         except Exception:
             break  # site down, slow or refusing connections: skip its other pages
-        for e in find_emails_in_text(page):
-            local, _, domain = e.lower().partition("@")
-            same_site = site == domain or site.endswith("." + domain) or domain.endswith("." + site)
-            if HIRING_LOCAL.match(local) and same_site:
-                return e, base + path
+        if page:
+            for e in find_emails_in_text(page):
+                local, _, domain = e.lower().partition("@")
+                same_site = site == domain or site.endswith("." + domain) or domain.endswith("." + site)
+                if HIRING_LOCAL.match(local) and same_site:
+                    return e, url
     return None, None
 
 
