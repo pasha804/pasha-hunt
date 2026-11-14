@@ -1485,14 +1485,22 @@ def pick_email(job):
     if site_em and verify_email_domain(site_em):
         return site_em, site_url
 
-    # Priority 4: Verified domain contact synthesis for company
-    for host in company_sites(job):
-        site = host.removeprefix("www.")
-        for prefix in ("careers", "jobs", "hr", "talent", "hiring"):
-            cand = f"{prefix}@{site}"
-            if verify_email_domain(cand):
-                return cand, f"https://{site}"
+    # Priority 3.5: Scrapling stealth crawler on job apply/portal URL
+    apply_url = job.get("url") or job.get("apply")
+    if apply_url and "://" in str(apply_url):
+        try:
+            import scrapling_adapter
+            if scrapling_adapter.is_scrapling_available():
+                c_emails = scrapling_adapter.extract_emails_from_url(apply_url, timeout=6)
+                hiring_c = [e for e in c_emails if HIRING_LOCAL.match(e.split("@")[0])]
+                if hiring_c and verify_email_domain(hiring_c[0]):
+                    return hiring_c[0], apply_url
+                elif c_emails and verify_email_domain(c_emails[0]):
+                    return c_emails[0], apply_url
+        except Exception:
+            pass
 
+    # No unverified guessing or synthesis: return None so portal application is used
     return None, None
 
 
@@ -2573,11 +2581,53 @@ def save_jobs(jobs, stamp):
     keep = []
     for j in jobs:
         j = {k: v for k, v in j.items() if k != "raw_html"}
-        j["date"] = j["date"].isoformat() if j.get("date") else ""
-        if j["status"] == STATUS_REJECTED:
-            j["text"] = j["text"][:3000]
+        if isinstance(j.get("date"), (dt.date, dt.datetime)):
+            j["date"] = j["date"].isoformat()
+        else:
+            j["date"] = str(j.get("date") or "")
+        if j.get("status") == STATUS_REJECTED:
+            j["text"] = j.get("text", "")[:3000]
         keep.append(j)
     write_jobs({"updated": stamp, "jobs": keep})
+
+
+def src_all():
+    """Runs all 18 radar sources in parallel, merges with existing jobs.json, and writes clean results."""
+    now = dt.datetime.now(dt.timezone.utc)
+    today = dt.date.today()
+    notes = []
+
+    existing_jobs = []
+    if os.path.exists(JOBS_FILE):
+        try:
+            with open(JOBS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    existing_jobs = data.get("jobs", [])
+                elif isinstance(data, list):
+                    existing_jobs = data
+        except Exception:
+            existing_jobs = []
+
+    fresh_jobs = collect([], now, today, notes)
+
+    seen = set()
+    merged = []
+    for j in fresh_jobs:
+        key = (slug(j.get("company", "")), slug(j.get("title", "")))
+        if key not in seen:
+            seen.add(key)
+            merged.append(j)
+
+    for j in existing_jobs:
+        key = (slug(j.get("company", "")), slug(j.get("title", "")))
+        if key not in seen:
+            seen.add(key)
+            merged.append(j)
+
+    save_jobs(merged, now.isoformat())
+    log(f"Radar sweep complete: {len(merged)} total opportunities indexed across 18 feeds.")
+    return merged
 
 
 def load_jobs():

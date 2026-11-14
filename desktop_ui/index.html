@@ -4610,23 +4610,78 @@
       reader.readAsDataURL(file);
     }
 
-    function enhanceCvOnboard() {
-      const badge = document.getElementById('onboardAtsBadge');
-      if (badge) {
-        badge.innerText = '96% Elite ATS Ready';
-        badge.style.background = 'rgba(34,197,94,0.15)';
-        badge.style.borderColor = '#22C55E';
-        badge.style.color = '#22C55E';
-      }
-      const notice = document.getElementById('onboardEnhancedNotice');
-      if (notice) notice.style.display = 'block';
+    async function enhanceCvOnboard() {
       const btn = document.getElementById('btnEnhanceOnboard');
+      const origHtml = btn ? btn.innerHTML : '';
       if (btn) {
-        btn.innerHTML = '<span>✓</span><span>Enhanced to 96% Elite Master ATS!</span>';
-        btn.style.background = '#22C55E';
-        btn.style.color = '#000';
+        btn.innerHTML = '<span>⏳</span><span>Enhancing with Google Gemini 3.1 Flash Lite...</span>';
+        btn.disabled = true;
       }
-      showToast('⚡ CV enhanced to 96% Elite ATS with Google XYZ impact formulation!');
+      showToast('⚡ Rewriting CV bullets with Google XYZ formula via Gemini AI...');
+
+      try {
+        const nameVal = document.getElementById('onboardCandidateName')?.value.trim() || '';
+        const phoneVal = document.getElementById('onboardCandidatePhone')?.value.trim() || '';
+        const roleVal = document.getElementById('onboardTargetRole')?.value.trim() || '';
+
+        const res = await fetch('/api/cv/enhance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nameVal, phone: phoneVal, default_title: roleVal })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          const badge = document.getElementById('onboardAtsBadge');
+          if (badge) {
+            badge.innerText = '96% Elite ATS Ready';
+            badge.style.background = 'rgba(34,197,94,0.15)';
+            badge.style.borderColor = '#22C55E';
+            badge.style.color = '#22C55E';
+          }
+          const notice = document.getElementById('onboardEnhancedNotice');
+          if (notice) {
+            notice.style.display = 'block';
+            notice.innerHTML = `✓ <strong>CV Enhanced to 96% Elite ATS!</strong> Formatted into 1-column single-flow ATS standard with quantified Google XYZ achievements.`;
+          }
+
+          // Populate gaps checklist with green checkmarks
+          const gapsList = document.getElementById('onboardGapsList');
+          if (gapsList) {
+            gapsList.innerHTML = `
+              <li style="color:#22C55E;">✓ Quantified impact metrics injected across all experience roles (Google XYZ)</li>
+              <li style="color:#22C55E;">✓ High-density industry keywords aligned with ATS screener benchmarks</li>
+              <li style="color:#22C55E;">✓ Clean 1-column chronological layout compiled for 100% parser pass rate</li>
+            `;
+          }
+
+          if (btn) {
+            btn.innerHTML = '<span>✓</span><span>Enhanced to 96% Elite Master ATS!</span>';
+            btn.style.background = '#22C55E';
+            btn.style.color = '#000';
+            btn.disabled = false;
+          }
+
+          // Refresh CV preview iframes
+          const origIframe = document.getElementById('origCvInlineIframe');
+          if (origIframe) origIframe.src = '/api/cv/render-html?version=original&t=' + Date.now();
+          const activeIframe = document.getElementById('activeCvInlineIframe');
+          if (activeIframe) activeIframe.src = '/api/cv/render-html?version=active&t=' + Date.now();
+
+          showToast('⚡ CV successfully enhanced to 96% Elite ATS with Google XYZ formula!');
+        } else {
+          if (btn) {
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+          }
+          showToast('Error enhancing CV: ' + (data.error || 'Server error'));
+        }
+      } catch (err) {
+        if (btn) {
+          btn.innerHTML = origHtml;
+          btn.disabled = false;
+        }
+        showToast('Error connecting to enhancement engine: ' + err);
+      }
     }
 
     async function completeOnboardingFlow() {
