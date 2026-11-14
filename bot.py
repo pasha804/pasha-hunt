@@ -31,6 +31,7 @@ import email.utils
 import hashlib
 import html
 import imaplib
+import smtplib
 import json
 import os
 import re
@@ -2195,6 +2196,64 @@ def save_draft(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None
             imap.logout()
         except Exception:
             pass
+
+
+def send_email_smtp(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None):
+    """Sends a real email directly via Gmail SMTP with the tailored ATS CV attached.
+    Ensures message is delivered to the recipient and a copy is saved in Sent."""
+    prof = profile_data or {}
+    if not prof:
+        try:
+            prof = load_profile()
+        except Exception:
+            prof = {}
+    candidate_name = (prof.get("name") or "").strip()
+    clean_prefix = re.sub(r"[^A-Za-z0-9]+", "-", candidate_name).strip("-") if candidate_name else ""
+
+    if pdf_filename:
+        attach_name = pdf_filename
+    elif clean_prefix:
+        attach_name = f"{clean_prefix}-ATS-CV.pdf"
+    elif pdf and os.path.basename(pdf).lower() not in ("active_user_cv.pdf", "master_cv.pdf", "cv.pdf"):
+        attach_name = os.path.basename(pdf)
+    else:
+        attach_name = "Tailored-ATS-CV.pdf"
+
+    from_addr = (cfg.get("gmail_address") or "").strip()
+    from_pass = (cfg.get("gmail_app_password") or "").replace(" ", "").strip()
+    if not from_addr or not from_pass:
+        raise ValueError("Gmail address and App Password must be configured to send emails.")
+
+    msg = email.message.EmailMessage()
+    msg["From"] = email.utils.formataddr((candidate_name or "Applicant", from_addr))
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg["Date"] = email.utils.formatdate(time.time(), localtime=True)
+    msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
+    msg.set_content(body)
+
+    if pdf and os.path.exists(pdf):
+        with open(pdf, "rb") as f:
+            msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=attach_name)
+
+    # First attempt: SMTP_SSL over port 465
+    last_err = None
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
+            server.login(from_addr, from_pass)
+            server.send_message(msg)
+            return {"ok": True, "to": to, "subject": subject, "attachment": attach_name, "from": from_addr}
+    except Exception as e:
+        last_err = e
+        # Fallback attempt: SMTP with STARTTLS over port 587
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+                server.starttls()
+                server.login(from_addr, from_pass)
+                server.send_message(msg)
+                return {"ok": True, "to": to, "subject": subject, "attachment": attach_name, "from": from_addr}
+        except Exception as e2:
+            raise RuntimeError(f"SMTP Delivery failed: {str(e2)} (SSL attempt error: {str(last_err)})")
 
 
 # ---------- main ----------

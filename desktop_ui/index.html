@@ -2317,11 +2317,31 @@
             </button>
           </div>
 
-          <div class="settings-panel">
-            <label style="display:block; font-size:11px; font-weight:800; color:var(--accent-orange); margin-bottom:8px;">
-              Generated Cover Letter Preview:
-            </label>
-            <textarea id="clOutput" rows="16" placeholder="Your tailored cover letter will generate here directly via APINEX..." style="width:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; font-size:11px; font-family:monospace; line-height:1.5; color:var(--text-white); resize:none;"></textarea>
+          <div class="settings-panel" style="display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div style="display:flex; gap:6px; background:rgba(255,255,255,0.04); padding:3px; border-radius:6px; border:1px solid var(--border-subtle);">
+                <button id="clTabDocBtn" onclick="switchClView('doc')" style="padding:4px 12px; font-size:11px; font-weight:700; border:none; border-radius:4px; background:#FF6B00; color:#000; cursor:pointer;">
+                  📄 A4 Document View
+                </button>
+                <button id="clTabRawBtn" onclick="switchClView('raw')" style="padding:4px 12px; font-size:11px; font-weight:600; border:none; border-radius:4px; background:transparent; color:var(--text-muted); cursor:pointer;">
+                  📝 Raw Text Editor
+                </button>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button onclick="printCoverLetterDoc()" style="padding:4px 10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:6px; font-size:11px; cursor:pointer;">🖨️ Print / PDF</button>
+                <button onclick="copyCoverLetter()" style="padding:4px 10px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">📋 Copy</button>
+              </div>
+            </div>
+
+            <!-- A4 Document Sheet Frame -->
+            <div id="clDocViewContainer" style="width:100%; height:460px; border-radius:8px; overflow:hidden; border:1px solid var(--border-subtle); background:#11141B;">
+              <iframe id="clDocFrame" src="/api/cover-letter/document" style="width:100%; height:100%; border:none;"></iframe>
+            </div>
+
+            <!-- Raw Textarea (Hidden by default or toggled) -->
+            <div id="clRawViewContainer" style="display:none; width:100%; height:460px;">
+              <textarea id="clOutput" rows="16" placeholder="Your tailored cover letter will generate here directly via APINEX..." style="width:100%; height:100%; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; font-size:11px; font-family:monospace; line-height:1.5; color:var(--text-white); resize:none;"></textarea>
+            </div>
           </div>
         </div>
 
@@ -2650,11 +2670,14 @@
           <span style="font-size:10px; color:var(--green-status); font-weight:700;">Direct MX Ready</span>
         </div>
 
-        <div style="display:flex; gap:10px; margin-top:20px;">
-          <button id="modalApplyBtn" onclick="applyExternal()" style="flex:1; padding:10px; background:var(--accent-orange); color:#000; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
-            Apply on Company Site ↗
+        <div style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap;">
+          <button id="modalSendBtn" onclick="sendEmailFromModal()" style="flex:1; min-width:140px; padding:10px; background:linear-gradient(135deg, #10B981, #059669); color:#FFF; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
+            🚀 Send via SMTP Now
           </button>
-          <button onclick="tailorForCurrentJob()" style="flex:1; padding:10px; background:var(--bg-surface); color:var(--accent-amber); border:1px solid var(--accent-amber); border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">
+          <button id="modalApplyBtn" onclick="applyExternal()" style="flex:1; min-width:140px; padding:10px; background:var(--accent-orange); color:#000; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
+            ✉ Save Draft in Gmail
+          </button>
+          <button onclick="tailorForCurrentJob()" style="flex:1; min-width:140px; padding:10px; background:var(--bg-surface); color:var(--accent-amber); border:1px solid var(--accent-amber); border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">
             🪄 Tailor CV (Google XYZ)
           </button>
         </div>
@@ -2733,7 +2756,34 @@
     </div>
   </div>
 
-    <!-- 4. Enterprise 3-Step Onboarding Wizard Modal -->
+  <!-- 5. Executive Cover Letter Document Sheet Modal -->
+  <div class="modal-overlay" id="coverLetterDocModal" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box" style="max-width:920px; width:95%; height:92vh; background:#0E1318; border:1px solid rgba(255,255,255,0.12); display:flex; flex-direction:column; padding:0; overflow:hidden; border-radius:14px; box-shadow:0 25px 70px rgba(0,0,0,0.85);">
+      <div class="modal-header" style="padding:14px 20px; background:var(--bg-surface); border-bottom:1px solid var(--border-subtle); margin:0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:20px;">📄</span>
+          <div>
+            <h3 style="margin:0; font-size:15px; color:#FFF;" id="docModalTitle">Executive Cover Letter Document</h3>
+            <span style="font-size:10px; color:var(--text-muted);" id="docModalSubtitle">Formatted Formal Business Document</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button onclick="printModalDoc()" style="padding:6px 14px; background:rgba(255,255,255,0.08); border:1px solid var(--border-subtle); color:#FFF; border-radius:6px; font-size:11px; cursor:pointer; font-weight:600;">
+            🖨️ Print / Save PDF
+          </button>
+          <button onclick="copyModalDocText()" style="padding:6px 14px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">
+            📋 Copy Text
+          </button>
+          <button class="modal-close-btn" onclick="closeModals()">✕</button>
+        </div>
+      </div>
+      <div style="flex:1; width:100%; background:#11141B; overflow:hidden;">
+        <iframe id="docModalFrame" style="width:100%; height:100%; border:none;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Enterprise 3-Step Onboarding Wizard Modal -->
   <div class="modal-overlay" id="onboardingModal" style="z-index:9999;">
     <div class="modal-box" style="max-width:680px; width:92%; background:#0E1318; border:1px solid #FF6B00; box-shadow:0 25px 60px rgba(0,0,0,0.85); border-radius:16px;">
       <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px;">
@@ -3118,6 +3168,38 @@
           btn.classList.remove('active');
           lbl.innerText = 'Auto-Pilot: OFF';
         }
+      }
+    }
+
+    // --- REAL SMTP EMAIL DISPATCH (Delivers directly to Recruiter's Inbox) ---
+    async function sendEmailDirect(company, title, email, jobId, btnId) {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.innerHTML = '<span>🚀 Sending via SMTP...</span>';
+      showToast(`🚀 Delivering tailored application with ATS CV to ${email} via Gmail SMTP...`);
+      try {
+        const res = await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company: company, role: title, email: email, job_id: jobId })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          if (btn) {
+            btn.innerHTML = '<span>✓ Delivered (SMTP)</span>';
+            btn.style.background = 'rgba(34, 197, 94, 0.3)';
+            btn.style.borderColor = 'var(--green-status)';
+          }
+          showToast(`🎉 SUCCESS: Application email with ATS CV delivered to ${email} via SMTP!`);
+          await loadTrackerPipeline();
+          await loadDrafts();
+          await loadCoverLetters();
+        } else {
+          if (btn) btn.innerHTML = '<span>🚀 Send via SMTP</span>';
+          showToast(`Delivery error: ${data.error || 'Failed'}`);
+        }
+      } catch (e) {
+        if (btn) btn.innerHTML = '<span>🚀 Send via SMTP</span>';
+        showToast('Error connecting to local server: ' + e);
       }
     }
 
@@ -3695,7 +3777,7 @@
           if (boostBtnContainer) {
             if (!isEnhanced) {
               boostBtnContainer.innerHTML = `
-                <button onclick="triggerBoostFromDashboard()" style="width:100%; margin-top:10px; margin-bottom:10px; padding:10px; border-radius:8px; background:linear-gradient(135deg, #FF6B00 0%, #FF8800 100%); color:#000; font-weight:800; border:none; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow: 0 4px 15px rgba(255,107,0,0.35);">
+                <button id="dashAtsBoostBtn" onclick="triggerBoostFromDashboard()" style="width:100%; margin-top:10px; margin-bottom:10px; padding:10px; border-radius:8px; background:linear-gradient(135deg, #FF6B00 0%, #FF8800 100%); color:#000; font-weight:800; border:none; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow: 0 4px 15px rgba(255,107,0,0.35);">
                   <span>⚡</span> Boost to 96% Elite Master ATS CV
                 </button>
               `;
@@ -3895,8 +3977,11 @@
             </div>
           `;
           actionBtnHtml = `
-            <button class="btn-email-draft" id="draft-btn-${i}" onclick="createGmailDraftDirect('${j.company}', '${j.title}', '${j.email}', '${j.id}', 'draft-btn-${i}')" title="Save tailored CV & application draft directly into your Gmail account">
-              ✉ Save Draft to Gmail
+            <button class="tbl-action-btn" id="send-btn-${i}" onclick="sendEmailDirect('${j.company.replace(/'/g, "\\'")}', '${j.title.replace(/'/g, "\\'")}', '${j.email}', '${j.id}', 'send-btn-${i}')" style="background:linear-gradient(135deg, #10B981, #059669); color:#FFF; font-weight:700; border:none;" title="Send tailored application with ATS CV immediately via Gmail SMTP">
+              🚀 Send Now
+            </button>
+            <button class="btn-email-draft" id="draft-btn-${i}" onclick="createGmailDraftDirect('${j.company.replace(/'/g, "\\'")}', '${j.title.replace(/'/g, "\\'")}', '${j.email}', '${j.id}', 'draft-btn-${i}')" title="Save tailored CV & application draft directly into your Gmail account">
+              ✉ Draft in Gmail
             </button>
             <button class="tbl-action-btn" onclick="openJobModalByIndex(${i})">Inspect</button>
           `;
@@ -3913,7 +3998,7 @@
         }
 
         if (j.is_sent) {
-          deliverabilityHtml += `<span class="badge-sent" style="margin-top:2px;">✈️ Drafted / Sent</span>`;
+          deliverabilityHtml += `<span class="badge-sent" style="margin-top:2px;">🚀 Sent via SMTP</span>`;
         }
         if (j.has_reply) {
           deliverabilityHtml += `<span class="badge-reply" style="margin-top:2px;">📩 Recruiter Replied!</span>`;
@@ -4066,11 +4151,14 @@
                 ${d.body}
               </div>
             </div>
-            <div style="display:flex; gap:8px; margin-top:14px;">
+            <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+              <button class="tbl-action-btn" id="draft-send-btn-${d.id}" onclick="sendEmailDirect('${d.company.replace(/'/g, "\\'")}', '${d.role.replace(/'/g, "\\'")}', '${d.to}', '${d.id}', 'draft-send-btn-${d.id}')" style="flex:1; background:linear-gradient(135deg, #10B981, #059669); color:#FFF; font-weight:700; border:none;">
+                🚀 Send via SMTP Now
+              </button>
               <button class="tbl-action-btn" onclick="openGmailDrafts()" style="flex:1;">
                 Open in Gmail Web ↗
               </button>
-              <button class="tbl-action-btn" onclick="createGmailDraftDirect('${d.company}', '${d.role}', '${d.to}', '${d.id}', 'draft-card-btn')" style="flex:1; color:var(--green-status);">
+              <button class="tbl-action-btn" onclick="createGmailDraftDirect('${d.company.replace(/'/g, "\\'")}', '${d.role.replace(/'/g, "\\'")}', '${d.to}', '${d.id}', 'draft-card-btn-${d.id}')" style="flex:1; color:var(--accent-orange);">
                 ✉ Push to Gmail Drafts
               </button>
             </div>
@@ -4094,7 +4182,10 @@
             <td><span style="color:var(--text-muted);">${c.location}</span></td>
             <td><span class="mx-badge verified">✓ Active Hiring</span></td>
             <td>
-              <button class="btn-email-draft" id="contact-btn-${i}" onclick="createGmailDraftDirect('${c.company}', 'Full Stack Developer', '${c.email}', 'c-${i}', 'contact-btn-${i}')">✉ Draft in Gmail</button>
+              <div style="display:flex; gap:6px;">
+                <button class="tbl-action-btn" id="contact-send-btn-${i}" onclick="sendEmailDirect('${c.company.replace(/'/g, "\\'")}', 'Target Role', '${c.email}', 'c-${i}', 'contact-send-btn-${i}')" style="background:linear-gradient(135deg, #10B981, #059669); color:#FFF; font-weight:700; border:none; padding:4px 10px;">🚀 Send Email</button>
+                <button class="btn-email-draft" id="contact-btn-${i}" onclick="createGmailDraftDirect('${c.company.replace(/'/g, "\\'")}', 'Target Role', '${c.email}', 'c-${i}', 'contact-btn-${i}')" style="padding:4px 10px;">✉ Draft</button>
+              </div>
             </td>
           </tr>
         `).join('');
@@ -4114,7 +4205,27 @@
       document.getElementById('modalJobDesc').innerText = job.snippet || 'Verified career opportunity matching your professional background and qualifications.';
       document.getElementById('modalJobEmail').innerText = job.email || 'Online Portal Application';
 
+      const sendBtn = document.getElementById('modalSendBtn');
+      const applyBtn = document.getElementById('modalApplyBtn');
+      if (job.apply_type === 'email' && job.email) {
+        if (sendBtn) { sendBtn.style.display = 'inline-block'; sendBtn.innerHTML = '🚀 Send via SMTP Now'; sendBtn.style.background = 'linear-gradient(135deg, #10B981, #059669)'; }
+        if (applyBtn) { applyBtn.innerHTML = '✉ Save Draft in Gmail'; applyBtn.style.background = 'var(--accent-orange)'; }
+      } else {
+        if (sendBtn) { sendBtn.style.display = 'none'; }
+        if (applyBtn) { applyBtn.innerHTML = 'Apply on Company Site ↗'; applyBtn.style.background = 'var(--accent-orange)'; }
+      }
+
       document.getElementById('jobModal').classList.add('active');
+    }
+
+    function sendEmailFromModal() {
+      if (currentSelectedJob && currentSelectedJob.email) {
+        sendEmailDirect(currentSelectedJob.company, currentSelectedJob.title, currentSelectedJob.email, currentSelectedJob.id, 'modalSendBtn');
+      } else if (currentSelectedJob && currentSelectedJob.url && currentSelectedJob.url !== '#') {
+        openExternalUrl(currentSelectedJob.url);
+      } else {
+        showToast('Online application portal opened.');
+      }
     }
 
     function applyExternal() {
@@ -4287,6 +4398,7 @@
         const res = await fetch('/api/onboarding/reset');
         const data = await res.json();
         if (data.ok) {
+          localStorage.removeItem('pasha_onboarding_completed');
           closeModals();
           showToast('Profile reset! Launching Onboarding Wizard...', 'success');
           openOnboardingModal();
@@ -4340,7 +4452,7 @@
       const company = document.getElementById('clCompany').value.trim();
       const title = document.getElementById('clPosition').value.trim();
       const output = document.getElementById('clOutput');
-      output.value = 'Generating tailored cover letter via APINEX Engine...';
+      if (output) output.value = 'Generating tailored cover letter via APINEX Engine...';
 
       try {
         const res = await fetch('/api/cover-letter', {
@@ -4349,18 +4461,23 @@
           body: JSON.stringify({ company: company, title: title })
         });
         const data = await res.json();
-        output.value = data.letter;
+        if (output) output.value = data.letter;
         showToast(`Cover letter generated for ${company}!`);
-        loadCoverLetters();
+        const docFrame = document.getElementById('clDocFrame');
+        if (docFrame) docFrame.src = '/api/cover-letter/document?t=' + Date.now();
+        switchClView('doc');
+        await loadCoverLetters();
       } catch (e) {
-        output.value = 'Error generating letter.';
+        if (output) output.value = 'Error generating letter.';
       }
     }
 
     function copyCoverLetter() {
-      const text = document.getElementById('clOutput').value;
-      navigator.clipboard.writeText(text);
-      showToast('Cover letter copied to clipboard!');
+      const text = document.getElementById('clOutput')?.value || '';
+      if (text) {
+        navigator.clipboard.writeText(text);
+        showToast('Cover letter copied to clipboard!');
+      }
     }
 
     let _allCoverLetters = [];
@@ -4378,48 +4495,126 @@
         }
         if (_allCoverLetters.length === 0) {
           container.innerHTML = `
-            <div style="text-align:center; padding:20px; color:var(--text-muted); font-size:12px;">
-              No application cover letters saved yet. Generate one above or create a draft in Email Applications!
+            <div style="text-align:center; padding:24px; color:var(--text-muted); font-size:12px;">
+              No application cover letters saved yet. Generate one above or send/draft an application!
             </div>
           `;
           return;
         }
-        container.innerHTML = _allCoverLetters.map(cl => `
-          <div style="background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:8px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        container.innerHTML = _allCoverLetters.map(cl => {
+          const isSent = cl.status && cl.status.toLowerCase().includes('sent');
+          const statusBg = isSent ? 'rgba(34,197,94,0.15)' : 'rgba(255,170,0,0.15)';
+          const statusColor = isSent ? '#22C55E' : '#FFAA00';
+          const statusBorder = isSent ? 'rgba(34,197,94,0.3)' : 'rgba(255,170,0,0.3)';
+          const statusIcon = isSent ? '🚀' : '✉';
+
+          return `
+          <div style="background:var(--bg-base); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px; display:flex; justify-content:space-between; align-items:flex-start; gap:14px; transition:border-color 0.2s;" onmouseenter="this.style.borderColor='rgba(255,107,0,0.4)'" onmouseleave="this.style.borderColor='var(--border-subtle)'">
             <div style="flex:1; min-width:0;">
-              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
-                <strong style="color:var(--text-white); font-size:13px;">${escapeHtml(cl.company || 'Enterprise')}</strong>
-                <span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(255,107,0,0.12); color:#FF6B00; font-weight:700;">${escapeHtml(cl.role || 'Role')}</span>
-                <span style="font-size:10px; color:var(--text-muted);">${escapeHtml(cl.date || '')}</span>
-                ${cl.recipient ? `<span style="font-size:10px; color:var(--green-status); font-family:monospace;">To: ${escapeHtml(cl.recipient)}</span>` : ''}
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap;">
+                <span style="font-size:11px; padding:3px 8px; border-radius:4px; background:rgba(255,107,0,0.15); color:#FF6B00; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">${escapeHtml(cl.company || 'Enterprise')}</span>
+                <span style="font-size:11px; color:#FFF; font-weight:700;">${escapeHtml(cl.role || 'Role')}</span>
+                <span style="font-size:10px; color:var(--text-muted);">• ${escapeHtml(cl.date || '')}</span>
+                <span style="font-size:10px; padding:2px 8px; border-radius:12px; font-weight:700; background:${statusBg}; color:${statusColor}; border:1px solid ${statusBorder};">
+                  ${statusIcon} ${escapeHtml(cl.status || 'Drafted in Gmail')}
+                </span>
+                ${cl.recipient ? `<span style="font-size:10px; color:var(--text-dim); font-family:monospace;">To: ${escapeHtml(cl.recipient)}</span>` : ''}
               </div>
-              <div style="font-size:11px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                ${escapeHtml((cl.body || '').substring(0, 130))}...
+              <div style="font-size:12px; font-weight:600; color:var(--text-cream); margin-bottom:6px;">
+                ${escapeHtml(cl.subject || `Application: ${cl.role} — ${cl.company}`)}
+              </div>
+              <div style="font-size:11px; color:var(--text-dim); line-height:1.5; background:var(--bg-surface); padding:8px 12px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); max-height:55px; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+                ${escapeHtml(cl.body || '')}
               </div>
             </div>
-            <div style="display:flex; gap:6px; flex-shrink:0;">
-              <button onclick="viewCoverLetter('${cl.id}')" style="padding:6px 12px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:6px; font-size:11px; cursor:pointer;">
-                👁 View
+            <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
+              <button onclick="openCoverLetterDocModal('${cl.id}', '${escapeHtml(cl.company)}')" style="padding:6px 14px; background:linear-gradient(135deg, #FF6B00 0%, #FF8800 100%); color:#000; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; border:none; display:flex; align-items:center; gap:5px; box-shadow:0 2px 8px rgba(255,107,0,0.25);">
+                📄 View Cover Page
               </button>
-              <button onclick="copySpecificCoverLetter('${cl.id}')" style="padding:6px 12px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">
-                📋 Copy
-              </button>
+              <div style="display:flex; gap:4px;">
+                <button onclick="copySpecificCoverLetter('${cl.id}')" style="flex:1; padding:5px 8px; background:rgba(34,197,94,0.15); border:1px solid #22C55E; color:#22C55E; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer;">
+                  📋 Copy
+                </button>
+                <button onclick="loadCoverLetterIntoEditor('${cl.id}')" style="flex:1; padding:5px 8px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:#FFF; border-radius:6px; font-size:10px; cursor:pointer;">
+                  ✏️ Edit
+                </button>
+              </div>
             </div>
           </div>
-        `).join('');
+          `;
+        }).join('');
       } catch (e) {
         console.warn('loadCoverLetters error:', e);
       }
     }
 
-    function viewCoverLetter(id) {
+    function openCoverLetterDocModal(id, company) {
+      const modal = document.getElementById('coverLetterDocModal');
+      const frame = document.getElementById('docModalFrame');
+      const title = document.getElementById('docModalTitle');
+      const subtitle = document.getElementById('docModalSubtitle');
+      if (title) title.innerText = `Executive Cover Letter — ${company || 'Enterprise'}`;
+      if (subtitle) subtitle.innerText = `Verified Formal A4 Business Document`;
+      if (frame) frame.src = `/api/cover-letter/document?id=${encodeURIComponent(id)}&t=${Date.now()}`;
+      if (modal) modal.classList.add('active');
+    }
+
+    function printModalDoc() {
+      const frame = document.getElementById('docModalFrame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.print();
+      }
+    }
+
+    function copyModalDocText() {
+      const frame = document.getElementById('docModalFrame');
+      try {
+        const bodyText = frame.contentWindow.document.querySelector('.sheet')?.innerText || '';
+        if (bodyText) {
+          navigator.clipboard.writeText(bodyText);
+          showToast('Copied full cover letter document text to clipboard!');
+        }
+      } catch (e) {
+        showToast('Document text copied.');
+      }
+    }
+
+    function printCoverLetterDoc() {
+      const frame = document.getElementById('clDocFrame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.print();
+      }
+    }
+
+    function loadCoverLetterIntoEditor(id) {
       const found = _allCoverLetters.find(l => l.id === id);
       if (!found) return;
       if (document.getElementById('clCompany')) document.getElementById('clCompany').value = found.company || '';
       if (document.getElementById('clPosition')) document.getElementById('clPosition').value = found.role || '';
       if (document.getElementById('clOutput')) document.getElementById('clOutput').value = found.body || '';
-      showToast(`Loaded cover letter for ${found.company} into editor!`);
-      document.getElementById('clOutput')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const docFrame = document.getElementById('clDocFrame');
+      if (docFrame) docFrame.src = `/api/cover-letter/document?id=${encodeURIComponent(id)}&t=${Date.now()}`;
+      showToast(`Loaded cover letter for ${found.company}!`);
+      switchClView('doc');
+      document.getElementById('page-cover-letter')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function switchClView(mode) {
+      const docView = document.getElementById('clDocViewContainer');
+      const rawView = document.getElementById('clRawViewContainer');
+      const tabDoc = document.getElementById('clTabDocBtn');
+      const tabRaw = document.getElementById('clTabRawBtn');
+      if (mode === 'doc') {
+        if (docView) docView.style.display = 'block';
+        if (rawView) rawView.style.display = 'none';
+        if (tabDoc) { tabDoc.style.background = '#FF6B00'; tabDoc.style.color = '#000'; }
+        if (tabRaw) { tabRaw.style.background = 'transparent'; tabRaw.style.color = 'var(--text-muted)'; }
+      } else {
+        if (docView) docView.style.display = 'none';
+        if (rawView) rawView.style.display = 'block';
+        if (tabDoc) { tabDoc.style.background = 'transparent'; tabDoc.style.color = 'var(--text-muted)'; }
+        if (tabRaw) { tabRaw.style.background = '#FF6B00'; tabRaw.style.color = '#000'; }
+      }
     }
 
     function copySpecificCoverLetter(id) {
@@ -4430,6 +4625,8 @@
     }
 
     async function enhanceCvWithGemini() {
+      const boostBtn = document.getElementById('dashAtsBoostBtn');
+      if (boostBtn) boostBtn.innerHTML = '<span>⏳</span> Rewriting with Google XYZ...';
       showToast('⚡ Rewriting CV with Google XYZ quantified metrics via Gemini AI...');
       try {
         const res = await fetch('/api/cv/enhance', {
@@ -4439,23 +4636,21 @@
         });
         const data = await res.json();
         if (data.ok) {
-          showToast('✅ CV successfully enhanced to 96% Elite ATS with Google XYZ formula!');
-          await loadCvStudioInfo(true);
+          showToast('🎉 SUCCESS: CV boosted to 96% Elite ATS with Google XYZ formula!');
           await loadDashboard();
+          await loadCvStudioInfo(true);
         } else {
           showToast('Enhancement error: ' + (data.error || 'Server error'));
+          if (boostBtn) boostBtn.innerHTML = '<span>⚡</span> Boost to 96% Elite Master ATS CV';
         }
       } catch (e) {
         showToast('Error connecting to AI engine: ' + e);
+        if (boostBtn) boostBtn.innerHTML = '<span>⚡</span> Boost to 96% Elite Master ATS CV';
       }
     }
 
-    function triggerBoostFromDashboard() {
-      switchPage('cv-intelligence');
-      showToast('⚡ Initiating Google XYZ ATS boost with Gemini AI...');
-      setTimeout(() => {
-        enhanceCvWithGemini();
-      }, 350);
+    async function triggerBoostFromDashboard() {
+      await enhanceCvWithGemini();
     }
 
     // --- Live Scan Trigger ---
@@ -4588,11 +4783,17 @@
     let onboardStep = 1;
 
     async function checkOnboardingStatus() {
+      // If user has already configured/completed onboarding, NEVER show modal automatically
+      if (localStorage.getItem('pasha_onboarding_completed') === 'true') {
+        return;
+      }
       try {
         const res = await fetch('/api/onboarding/status');
         const data = await res.json();
-        if (data.needed) {
+        if (data.needed && !data.onboarding_complete) {
           openOnboardingModal();
+        } else {
+          localStorage.setItem('pasha_onboarding_completed', 'true');
         }
       } catch (e) {
         console.warn('Onboarding check failed:', e);
@@ -4902,6 +5103,7 @@
         });
         const data = await res.json();
         if (data.ok) {
+          localStorage.setItem('pasha_onboarding_completed', 'true');
           showToast('🚀 Pasha Hunt 2.0 configured! Dashboard initialized.');
           closeModals();
           await loadDashboard();
