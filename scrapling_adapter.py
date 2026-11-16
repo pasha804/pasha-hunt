@@ -1,4 +1,4 @@
-"""Scrapling Stealth Engine Adapter for Pasha Hunt 2.0
+"""Scrapling Stealth Engine Adapter for Pasha Hunt 2.0 / 3.0
 Integrates D4Vinci/Scrapling (https://github.com/D4Vinci/Scrapling)
 Undetectable, powerful, and adaptive web scraping to bypass Cloudflare,
 Akamai, and anti-bot systems when crawling company career portals and finding recruiter emails.
@@ -6,77 +6,301 @@ Akamai, and anti-bot systems when crawling company career portals and finding re
 import re
 import urllib.request
 import urllib.error
+import urllib.parse
+from typing import Dict, Any, List, Optional
 
 HAS_SCRAPLING = False
+HAS_FETCHER = False
+HAS_STEALTHY_FETCHER = False
+HAS_SELECTOR = False
+SCRAPLING_VERSION = "unknown"
+
 try:
-    from scrapling import Fetcher
+    import scrapling
+    SCRAPLING_VERSION = getattr(scrapling, "__version__", "0.5.1")
     HAS_SCRAPLING = True
 except Exception:
     HAS_SCRAPLING = False
 
+try:
+    from scrapling import Fetcher
+    HAS_FETCHER = True
+except Exception:
+    HAS_FETCHER = False
 
-def is_scrapling_available():
+try:
+    from scrapling import StealthyFetcher
+    HAS_STEALTHY_FETCHER = True
+except Exception:
+    HAS_STEALTHY_FETCHER = False
+
+try:
+    from scrapling import Selector
+    HAS_SELECTOR = True
+except Exception:
+    HAS_SELECTOR = False
+
+
+def is_scrapling_available() -> bool:
     """Returns True if D4Vinci/Scrapling engine is initialized and ready."""
-    return HAS_SCRAPLING
+    return HAS_SCRAPLING and (HAS_FETCHER or HAS_SELECTOR)
 
 
-def stealth_fetch(url, timeout=10):
-    """Fetches URL using D4Vinci/Scrapling stealth engine if available,
-    falling back to hardened modern browser headers with anti-bot resistance.
-    """
-    if HAS_SCRAPLING:
+def get_scrapling_status() -> Dict[str, Any]:
+    """Returns a full diagnostic status of the Scrapling engine."""
+    return {
+        "available": is_scrapling_available(),
+        "version": SCRAPLING_VERSION,
+        "has_fetcher": HAS_FETCHER,
+        "has_stealthy_fetcher": HAS_STEALTHY_FETCHER,
+        "has_selector": HAS_SELECTOR,
+        "engine": "D4Vinci/Scrapling"
+    }
+
+
+def detect_portal_type(url: str) -> str:
+    """Classifies the target career portal based on URL domain and path signatures."""
+    if not url:
+        return "generic"
+    u = url.lower()
+    if "greenhouse.io" in u:
+        return "greenhouse"
+    elif "lever.co" in u:
+        return "lever"
+    elif "workday" in u or "myworkdayjobs.com" in u:
+        return "workday"
+    elif "ashbyhq.com" in u:
+        return "ashby"
+    elif "linkedin.com" in u:
+        return "linkedin"
+    elif "indeed.com" in u:
+        return "indeed"
+    elif "smartrecruiters.com" in u:
+        return "smartrecruiters"
+    elif "bamboohr.com" in u:
+        return "bamboohr"
+    return "generic"
+
+
+def extract_emails_from_text(text: str) -> List[str]:
+    """Extracts valid, de-obfuscated recruiter emails from raw text or HTML."""
+    if not text:
+        return []
+
+    raw_emails = set(re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", text))
+
+    # Obfuscated emails: e.g. careers [at] company [dot] com or jobs (at) domain.com
+    obf = re.findall(
+        r"([a-zA-Z0-9_.+-]+)\s*(?:\[at\]|\(at\)|@)\s*([a-zA-Z0-9-]+)\s*(?:\[dot\]|\(dot\)|\.)\s*([a-zA-Z0-9-.]+)",
+        text,
+        re.IGNORECASE
+    )
+    for a, b, c in obf:
+        raw_emails.add(f"{a}@{b}.{c}")
+
+    valid = []
+    ignored_patterns = [
+        ".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif",
+        "example.com", "domain.com", "sentry.io", "wixpress.com",
+        "cloudflare.com", "google-analytics.com", "schema.org"
+    ]
+    for e in raw_emails:
+        e_clean = e.strip(".,;:()<>[]'\" \t\n\r").lower()
+        if "@" in e_clean and "." in e_clean.split("@")[1]:
+            if not any(bad in e_clean for bad in ignored_patterns):
+                valid.append(e_clean)
+
+    return sorted(list(set(valid)))
+
+
+def parse_job_html(html: str, url: str = "") -> Dict[str, Any]:
+    """Parses raw HTML using Scrapling's Selector engine into a structured job specification."""
+    data = {
+        "title": "",
+        "company": "",
+        "location": "",
+        "description": "",
+        "emails": [],
+        "portal_type": detect_portal_type(url),
+        "url": url,
+        "salary": ""
+    }
+
+    if not html:
+        return data
+
+    emails = extract_emails_from_text(html)
+    data["emails"] = emails
+
+    if HAS_SELECTOR:
         try:
-            page = Fetcher.get(url, timeout=timeout)
-            if page:
-                if hasattr(page, 'html_content') and page.html_content:
-                    return page.html_content
-                if hasattr(page, 'body') and page.body:
-                    if isinstance(page.body, bytes):
-                        return page.body.decode('utf-8', errors='ignore')
-                    return str(page.body)
+            sel = Selector(html)
+            
+            # Title extraction heuristics
+            title_candidates = [
+                sel.css(".app-title::text").get(),
+                sel.css("h1.job-title::text").get(),
+                sel.css("h1::text").get(),
+                sel.css('[data-qa="job-title"]::text').get(),
+                sel.css(".posting-headline h2::text").get(),
+                sel.css(".job-header h1::text").get(),
+                sel.css("title::text").get()
+            ]
+            for t in title_candidates:
+                if t and t.strip():
+                    t_clean = t.strip()
+                    # Strip " - Company Name" or " | Careers" from title tag
+                    if " - " in t_clean and sel.css("title::text").get() == t:
+                        t_clean = t_clean.split(" - ")[0].strip()
+                    data["title"] = t_clean
+                    break
+
+            # Company extraction
+            company_candidates = [
+                sel.css(".company-name::text").get(),
+                sel.css(".company::text").get(),
+                sel.css('[data-qa="company-name"]::text').get(),
+                sel.css(".posting-headline .company::text").get(),
+                sel.xpath('//meta[@property="og:site_name"]/@content').get()
+            ]
+            for c in company_candidates:
+                if c and c.strip():
+                    data["company"] = c.strip()
+                    break
+
+            # If company missing, infer from domain
+            if not data["company"] and url:
+                parsed = urllib.parse.urlparse(url)
+                parts = parsed.netloc.split(".")
+                if len(parts) >= 2:
+                    data["company"] = parts[-2].capitalize()
+
+            # Location extraction
+            location_candidates = [
+                sel.css(".location::text").get(),
+                sel.css(".job-location::text").get(),
+                sel.css('[data-qa="job-location"]::text').get(),
+                sel.css(".workplaceTypes::text").get(),
+                sel.xpath('//div[contains(@class, "location")]/text()').get()
+            ]
+            for loc in location_candidates:
+                if loc and loc.strip():
+                    data["location"] = loc.strip()
+                    break
+
+            # Description extraction
+            desc_elements = sel.css("#job-description, .job-description, .description, [data-qa='job-description'], article, .content")
+            if desc_elements:
+                full_desc = " ".join(desc_elements.xpath(".//text()").getall())
+                data["description"] = " ".join(full_desc.split())
+            else:
+                body_text = " ".join(sel.xpath("//body//text()").getall())
+                data["description"] = " ".join(body_text.split())
+
+            return data
         except Exception:
             pass
 
-    # Hardened modern browser headers (Bypasses basic anti-bot & 403 blocks)
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": '"Windows"',
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1"
-    }
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", errors="ignore")
+    # Fallback basic extraction if Selector fails
+    title_match = re.search(r"<h1[^>]*>(.*?)</h1>", html, re.I | re.S)
+    if title_match:
+        data["title"] = re.sub(r"<[^>]+>", "", title_match.group(1)).strip()
+
+    data["description"] = re.sub(r"<[^>]+>", " ", html)
+    data["description"] = " ".join(data["description"].split())
+    return data
 
 
-def extract_emails_from_url(url, timeout=10):
+def stealth_fetch(url: str, timeout: int = 12, use_stealth_browser: bool = False) -> Optional[str]:
+    """Fetches URL using D4Vinci/Scrapling stealth engine with multi-tier fallback:
+    1. StealthyFetcher (Headless Chrome with stealth fingerprints if requested or required)
+    2. Fetcher.get (High-speed HTTP fetcher)
+    3. Hardened modern browser headers via urllib
+    """
+    if not url:
+        return None
+
+    # Tier 1: Stealthy browser fetch if requested and available
+    if use_stealth_browser and HAS_STEALTHY_FETCHER:
+        try:
+            resp = StealthyFetcher.fetch(url, headless=True)
+            if resp and hasattr(resp, "text") and resp.text:
+                return resp.text
+            if resp and hasattr(resp, "body") and resp.body:
+                return resp.body.decode("utf-8", errors="ignore") if isinstance(resp.body, bytes) else str(resp.body)
+        except Exception:
+            pass
+
+    # Tier 2: Fast HTTP Fetcher from Scrapling
+    if HAS_FETCHER:
+        try:
+            resp = Fetcher.get(url, timeout=timeout)
+            if resp:
+                if hasattr(resp, "text") and resp.text:
+                    return resp.text
+                if hasattr(resp, "body") and resp.body:
+                    return resp.body.decode("utf-8", errors="ignore") if isinstance(resp.body, bytes) else str(resp.body)
+        except Exception:
+            # If fast fetcher failed due to anti-bot challenge and we haven't tried stealth browser yet
+            if HAS_STEALTHY_FETCHER:
+                try:
+                    resp = StealthyFetcher.fetch(url, headless=True)
+                    if resp and hasattr(resp, "text") and resp.text:
+                        return resp.text
+                except Exception:
+                    pass
+
+    # Tier 3: Hardened modern browser headers (Bypasses basic anti-bot & 403 blocks)
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1"
+        }
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", errors="ignore")
+    except Exception:
+        return None
+
+
+def extract_emails_from_url(url: str, timeout: int = 10, deep_scan: bool = True) -> List[str]:
     """Deep crawl a target company careers or contact page to discover hidden recruiter emails."""
     try:
         content = stealth_fetch(url, timeout=timeout)
+        if not content and HAS_STEALTHY_FETCHER:
+            # Retry with stealth browser
+            content = stealth_fetch(url, timeout=timeout, use_stealth_browser=True)
         if not content:
             return []
         
-        # Regex matching standard and obfuscated emails
-        raw_emails = set(re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", content))
-        
-        # Obfuscated emails: e.g., careers [at] company [dot] com
-        obf = re.findall(r"([a-zA-Z0-9_.+-]+)\s*(?:\[at\]|\(at\)|@)\s*([a-zA-Z0-9-]+)\s*(?:\[dot\]|\(dot\)|\.)\s*([a-zA-Z0-9-.]+)", content, re.IGNORECASE)
-        for a, b, c in obf:
-            raw_emails.add(f"{a}@{b}.{c}")
-
-        valid = []
-        for e in raw_emails:
-            e_clean = e.strip(".").lower()
-            if not any(bad in e_clean for bad in [".png", ".jpg", ".jpeg", ".webp", ".svg", "example.com", "domain.com", "sentry.io"]):
-                valid.append(e_clean)
-
-        return valid
+        return extract_emails_from_text(content)
     except Exception:
         return []
+
+
+def crawl_job_url(url: str, timeout: int = 15) -> Dict[str, Any]:
+    """Crawls any target job posting URL with Scrapling and returns a complete structured dictionary."""
+    content = stealth_fetch(url, timeout=timeout)
+    if not content and HAS_STEALTHY_FETCHER:
+        content = stealth_fetch(url, timeout=timeout, use_stealth_browser=True)
+    
+    if not content:
+        return {
+            "success": False,
+            "error": "Failed to retrieve page content",
+            "url": url,
+            "portal_type": detect_portal_type(url)
+        }
+
+    job_data = parse_job_html(content, url=url)
+    job_data["success"] = True
+    return job_data

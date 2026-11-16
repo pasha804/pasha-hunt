@@ -1544,6 +1544,8 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_get_cover_letters()
         elif path == "/api/cover-letter/document":
             self._handle_cover_letter_document(query)
+        elif path == "/api/scrapling/status":
+            self._handle_scrapling_status()
         else:
             super().do_GET()
 
@@ -1608,6 +1610,10 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_test_gmail(req_data)
         elif path == "/api/onboarding/complete":
             self._handle_onboarding_complete(req_data)
+        elif path == "/api/scrapling/crawl-job":
+            self._handle_scrapling_crawl_job(req_data)
+        elif path == "/api/scrapling/import-job":
+            self._handle_scrapling_import_job(req_data)
         elif path == "/api/onboarding/reset":
             self._handle_onboarding_reset()
         elif path == "/api/settings/model":
@@ -2495,6 +2501,79 @@ Sincerely,
             "found_count": len(found),
             "found": found,
             "message": f"Discovered {len(found)} new recruiter emails from company career sites!"
+        })
+
+    def _handle_scrapling_status(self):
+        import scrapling_adapter
+        status = scrapling_adapter.get_scrapling_status()
+        self._send_json({"ok": True, "scrapling": status})
+
+    def _handle_scrapling_crawl_job(self, req_data):
+        import scrapling_adapter
+        url = req_data.get("url", "").strip()
+        if not url:
+            self._send_json({"ok": False, "error": "URL parameter is required"}, status=400)
+            return
+        result = scrapling_adapter.crawl_job_url(url)
+        self._send_json({"ok": True, "job": result})
+
+    def _handle_scrapling_import_job(self, req_data):
+        import scrapling_adapter
+        url = req_data.get("url", "").strip()
+        if not url:
+            self._send_json({"ok": False, "error": "URL parameter is required"}, status=400)
+            return
+
+        crawled = scrapling_adapter.crawl_job_url(url)
+        if not crawled.get("success"):
+            self._send_json({"ok": False, "error": crawled.get("error", "Failed to crawl job URL")}, status=400)
+            return
+
+        job_title = crawled.get("title") or "Software Engineer"
+        company = crawled.get("company") or "Target Company"
+        job_id = f"scrapling-{abs(hash(url)) % 10000000}"
+
+        prof = load_profile()
+        score = 85
+        if prof:
+            try:
+                prof_kw = extract_candidate_matching_profile(prof)
+                mock_job = {"title": job_title, "text": crawled.get("description", "")}
+                score = calculate_dynamic_job_match(mock_job, prof_kw)
+            except Exception:
+                score = 85
+
+        emails = crawled.get("emails", [])
+        primary_email = emails[0] if emails else ""
+
+        new_job = {
+            "id": job_id,
+            "title": job_title,
+            "company": company,
+            "location": crawled.get("location") or "Remote / Unspecified",
+            "url": url,
+            "apply": url,
+            "email": primary_email,
+            "email_src": "Scrapling Stealth Harvester" if primary_email else "",
+            "portal_type": crawled.get("portal_type", "generic"),
+            "text": crawled.get("description", ""),
+            "description": crawled.get("description", ""),
+            "score": score,
+            "status": "ready",
+            "source": f"Scrapling ({crawled.get('portal_type', 'web')})"
+        }
+
+        with _jobs_lock:
+            cached = get_cached_jobs()
+            existing = [j for j in cached if j.get("url") == url or j.get("id") == job_id]
+            if not existing:
+                cached.insert(0, new_job)
+                save_jobs_cache_to_disk()
+
+        self._send_json({
+            "ok": True,
+            "job": new_job,
+            "message": f"Successfully crawled and imported '{job_title}' at {company} using Scrapling Stealth Engine!"
         })
 
     def _handle_inbox_sync(self):

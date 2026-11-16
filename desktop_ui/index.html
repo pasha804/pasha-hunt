@@ -2057,6 +2057,12 @@
             <span>🔍</span>
             <span>Extract Missing Emails</span>
           </button>
+          <button class="scrapling-crawl-btn" onclick="openScraplingCrawlerModal()"
+            style="background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 180, 216, 0.15)); border: 1px solid rgba(0, 230, 118, 0.4); color: #00E676; border-radius: 8px; padding: 7px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 11px;"
+            title="Crawl any LinkedIn, Greenhouse, Lever, or company career portal URL using D4Vinci/Scrapling stealth engine">
+            <span>⚡</span>
+            <span>Scrapling URL Harvester</span>
+          </button>
           <button class="refresh-btn" onclick="loadJobsBySegment(currentSegment)" title="Refresh opportunities">
             <span>🔄</span>
             <span>Refresh Table</span>
@@ -3130,6 +3136,56 @@
           <button onclick="tailorForCurrentJob()"
             style="flex:1; min-width:140px; padding:10px; background:var(--bg-surface); color:var(--accent-amber); border:1px solid var(--accent-amber); border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">
             🪄 Tailor CV (Google XYZ)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scrapling Stealth Crawler Modal -->
+  <div class="modal-overlay" id="scraplingModal" onclick="if(event.target===this)closeModals()">
+    <div class="modal-box" style="max-width: 620px;">
+      <div class="modal-header">
+        <div>
+          <span style="font-size:10px; font-weight:800; color:#00E676; text-transform:uppercase; letter-spacing:0.05em;">
+            ⚡ D4VINCI / SCRAPLING STEALTH ENGINE (v0.5.1)
+          </span>
+          <h3 style="margin-top:4px;">Crawl & Ingest Job by URL</h3>
+        </div>
+        <button class="modal-close-btn" onclick="closeModals()">✕</button>
+      </div>
+      <div class="modal-body" style="font-size:12px; color:var(--text-cream); line-height:1.6;">
+        <p style="color:var(--text-muted); margin-bottom:12px;">
+          Paste any job or portal URL from <strong>Greenhouse, Lever, Workday, Ashby, LinkedIn, or Company Career Sites</strong>.
+          Scrapling's anti-bot stealth engine bypasses Cloudflare Turnstile, extracting the job spec, requirements, and recruiter emails automatically.
+        </p>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:11px; font-weight:700; color:#FFF; margin-bottom:6px;">Target Job or Portal URL</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="scraplingUrlInput" placeholder="https://boards.greenhouse.io/company/jobs/123..."
+              style="flex:1; background:var(--bg-base); border:1px solid var(--border-subtle); color:#FFF; padding:10px 14px; border-radius:8px; font-size:12px;" />
+            <button onclick="executeScraplingCrawl()" id="scraplingCrawlBtn"
+              style="background:#00E676; color:#000; border:none; padding:10px 16px; border-radius:8px; font-weight:800; cursor:pointer;">
+              ⚡ Crawl URL
+            </button>
+          </div>
+        </div>
+
+        <div id="scraplingResultBox" style="display:none; margin-top:14px; background:var(--bg-surface); padding:14px; border-radius:10px; border:1px solid rgba(0,230,118,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 id="scraplingJobTitle" style="color:#FFF; font-size:14px; margin:0;"></h4>
+            <span id="scraplingPortalBadge" style="background:rgba(0,230,118,0.15); color:#00E676; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700;"></span>
+          </div>
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+            <strong id="scraplingCompany" style="color:#FFF;"></strong> • <span id="scraplingLocation"></span>
+          </div>
+          <div style="font-size:11px; margin-bottom:12px; color:#A7F3D0;" id="scraplingEmailsFound"></div>
+          <div style="max-height:120px; overflow-y:auto; font-size:11px; color:var(--text-muted); background:var(--bg-base); padding:8px; border-radius:6px; margin-bottom:14px;" id="scraplingSnippet"></div>
+          
+          <button onclick="importScraplingJobToDatabase()" id="scraplingImportBtn"
+            style="width:100%; background:linear-gradient(135deg, #FF6B00, #FFA726); color:#FFF; border:none; padding:10px; border-radius:8px; font-weight:800; cursor:pointer;">
+            📥 Import to My Opportunities & Auto-Match CV
           </button>
         </div>
       </div>
@@ -5209,6 +5265,110 @@
 
     function closeModals() {
       document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    }
+
+    // --- Scrapling Stealth Engine UI Handlers ---
+    let currentScraplingResult = null;
+
+    function openScraplingCrawlerModal() {
+      const modal = document.getElementById('scraplingModal');
+      if (modal) {
+        modal.classList.add('active');
+        const input = document.getElementById('scraplingUrlInput');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        const box = document.getElementById('scraplingResultBox');
+        if (box) box.style.display = 'none';
+      }
+    }
+
+    async function executeScraplingCrawl() {
+      const input = document.getElementById('scraplingUrlInput');
+      const url = input ? input.value.trim() : '';
+      if (!url) {
+        showToast('Please enter a valid job or careers URL');
+        return;
+      }
+
+      const btn = document.getElementById('scraplingCrawlBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Crawling...';
+      }
+
+      try {
+        const res = await fetch('/api/scrapling/crawl-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        const data = await res.json();
+        if (!data.ok || !data.job || !data.job.success) {
+          showToast('Scrapling crawl failed: ' + (data.error || (data.job && data.job.error) || 'Check URL'));
+          if (btn) { btn.disabled = false; btn.innerText = '⚡ Crawl URL'; }
+          return;
+        }
+
+        currentScraplingResult = data.job;
+        const box = document.getElementById('scraplingResultBox');
+        if (box) box.style.display = 'block';
+
+        document.getElementById('scraplingJobTitle').innerText = data.job.title || 'Untitled Opportunity';
+        document.getElementById('scraplingCompany').innerText = data.job.company || 'Target Company';
+        document.getElementById('scraplingLocation').innerText = data.job.location || 'Remote / Unspecified';
+        document.getElementById('scraplingPortalBadge').innerText = (data.job.portal_type || 'web').toUpperCase();
+
+        const emailsCount = (data.job.emails && data.job.emails.length) ? data.job.emails.length : 0;
+        document.getElementById('scraplingEmailsFound').innerHTML = emailsCount > 0 
+          ? `✓ Discovered ${emailsCount} recruiter email(s): <strong>${data.job.emails.join(', ')}</strong>`
+          : 'ℹ No direct email found in page text (Will use portal application)';
+
+        document.getElementById('scraplingSnippet').innerText = (data.job.description || '').substring(0, 300) + '...';
+        showToast('Job crawled successfully with Scrapling!');
+      } catch (e) {
+        showToast('Error during Scrapling crawl: ' + e);
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '⚡ Crawl URL'; }
+      }
+    }
+
+    async function importScraplingJobToDatabase() {
+      const input = document.getElementById('scraplingUrlInput');
+      const url = input ? input.value.trim() : '';
+      if (!url) return;
+
+      const btn = document.getElementById('scraplingImportBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Importing & Matching...';
+      }
+
+      try {
+        const res = await fetch('/api/scrapling/import-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(data.message || 'Job imported successfully!');
+          closeModals();
+          if (typeof loadJobsBySegment === 'function') {
+            await loadJobsBySegment(currentSegment || 'all');
+          }
+        } else {
+          showToast('Import failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (e) {
+        showToast('Import error: ' + e);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerText = '📥 Import to My Opportunities & Auto-Match CV';
+        }
+      }
     }
 
     // --- Tailor Bullet Live via APINEX ---
