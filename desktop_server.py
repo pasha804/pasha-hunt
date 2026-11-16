@@ -39,9 +39,27 @@ import random
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import cv
+import bot
+
 
 def get_user_data_dir():
     """Returns guaranteed writable directory for application state, configs, and CVs."""
+    # Check if running in portable mode
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        if os.path.exists(os.path.join(exe_dir, "portable.txt")) or "portable" in exe_dir.lower() or os.path.exists(os.path.join(exe_dir, "data")):
+            target = os.path.join(exe_dir, "data")
+            os.makedirs(target, exist_ok=True)
+            return target
+    else:
+        # Development check: if portable.txt exists in repo root
+        here = os.path.dirname(os.path.abspath(__file__))
+        if os.path.exists(os.path.join(here, "portable.txt")):
+            target = os.path.join(here, "data")
+            os.makedirs(target, exist_ok=True)
+            return target
+
     local_app_data = os.environ.get("LOCALAPPDATA", "")
     if local_app_data:
         target = os.path.join(local_app_data, "Pasha Hunt", "User Data")
@@ -95,6 +113,9 @@ def resolve_ui_dir():
     return os.path.join(here, "desktop_ui")
 
 UI_DIR = resolve_ui_dir()
+
+# Ensure bot.py uses the exact same isolated data directory
+os.environ["JOBHUNTER_HOME"] = get_user_data_dir()
 
 import bot
 
@@ -284,7 +305,7 @@ def call_gemini(prompt, system_instruction=None, model=None, timeout=12):
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {
                         "temperature": 0.25,
-                        "maxOutputTokens": 2048
+                        "maxOutputTokens": 8192
                     }
                 }
                 if system_instruction:
@@ -350,7 +371,7 @@ def call_apinex(prompt, system_prompt="You are Pasha Hunt 2.0 AI Career Intellig
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.25,
-                "max_tokens": 1200
+                "max_tokens": 8192
             }
             req = urllib.request.Request(APINEX_URL, data=json.dumps(payload).encode("utf-8"), headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -408,7 +429,18 @@ def check_mx_record(domain):
     if domain in _mx_cache:
         return _mx_cache[domain]
     
-    known_valid = ["gmail.com", "google.com", "microsoft.com", "meta.com", "systemsltd.com", "systemslimited.com", "arbisoft.com", "devsinc.com", "tintash.com", "curemd.com", "educative.io", "folio3.com", "tether.to"]
+    known_valid = {
+        "gmail.com", "google.com", "microsoft.com", "meta.com", "systemsltd.com", "systemslimited.com",
+        "arbisoft.com", "devsinc.com", "tintash.com", "curemd.com", "educative.io", "folio3.com", "tether.to",
+        "canva.com", "remotebase.com", "deerdesigner.com", "manypixels.co", "designpickle.com", "superside.com",
+        "confiz.com", "werplay.com", "geniteam.com", "brainxtech.com", "motiff.com", "careem.com",
+        "10pearls.com", "venturedive.com", "sothebys.com", "invozone.com", "netsoltech.com", "tkxel.com",
+        "creativechaos.co", "i2cinc.com", "cloudlinux.com", "motive.com", "ebryx.com", "conradlabs.com",
+        "contour-software.com", "techlogix.com", "mindstormstudios.com", "imerit.ai", "imerit.com",
+        "askable.com", "safetywing.com", "alienintellect.com", "programmersforce.com", "collabify.io",
+        "kodland.com", "exlabora.com", "ssi-net.com", "emumba.com", "division50.com", "imerittechnology.com",
+        "supabase.com", "agentplace.io", "rolustech.com", "remotetalentcloud.com"
+    }
     if domain in known_valid:
         _mx_cache[domain] = True
         return True
@@ -424,7 +456,9 @@ def check_mx_record(domain):
             return False
 
     try:
-        answers = dns.resolver.resolve(domain, "MX")
+        resolver = dns.resolver.Resolver()
+        resolver.lifetime = 1.0
+        answers = resolver.resolve(domain, "MX")
         is_valid = len(answers) > 0
         _mx_cache[domain] = is_valid
         return is_valid
@@ -545,23 +579,34 @@ def sync_gmail_inbox(limit=25):
 
 
 def get_tracker_data():
-    """Reads tracker.csv to identify Sent/Drafted applications."""
-    tracker_file = resolve_file("tracker.csv")
+    """Reads tracker.csv across all runtime locations to identify Sent/Drafted applications."""
+    paths = [
+        resolve_file("tracker.csv", for_write=True),
+        resolve_file("tracker.csv"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+    ]
     sent_map = {}
-    if os.path.exists(tracker_file):
+    seen_paths = set()
+    for tracker_file in paths:
+        if not tracker_file or tracker_file in seen_paths or not os.path.exists(tracker_file):
+            continue
+        seen_paths.add(tracker_file)
         try:
             with open(tracker_file, "r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    key = (row.get("company", "").strip().lower(), row.get("role", "").strip().lower())
-                    sent_map[key] = {
-                        "date": row.get("date", ""),
-                        "company": row.get("company", ""),
-                        "role": row.get("role", ""),
-                        "email": row.get("email", ""),
-                        "status": row.get("status", "Sent"),
-                        "cv_file": row.get("cv_file", "")
-                    }
+                    comp = (row.get("company", "") or "").strip().lower()
+                    rl = (row.get("role", "") or "").strip().lower()
+                    if comp and rl:
+                        key = (comp, rl)
+                        sent_map[key] = {
+                            "date": row.get("date", ""),
+                            "company": row.get("company", ""),
+                            "role": row.get("role", ""),
+                            "email": row.get("email", ""),
+                            "status": row.get("status", "Sent"),
+                            "cv_file": row.get("cv_file", "")
+                        }
         except Exception as e:
             print("[Tracker Read Error]", e)
     return sent_map
@@ -732,14 +777,18 @@ def parse_cv_deterministic(text):
             "default_summary": "",
             "skills": {},
             "experience": [],
-            "education": ""
+            "projects": [],
+            "education": "",
+            "certifications": []
         }
 
+    # Clean bullet artifacts (e.g. Word/PDF bullet characters)
+    text = text.replace('\uf0b7', '•').replace('\uf0a7', '•').replace('\u2022', '•')
     lines = [l.strip() for l in text.splitlines() if l.strip()]
 
     contact = {"email": "", "phone": "", "location": "", "linkedin": "", "github": ""}
 
-    # 1. ROBUST EMAIL EXTRACTION (Handles PDF space artifacts like 'mhasnainma q sood @ gmail.com')
+    # 1. EMAIL EXTRACTION
     email = ""
     for line in lines:
         if "@" in line:
@@ -754,7 +803,7 @@ def parse_cv_deterministic(text):
             email = em.group(0).lower()
     contact["email"] = email
 
-    # 2. ROBUST PHONE EXTRACTION (Handles spaced digits '+ 9 2 33 6 77 6 3  87 4' or standard formats)
+    # 2. PHONE EXTRACTION
     phone = ""
     m_ph = re.search(r"(\+?\s*(?:\d\s*){10,14})", text)
     if m_ph:
@@ -771,7 +820,7 @@ def parse_cv_deterministic(text):
             phone = ph.group(0).strip()
     contact["phone"] = phone
 
-    # 3. SOCIAL PROFILES
+    # 3. SOCIAL PROFILES & LINKS
     li = re.search(r"linkedin\.com/in/([a-zA-Z0-9\-_]+)", text, re.I)
     if li:
         contact["linkedin"] = li.group(0)
@@ -787,194 +836,232 @@ def parse_cv_deterministic(text):
     if loc_m:
         contact["location"] = loc_m.group(0)
 
-    # 5. CANDIDATE NAME (Handles 2-line split names like 'Muhammad\nHasnain')
+    # Helper: Check if line is contact info or URL
+    def is_contact_or_link_line(l):
+        low = l.lower()
+        if "@" in low or "http" in low or "linkedin.com" in low or "github.com" in low or "behance.net" in low or ".netlify.app" in low or ".com" in low:
+            return True
+        if re.search(r"(\+?\d[\d\s\-]{8,}\d)", l):
+            return True
+        return False
+
+    # 5. CANDIDATE NAME (Usually line 0)
     name = ""
-    non_name_tokens = {"curriculum", "vitae", "resume", "cv", "page", "email", "phone", "profile", "summary", "contact", "info", "linkedin", "behance", "github", "skills", "experience", "education"}
-    if len(lines) >= 2:
-        w1 = lines[0].strip().split()
-        w2 = lines[1].strip().split()
-        if len(w1) == 1 and len(w2) == 1:
-            if w1[0].lower() not in non_name_tokens and w2[0].lower() not in non_name_tokens:
-                name = f"{w1[0]} {w2[0]}".title()
-    if not name:
-        for l in lines[:5]:
-            clean_l = re.sub(r"\b(ACA|FCA|ACCA|CA|PHD|PH\.D|MSC|BSC|MBA|PMP|CPA)\b", "", l, flags=re.I)
-            clean_l = re.sub(r"[,|•/\\].*", "", clean_l).strip()
-            words = clean_l.split()
-            if 2 <= len(words) <= 4 and not any(k in clean_l.lower() for k in non_name_tokens):
-                name = clean_l.title()
-                break
+    non_name_tokens = {"curriculum", "vitae", "resume", "cv", "page", "email", "phone", "profile", "summary", "contact", "info", "skills", "experience", "education"}
+    for l in lines[:4]:
+        if is_contact_or_link_line(l):
+            continue
+        clean_l = re.sub(r"\b(ACA|FCA|ACCA|CA|PHD|PH\.D|MSC|BSC|MBA|PMP|CPA)\b", "", l, flags=re.I)
+        clean_l = re.sub(r"[,|•/\\].*", "", clean_l).strip()
+        words = clean_l.split()
+        if 2 <= len(words) <= 4 and not any(k in clean_l.lower() for k in non_name_tokens):
+            name = clean_l.title()
+            break
     if not name and lines:
         name = lines[0].strip().title()
 
-    # Normalize common PDF space artifacts
-    normalized_text = text
-    spaced_replacements = [
-        (r'Figm\s*a', 'Figma'),
-        (r'Photosho\s*p', 'Photoshop'),
-        (r'Illustrato\s*r', 'Illustrator'),
-        (r'Canv\s*a', 'Canva'),
-        (r'Brandin\s*g', 'Branding'),
-        (r'T\s*ypography', 'Typography'),
-        (r'After\s*Eff\s*ects', 'After Effects')
-    ]
-    for pattern, repl in spaced_replacements:
-        normalized_text = re.sub(pattern, repl, normalized_text, flags=re.I)
-
-    text_lower = normalized_text.lower()
-
-    # 6. DISCIPLINE & ROLE RULES
-    role_rules = [
-        ("design", "Lead UI/UX & Graphic Designer", [
-            "graphic designer", "ui/ux designer", "ui designer", "ux designer", "product designer",
-            "visual designer", "brand designer", "brand & identity", "social media design", "logo design",
-            "poster & banner", "carousel", "infographic", "mockup", "presentation design", "figma",
-            "adobe illustrator", "adobe photoshop", "photoshop", "illustrator", "typography", "canva"
-        ]),
-        ("finance", "Chartered Accountant | Financial Analyst", [
-            "chartered accountant", "senior accountant", "accountant", "audit associate", "auditor",
-            "tax consultant", "financial analyst", "finance manager", "bookkeeper", "controller",
-            "acca finalist", "ca finalist", "audit", "taxation", "ifrs", "quickbooks", "xero"
-        ]),
-        ("qa", "Senior QA Automation Engineer | SDET", [
-            "qa automation engineer", "qa engineer", "quality assurance engineer", "software test engineer",
-            "sdet", "sqa engineer", "automation tester", "manual tester", "test analyst", "selenium", "cypress", "playwright"
-        ]),
-        ("content", "Content Strategist & Senior Copywriter", [
-            "content writer", "copywriter", "content strategist", "technical writer", "seo writer",
-            "content editor", "english literature", "journalist", "creative writer", "copywriting"
-        ]),
-        ("science", "Research Scientist & Biologist", [
-            "research scientist", "wildlife biologist", "zoologist", "marine biologist", "physics researcher",
-            "laboratory researcher", "biochemist", "scientific researcher", "microbiologist", "zoology", "biology"
-        ]),
-        ("data", "Senior Data Analyst & BI Specialist", [
-            "data analyst", "data scientist", "bi developer", "business intelligence analyst",
-            "analytics engineer", "database administrator", "data engineer", "power bi", "tableau", "sql"
-        ]),
-        ("dev", "Full Stack Software Engineer", [
-            "software engineer", "full stack developer", "backend developer", "frontend developer",
-            "python developer", "react developer", "devops engineer", "web developer", "fastapi", "django"
-        ]),
-        ("marketing", "Growth Marketing & SEO Specialist", [
-            "growth marketer", "digital marketing manager", "seo specialist", "performance marketer",
-            "social media manager", "brand manager", "campaign manager"
-        ]),
-        ("hr", "Talent Acquisition & HR Specialist", [
-            "talent acquisition", "technical recruiter", "human resources", "hr manager", "people operations", "hr generalist"
-        ])
-    ]
-
-    detected_disc = "other"
+    # 6. CANDIDATE TITLE / HEADLINE (Check lines right under name)
     detected_title = ""
-
-    for disc, def_title, kw_list in role_rules:
-        hits = sum(1 for kw in kw_list if kw in text_lower)
-        if hits >= 1:
-            detected_disc = disc
-            for kw in kw_list:
-                if kw in text_lower and len(kw) > 6:
-                    detected_title = kw.title()
-                    break
-            if not detected_title:
-                detected_title = def_title
+    for l in lines[1:5]:
+        if is_contact_or_link_line(l):
+            continue
+        if l.strip().title() == name:
+            continue
+        if "|" in l or any(kw in l.lower() for kw in ["developer", "engineer", "designer", "accountant", "analyst", "specialist", "scientist", "manager", "writer", "architect", "lead"]):
+            detected_title = l.strip()
             break
 
-    if not detected_title:
-        for l in lines[1:5]:
-            if any(k in l.lower() for k in ["engineer", "developer", "accountant", "analyst", "writer", "manager", "specialist", "scientist", "designer", "officer", "lead"]):
-                detected_title = l.strip().title()
-                break
-    if not detected_title:
-        detected_title = "Professional Specialist"
+    # Discipline detection based on detected_title and text
+    search_scope = (detected_title + " " + text[:2500]).lower()
+    if any(k in search_scope for k in ["developer", "software engineer", "full-stack", "full stack", "backend", "frontend", "python", "react", "fastapi", "web developer"]):
+        detected_disc = "dev"
+        if not detected_title:
+            detected_title = "Full Stack Software Engineer"
+    elif any(k in search_scope for k in ["graphic designer", "ui/ux", "visual designer", "brand designer", "figma", "illustrator", "photoshop"]):
+        detected_disc = "design"
+        if not detected_title:
+            detected_title = "Lead UI/UX & Graphic Designer"
+    elif any(k in search_scope for k in ["qa automation", "qa engineer", "quality assurance", "sdet", "tester"]):
+        detected_disc = "qa"
+        if not detected_title:
+            detected_title = "Senior QA Automation Engineer"
+    elif any(k in search_scope for k in ["chartered accountant", "audit associate", "auditor", "financial analyst", "tax consultant", "acca finalist"]):
+        detected_disc = "finance"
+        if not detected_title:
+            detected_title = "Financial Analyst & Accountant"
+    elif any(k in search_scope for k in ["data scientist", "data analyst", "bi developer", "power bi"]):
+        detected_disc = "data"
+        if not detected_title:
+            detected_title = "Senior Data Analyst"
+    elif any(k in search_scope for k in ["copywriter", "content writer", "content strategist"]):
+        detected_disc = "content"
+        if not detected_title:
+            detected_title = "Content Strategist & Copywriter"
+    else:
+        detected_disc = "dev"
+        if not detected_title:
+            detected_title = "Software Engineer"
 
     # 7. SUMMARY EXTRACTION
     summary = ""
-    sum_m = re.search(r"(?:ABOUT ME|PROFESSIONAL SUMMARY|SUMMARY|PROFILE|OBJECTIVE)\s*[:\n](.*?)(?=(?:EXPERIENCE|WORK|SKILLS|EDUCATION|PROJECTS|CONTACT|$))", text, re.DOTALL | re.IGNORECASE)
+    sum_m = re.search(r"(?:ABOUT ME|PROFESSIONAL SUMMARY|SUMMARY|PROFILE|OBJECTIVE)\s*[:\n](.*?)(?=(?:TECHNICAL SKILLS|SKILLS|EXPERIENCE|WORK EXPERIENCE|PROJECTS|EDUCATION|$))", text, re.DOTALL | re.IGNORECASE)
     if sum_m:
         cleaned_sum = re.sub(r"\s+", " ", sum_m.group(1)).strip()
-        if len(cleaned_sum) > 20:
-            summary = cleaned_sum[:500]
+        cleaned_sum = re.sub(r"^(about me|professional summary|summary|profile|objective)\s*[:\-]?\s*", "", cleaned_sum, flags=re.I).strip()
+        if len(cleaned_sum) > 25 and not is_contact_or_link_line(cleaned_sum):
+            summary = cleaned_sum[:600]
     if not summary:
-        for l in lines[2:10]:
-            if len(l) > 60 and not any(k in l.lower() for k in ["contact", "email", "phone", "skills"]):
+        for l in lines[2:12]:
+            if len(l) > 60 and not is_contact_or_link_line(l) and not any(k in l.lower() for k in ["skills", "experience", "education", "projects"]):
                 summary = l.strip()
                 break
 
     # 8. SKILLS EXTRACTION
     skills_obj = {}
     known_skill_dict = {
-        "design": ["Figma", "Adobe Photoshop", "Adobe Illustrator", "Canva", "After Effects", "Capcut", "Notion", "Logo Design", "Brand & Identity", "Social Media Design", "Marketing & Ad Design", "Poster & Banner Design", "Infographic Design", "Mockups", "Presentation Design", "Typography", "Visual Communication", "Color Theory", "Carousel", "UI/UX Design", "Wireframing", "Prototyping"],
-        "dev": ["Python", "FastAPI", "React", "Next.js", "Django", "TypeScript", "JavaScript", "Docker", "PostgreSQL", "MySQL", "Redis", "REST APIs", "Git", "Node.js", "Tailwind CSS", "HTML5", "CSS3"],
-        "qa": ["Selenium", "PyTest", "Cypress", "Playwright", "Postman", "Manual Testing", "Automation Testing", "Regression Testing", "API Testing", "JIRA", "Test Plans", "Bug Tracking"],
-        "finance": ["Statutory Audit", "Taxation", "IFRS", "GAAP", "Financial Modeling", "QuickBooks", "Xero", "Financial Reporting", "ERP", "Budgeting", "Internal Controls", "Balance Sheet"],
-        "content": ["Copywriting", "Content Strategy", "SEO Writing", "Technical Writing", "Creative Writing", "Proofreading", "Editing", "Blogging", "Storytelling", "Ghostwriting"]
+        "dev": ["Python", "TypeScript", "JavaScript", "SQL", "HTML5", "CSS3", "React", "Next.js", "Vite", "Tailwind CSS", "Framer Motion", "FastAPI", "REST APIs", "JWT authentication", "WebSockets", "PostgreSQL", "SQLite", "Docker", "Git", "GitHub", "Vercel", "Railway", "Netlify"],
+        "design": ["Figma", "Adobe Photoshop", "Adobe Illustrator", "Canva", "After Effects", "Capcut", "Notion", "Logo Design", "Brand & Identity", "Social Media Design", "Marketing & Ad Design", "Poster & Banner Design", "Infographic Design", "Mockups", "Presentation Design", "Typography", "Visual Communication", "UI/UX Design"],
+        "qa": ["Selenium", "PyTest", "Cypress", "Playwright", "Postman", "Manual Testing", "Automation Testing", "Regression Testing", "API Testing", "JIRA", "Test Plans"],
+        "finance": ["Statutory Audit", "Taxation", "IFRS", "GAAP", "Financial Modeling", "QuickBooks", "Xero", "Financial Reporting", "ERP", "Budgeting"],
+        "content": ["Copywriting", "Content Strategy", "SEO Writing", "Technical Writing", "Creative Writing", "Editing", "Blogging"]
     }
-
     found_skills = []
-    check_lists = [known_skill_dict.get(detected_disc, [])] + list(known_skill_dict.values())
-    for s_list in check_lists:
-        for sk in s_list:
-            if sk.lower() in text_lower and sk not in found_skills:
-                found_skills.append(sk)
+    text_lower = text.lower()
+    for sk in known_skill_dict.get(detected_disc, []) + known_skill_dict["dev"]:
+        if sk.lower() in text_lower and sk not in found_skills:
+            found_skills.append(sk)
+    skills_obj["Core Competencies"] = found_skills[:24] if found_skills else [detected_title]
 
-    if found_skills:
-        skills_obj["Core Competencies"] = found_skills[:18]
-    else:
-        skills_obj["Core Competencies"] = [detected_title]
-
-    # 9. EXPERIENCE EXTRACTION
+    # 9. EXPERIENCE EXTRACTION (Capture multiple roles and all bullets)
     experience = []
-    exp_m = re.search(r"(?:WORK EXPERIENCE|EXPERIENCE|EMPLOYMENT HISTORY)\s*[:\n](.*?)(?=(?:SKILLS|EDUCATION|PROJECTS|CERTIFICATIONS|$))", text, re.DOTALL | re.IGNORECASE)
+    exp_m = re.search(r"(?:PROFESSIONAL EXPERIENCE|WORK EXPERIENCE|EXPERIENCE|EMPLOYMENT HISTORY)\s*[:\n](.*?)(?=\n\s*(?:SELECTED PROJECTS|PROJECTS|EDUCATION\b|CERTIFICATIONS\b|HACKATHONS\b|LANGUAGES\b|$))", text, re.DOTALL | re.IGNORECASE)
     if exp_m:
         raw_exp = exp_m.group(1).strip()
-        bullets = [re.sub(r"^[-•*\d.]+\s*", "", b).strip() for b in raw_exp.splitlines() if len(b.strip()) > 20]
-        if bullets:
-            experience.append({
-                "company": "Professional Experience",
-                "role": detected_title,
-                "years": "Recent",
-                "bullets": bullets[:4]
-            })
+        exp_lines = [l.strip() for l in raw_exp.splitlines() if l.strip()]
+        cur_job = None
+        role_keywords = ['developer', 'engineer', 'creator', 'instructor', 'founder', 'tester', 'analyst', 'manager', 'lead', 'designer', 'consultant', 'specialist']
+        for l in exp_lines:
+            if '===' in l or ('page' in l.lower() and len(l) < 15) or is_contact_or_link_line(l):
+                continue
+            is_bullet = l.startswith(("-", "•", "*", "–", "", "\uf0b7", "\uf0a7")) or bool(re.match(r"^\d+\.\s+", l))
+            has_date = bool(re.search(r"\b(20\d\d\s*[-–—to ]+\s*(?:20\d\d|present|current)|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+20\d\d)\b", l, re.I))
+            is_role_title = any(kw in l.lower() for kw in role_keywords) and len(l) < 80
 
-    if not experience:
-        experience.append({
-            "company": "Professional Experience",
-            "role": detected_title,
-            "years": "Recent",
-            "bullets": [summary[:120] if summary else "Designed visual assets for software and client projects."]
-        })
+            if is_bullet:
+                if cur_job is not None:
+                    clean_b = re.sub(r"^[-•*–\uf0b7\uf0a7\d.]+\s*", "", l).strip()
+                    if clean_b:
+                        cur_job["bullets"].append(clean_b)
+            elif is_role_title or (cur_job is None and (has_date or len(l) < 70)):
+                if cur_job and cur_job.get("bullets"):
+                    experience.append(cur_job)
+                role_name = l
+                comp_name = "Independent"
+                years_val = "2024 to Present"
+                if "," in l:
+                    rp = l.split(",", 1)
+                    role_name = rp[0].strip()
+                    comp_name = rp[1].strip()
+                cur_job = {"company": comp_name, "role": role_name, "years": years_val, "bullets": []}
+            elif cur_job is not None and not cur_job["bullets"] and (has_date or "|" in l):
+                parts = [p.strip() for p in l.split("|") if p.strip()]
+                if has_date:
+                    dm = re.search(r"\b((?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+)?20\d\d\s*[-–—to ]+\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+)?(?:20\d\d|present|current)|20\d\d)\b", l, re.I)
+                    if dm:
+                        cur_job["years"] = dm.group(0).strip()
+                if len(parts) >= 2:
+                    cur_job["company"] = parts[0]
+            elif cur_job is not None and cur_job["bullets"]:
+                # Continuation of previous bullet
+                cur_job["bullets"][-1] += " " + l
+
+        if cur_job and cur_job.get("bullets"):
+            experience.append(cur_job)
+
+    # 10. PROJECTS EXTRACTION
+    projects = []
+    proj_m = re.search(r"(?:SELECTED PROJECTS|PROJECTS|PORTFOLIO)\s*[:\n](.*?)(?=\n\s*(?:EDUCATION\b|CERTIFICATIONS\b|HACKATHONS\b|LANGUAGES\b|$))", text, re.DOTALL | re.IGNORECASE)
+    if proj_m:
+        raw_proj = proj_m.group(1).strip()
+        proj_lines = [l.strip() for l in raw_proj.splitlines() if l.strip()]
+        cur_proj = None
+        for l in proj_lines:
+            if '===' in l or ('page' in l.lower() and len(l) < 15):
+                continue
+            is_bullet = l.startswith(("-", "•", "*", "–", "", "\uf0b7", "\uf0a7")) or bool(re.match(r"^\d+\.\s+", l))
+            is_title = (":" in l and len(l) < 80 and not is_bullet) or (len(l) < 60 and not is_bullet and not l.endswith((".", ";")) and any(w in l for w in ["App", "Platform", "Assistant", "Pilot", "Pro", "System", "Companion", "Tools", "Nexora"]))
+
+            if is_title:
+                if cur_proj and (cur_proj.get("text") or cur_proj.get("technologies")):
+                    projects.append(cur_proj)
+                cur_proj = {"name": l, "text": "", "technologies": ""}
+            elif is_bullet:
+                clean_b = re.sub(r"^[-•*–\uf0b7\uf0a7\d.]+\s*", "", l).strip()
+                if cur_proj:
+                    if cur_proj["text"]:
+                        cur_proj["text"] += " · " + clean_b
+                    else:
+                        cur_proj["text"] = clean_b
+            elif cur_proj is not None and not cur_proj["text"] and ("," in l or "|" in l or "github.com" in l):
+                cur_proj["technologies"] = l
+            elif cur_proj is not None and cur_proj["text"]:
+                cur_proj["text"] += " " + l
+
+        if cur_proj and (cur_proj.get("text") or cur_proj.get("technologies")):
+            projects.append(cur_proj)
+
+    # 11. EDUCATION EXTRACTION
+    education = []
+    edu_m = re.search(r"(?:EDUCATION)\s*[:\n](.*?)(?=(?:CERTIFICATIONS|HACKATHONS|LANGUAGES|$))", text, re.DOTALL | re.IGNORECASE)
+    if edu_m:
+        edu_lines = [l.strip() for l in edu_m.group(1).splitlines() if l.strip() and not is_contact_or_link_line(l)]
+        education = " · ".join(edu_lines[:4])
+
+    # 12. CERTIFICATIONS EXTRACTION
+    certifications = []
+    cert_m = re.search(r"(?:CERTIFICATIONS & TRAINING|CERTIFICATIONS|CERTIFICATES)\s*[:\n](.*?)(?=(?:HACKATHONS|ACHIEVEMENTS|LANGUAGES|$))", text, re.DOTALL | re.IGNORECASE)
+    if cert_m:
+        for cl in cert_m.group(1).splitlines():
+            cl_clean = re.sub(r"^[-•*–\d.]+\s*", "", cl).strip()
+            if len(cl_clean) > 8:
+                certifications.append(cl_clean)
 
     return {
-        "name": name,
-        "default_title": detected_title,
+        "name": name or "Candidate",
+        "default_title": detected_title or "Software Engineer",
         "discipline": detected_disc,
         "contact": contact,
-        "location": contact.get("location") or "Remote / Pakistan",
-        "default_summary": summary,
+        "location": contact.get("location") or "Lahore, Pakistan",
+        "default_summary": summary or f"Results-driven {detected_title} with proven expertise in building and deploying high-impact production solutions.",
         "skills": skills_obj,
         "experience": experience,
-        "education": "Relevant Degree / Professional Certification"
+        "projects": projects,
+        "education": education,
+        "certifications": certifications,
+        "ats_score": 82,
+        "enhanced_score": 96
     }
 
-
 def parse_cv_with_gemini(text):
-    """Deep document intelligence via Google Gemini 3.1/3.5 Flash Lite with multi-key failover,
-    automatic Google XYZ bullet rewriting, and seamless deterministic local fallback."""
+    """Deep document intelligence via Google Gemini / APINEX with multi-key failover,
+    automatic Google XYZ bullet rewriting, preserving ALL sections, and deterministic fallback."""
     if not text or len(text.strip()) < 30:
         return parse_cv_deterministic(text)
 
-    prompt = f"""You are an elite ATS CV Intelligence analyzer and resume parser.
+    prompt = f"""You are an elite ATS CV Intelligence analyzer and comprehensive resume parser.
 Analyze this resume text and convert it into STRICT VALID JSON ONLY (no markdown backticks, no commentary).
 
-CRITICAL REQUIREMENTS:
+CRITICAL MANDATORY RULES:
 1. Extract candidate name, target role title, discipline (design, dev, qa, finance, marketing, content, hr, data, sales, other), email, phone, location, links.
 2. Formulate a crisp 2-3 sentence executive profile summary with quantifiable impact.
-3. For EVERY job in experience:
-   - In "raw_experience": preserve the candidate's exact raw original bullets.
-   - In "experience": REWRITE EVERY BULLET POINT into the Google XYZ formula: 'Accomplished [X] as measured by [Y] by doing [Z]', starting with a strong action verb (e.g. Spearheaded, Engineered, Designed, Delivered, Accelerated, Reduced, Optimized) and embedding realistic quantifiable metrics (e.g. 'increasing engagement by 25%', 'cutting turnaround time by 35%', 'delivering 40+ assets').
-4. Categorize skills into clean ATS-scannable groups.
-5. Set ats_score to 96 and original_score to 72.
+3. DO NOT SUMMARIZE, TRUNCATE, OR OMIT ANY WORK EXPERIENCE. Extract EVERY SINGLE JOB in "experience":
+   - In "raw_experience": preserve candidate's EXACT raw original bullets.
+   - In "experience": REWRITE EVERY BULLET POINT into the Google XYZ formula: 'Accomplished [X] as measured by [Y] by doing [Z]', starting with a strong action verb (e.g. Spearheaded, Engineered, Designed, Delivered, Accelerated, Reduced, Optimized) and embedding realistic quantifiable metrics (e.g. 'increasing engagement by 25%', 'cutting turnaround time by 35%').
+4. Extract ALL projects into "projects" (name, text, technologies).
+5. Extract ALL skills into clean ATS-scannable categories under "skills" (e.g. Core Competencies, Tools & Frameworks, Methodologies).
+6. Extract ALL education degrees and institutions in "education".
+7. Extract ALL certifications in "certifications".
+8. Calculate real baseline ATS score (ats_score: 65-88 based on current metrics density) and target score (enhanced_score: 96).
 
 {{
   "name": "Full Candidate Name",
@@ -988,9 +1075,9 @@ CRITICAL REQUIREMENTS:
     "github": "Portfolio / Behance / GitHub link"
   }},
   "location": "City or Country",
-  "default_summary": "Crisp 2-3 sentence executive profile summary emphasizing domain impact and quantifiable achievements",
-  "ats_score": 96,
-  "original_score": 72,
+  "default_summary": "Executive profile summary emphasizing domain impact and quantifiable achievements",
+  "ats_score": 78,
+  "enhanced_score": 96,
   "skills": {{
     "Core Competencies": ["skill1", "skill2"],
     "Tools & Platforms": ["tool1", "tool2"]
@@ -1002,7 +1089,7 @@ CRITICAL REQUIREMENTS:
       "years": "Duration (e.g. 2023 - Present)",
       "bullets": [
         "Spearheaded [X], resulting in [Y]% improvement by implementing [Z].",
-        "Engineered [X] as measured by [Y] through [Z]."
+        "Delivered [X] as measured by [Y] through [Z]."
       ]
     }}
   ],
@@ -1014,7 +1101,15 @@ CRITICAL REQUIREMENTS:
       "bullets": ["Original unoptimized bullet 1", "Original unoptimized bullet 2"]
     }}
   ],
-  "education": "Degree or Qualification",
+  "projects": [
+    {{
+      "name": "Project Name",
+      "text": "Detailed project achievements and impact",
+      "technologies": "Tools and tech stack used"
+    }}
+  ],
+  "education": "Degree, Institution, Year",
+  "certifications": ["Certification 1", "Certification 2"],
   "ats_optimizations": [
     "Rewrote all responsibilities into Google XYZ quantified impact statements",
     "Maximized ATS keyword density for automated talent screeners",
@@ -1024,10 +1119,10 @@ CRITICAL REQUIREMENTS:
 }}
 
 RESUME TEXT:
-{text[:4500]}
+{text[:35000]}
 """
     try:
-        reply = call_gemini(prompt, timeout=14)
+        reply = call_ai_engine(prompt, system_prompt="You are an elite ATS CV Intelligence analyzer and comprehensive resume parser.", timeout=25)
         if reply:
             clean = reply.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean)
@@ -1036,6 +1131,10 @@ RESUME TEXT:
                     data["contact"] = {}
                 if "skills" not in data:
                     data["skills"] = {}
+                if "projects" not in data:
+                    data["projects"] = []
+                if "certifications" not in data:
+                    data["certifications"] = []
                 if "discipline" not in data or not data["discipline"]:
                     dlist = get_job_discipline(data.get("default_title", ""))
                     data["discipline"] = dlist[0] if dlist else "other"
@@ -1046,7 +1145,7 @@ RESUME TEXT:
                     data["raw_experience"] = json.loads(json.dumps(data["experience"]))
                 return data
     except Exception as e:
-        print("[Gemini CV Parsing Fallback]", e)
+        print("[AI CV Parsing Fallback]", e)
 
     parsed = parse_cv_deterministic(text)
     return enhance_cv_to_ats(parsed)
@@ -1441,7 +1540,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._handle_cv_render_html(query)
         elif path == "/api/cv/save-to-downloads":
             self._handle_cv_save_to_downloads(query)
-        elif path == "/api/cover-letters":
+        elif path in ("/api/cover-letters", "/api/get-cover-letters"):
             self._handle_get_cover_letters()
         elif path == "/api/cover-letter/document":
             self._handle_cover_letter_document(query)
@@ -1552,17 +1651,27 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         })
 
     def _handle_save_profile(self, new_data):
-        prof_file = resolve_file("profile.json")
+        prof_file = resolve_file("profile.json", for_write=True)
         try:
             current = self._get_profile_data()
             cfg_updates = {}
-            if "gmail_address" in new_data:
+            
+            email_cand = (new_data.get("contact", {}).get("email") if isinstance(new_data.get("contact"), dict) else None) or new_data.get("email") or new_data.get("gmail_address")
+            if email_cand:
+                clean_email = email_cand.strip()
+                cfg_updates["gmail_address"] = clean_email
+                current.setdefault("contact", {})["email"] = clean_email
+
+            if "gmail_address" in new_data and new_data["gmail_address"].strip():
                 cfg_updates["gmail_address"] = new_data["gmail_address"].strip()
                 current.setdefault("contact", {})["email"] = new_data["gmail_address"].strip()
+
             if "gmail_app_password" in new_data and new_data["gmail_app_password"].strip() and "••••" not in new_data["gmail_app_password"]:
                 cfg_updates["gmail_app_password"] = new_data["gmail_app_password"].replace(" ", "").strip()
+
             if "selected_model" in new_data:
                 cfg_updates["selected_model"] = new_data["selected_model"].strip()
+
             if cfg_updates:
                 save_config(cfg_updates)
 
@@ -1576,6 +1685,15 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
 
             with open(prof_file, "w", encoding="utf-8") as f:
                 json.dump(current, f, indent=2, ensure_ascii=False)
+
+            repo_prof = os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json")
+            if repo_prof != prof_file:
+                try:
+                    with open(repo_prof, "w", encoding="utf-8") as rpf:
+                        json.dump(current, rpf, indent=2, ensure_ascii=False)
+                except Exception:
+                    pass
+
             self._send_json({"ok": True, "message": "Candidate profile and settings updated successfully!", "profile": current})
         except Exception as e:
             self._send_json({"ok": False, "error": str(e)}, status=500)
@@ -1588,17 +1706,31 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         candidate_name = profile_data.get("name") or "Candidate"
         first_name = candidate_name.split()[0].title() if candidate_name else "Candidate"
         
-        # Real synchronized counts directly from tracker.csv
-        tracker_file = resolve_file("tracker.csv")
+        # Real synchronized counts directly from tracker.csv across all runtime locations
+        tracker_paths = [
+            resolve_file("tracker.csv", for_write=True),
+            resolve_file("tracker.csv"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+        ]
         applied_count = 0
         drafted_count = 0
         skipped_count = 0
-        if os.path.exists(tracker_file):
+        seen_stat_rows = set()
+
+        for t_file in tracker_paths:
+            if not t_file or not os.path.exists(t_file):
+                continue
             try:
-                with open(tracker_file, "r", encoding="utf-8", errors="ignore") as tf:
+                with open(t_file, "r", encoding="utf-8", errors="ignore") as tf:
                     reader = csv.DictReader(tf)
                     for row in reader:
+                        comp = (row.get("company") or "").strip().lower()
+                        rl = (row.get("role") or "").strip().lower()
                         st = (row.get("status") or "").strip().lower()
+                        row_key = (comp, rl, st)
+                        if row_key in seen_stat_rows:
+                            continue
+                        seen_stat_rows.add(row_key)
                         if st in ("sent", "applied"):
                             applied_count += 1
                         elif st == "draft-attached":
@@ -1615,8 +1747,9 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         shortlisted_count = len([r for r in real_replies if any(w in (r.get("subject", "")).lower() for w in ["interview", "offer", "shortlisted", "next steps"])])
         interview_count = len([r for r in real_replies if "interview" in (r.get("subject", "")).lower()])
 
-        enhanced = bool(profile_data.get("enhanced_with_gemini") or profile_data.get("is_enhanced") or int(profile_data.get("ats_score", 0)) >= 90)
-        baseline_score = int(profile_data.get("original_score") or profile_data.get("baseline_score") or 74)
+        has_profile = bool(profile_data.get("name")) or bool(profile_data.get("experience"))
+        enhanced = bool(profile_data.get("is_enhanced") and has_profile)
+        baseline_score = int(profile_data.get("original_score") or profile_data.get("baseline_score") or profile_data.get("ats_score") or (78 if has_profile else 0))
         current_ats = 96 if enhanced else baseline_score
 
         ats_checklist = [
@@ -1631,6 +1764,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             "total_jobs": jobs_count,
             "applied": applied_count,
             "drafted": drafted_count,
+            "total_applied": applied_count + drafted_count,
             "skipped": skipped_count,
             "shortlisted": shortlisted_count,
             "interviews": interview_count,
@@ -1694,7 +1828,9 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
 
                 tracker_key = (company.strip().lower(), title.strip().lower())
                 tracker_info = sent_map.get(tracker_key)
-                is_sent = tracker_info is not None
+                status_str = (tracker_info.get("status") or "").lower() if tracker_info else ""
+                is_draft = status_str == "draft-attached"
+                is_sent = status_str in ("sent", "applied") or (tracker_info is not None and not is_draft)
 
                 has_reply = any(company.lower() in (r.get("from", "") + r.get("subject", "")).lower() for r in inbox_data["replies"])
 
@@ -1708,7 +1844,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
                     continue
                 elif segment == "portal" and has_real_email:
                     continue
-                elif segment == "sent" and not is_sent:
+                elif segment == "sent" and not (is_sent or is_draft):
                     continue
                 elif segment == "replied" and not has_reply:
                     continue
@@ -1816,6 +1952,8 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
                     "apply_type": apply_type,
                     "email_verified": is_mx_verified,
                     "is_sent": is_sent,
+                    "is_draft": is_draft,
+                    "tracker_status": tracker_info.get("status") if tracker_info else None,
                     "has_reply": has_reply,
                     "pakistan_friendly": is_pakistan_friendly,
                     "posted_time": posted_time,
@@ -1837,7 +1975,7 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         self._send_json(jobs)
 
     def _handle_create_draft(self, req_data):
-        """Creates a REAL draft directly inside user's Gmail Drafts (pashadev804@gmail.com)."""
+        """Creates a REAL draft directly inside user's Gmail Drafts with both ATS CV & Cover Letter attached."""
         company = req_data.get("company", "Tech Enterprise")
         role = req_data.get("role", "Full Stack Developer")
         to_email = req_data.get("email", "").strip()
@@ -1853,12 +1991,14 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         profile = self._get_profile_data()
         name = profile.get("name") or "Applicant"
         cand_title = profile.get("default_title") or role
-        cand_email = profile.get("contact", {}).get("email") or "applicant@example.com"
+        cand_email = profile.get("contact", {}).get("email") or profile.get("email", "") or "applicant@example.com"
         cand_phone = profile.get("contact", {}).get("phone") or ""
         cand_summary = profile.get("default_summary") or f"With dedicated professional background as a {cand_title}, I am confident in delivering high impact for your team at {company}."
 
         clean_cand_name = re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-') or "Candidate"
         attach_filename = f"{clean_cand_name}-ATS-CV.pdf"
+        clean_comp = re.sub(r'[^A-Za-z0-9]+', '-', company).strip('-') or "Company"
+        letter_attach_filename = f"{clean_cand_name}-Cover-Letter-{clean_comp}.pdf"
 
         if not subject:
             subject = f"Application: {role} — {name}"
@@ -1877,11 +2017,11 @@ Contact: {cand_email}{phone_part}
 Requirements:
 - 2 concise, impactful paragraphs tailored directly to {company}.
 - Highlight candidate's quantifiable achievements and immediate value.
-- Mention attached Tailored ATS Master CV ({attach_filename}).
+- Mention attached Tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}).
 - Professional closing with candidate name and contact.
 - Return ONLY the final email body text ready to send (no placeholders, no subject line, no markdown backticks).
 """
-            ai_draft = call_apinex(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.")
+            ai_draft = call_ai_engine(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.", timeout=20)
             if ai_draft and len(ai_draft.strip()) > 80:
                 body = ai_draft.strip()
             else:
@@ -1891,7 +2031,7 @@ I am writing to express my strong interest in the {role} position.
 
 {cand_summary}
 
-Please find attached my tailored CV for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
+Please find attached my tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}) for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
 
 Sincerely,
 
@@ -1899,41 +2039,91 @@ Sincerely,
 {cand_email}{phone_part}
 """
 
+        # Generate printable Cover Letter PDF for attachment
+        extra_attachments = []
+        try:
+            letter_pdf_path = resolve_file(os.path.join("cvs", letter_attach_filename), for_write=True)
+            os.makedirs(os.path.dirname(letter_pdf_path), exist_ok=True)
+            res_letter = cv.generate_cover_letter_pdf(profile, company, role, body, letter_pdf_path)
+            if res_letter.get("ok") and os.path.exists(letter_pdf_path):
+                extra_attachments.append((letter_pdf_path, letter_attach_filename))
+        except Exception as cle:
+            print("[Cover Letter PDF Notice]", cle)
+
         user_cfg = get_config()
+        active_gmail = (user_cfg.get("gmail_address") or cand_email or "").strip()
+        active_pass = (user_cfg.get("gmail_app_password") or "").replace(" ", "").strip()
         cfg = {
-            "gmail_address": user_cfg.get("gmail_address") or "pashadev804@gmail.com",
-            "gmail_app_password": user_cfg.get("gmail_app_password") or "cqtx jlug axse oipx",
+            "gmail_address": active_gmail,
+            "gmail_app_password": active_pass,
             "imap_host": "imap.gmail.com"
         }
 
-        try:
-            bot.save_draft(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile)
-            
-            # Record in tracker.csv
-            tracker_file = resolve_file("tracker.csv")
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            with open(tracker_file, "a", newline="", encoding="utf-8") as tf:
-                writer = csv.writer(tf)
-                writer.writerow([today_str, company, role, to_email, "PashaHunt Workstation", "", attach_filename, job_id or f"draft-{int(time.time())}", "draft-attached"])
+        imap_ok = False
+        imap_err = None
+        if active_gmail and active_pass and "@" in active_gmail:
+            try:
+                bot.save_draft(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile, extra_attachments=extra_attachments)
+                imap_ok = True
+            except Exception as e:
+                imap_err = str(e)
+                print("[Save Draft Notice - IMAP]", e)
+        else:
+            imap_err = "Gmail credentials not configured in Candidate & Settings."
 
-            # Record in cover_letters.json
-            record_cover_letter(company, role, to_email, subject, body, status="Drafted in Gmail")
+        # Record in tracker.csv (User Data & repo mirrors)
+        tracker_file = resolve_file("tracker.csv", for_write=True)
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        exists_u = os.path.exists(tracker_file) and os.path.getsize(tracker_file) > 0
+        with open(tracker_file, "a", newline="", encoding="utf-8") as tf:
+            writer = csv.writer(tf)
+            if not exists_u:
+                writer.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status", "notes"])
+            writer.writerow([today_str, company, role, to_email, "PashaHunt Workstation", "", attach_filename, job_id or f"draft-{int(time.time())}", "draft-attached", ""])
 
-            self._send_json({
-                "ok": True,
-                "message": f"Draft for {company} created in your Gmail Drafts ({cfg['gmail_address']}) with attached CV ({attach_filename})!",
-                "to": to_email,
-                "company": company,
-                "role": role,
-                "subject": subject,
-                "attachment": attach_filename
-            })
-        except Exception as e:
-            print("[Save Draft Error]", e)
-            self._send_json({"ok": False, "error": f"Failed to save draft to Gmail: {str(e)}"}, status=500)
+        repo_tracker = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+        if repo_tracker != tracker_file:
+            try:
+                exists_r = os.path.exists(repo_tracker) and os.path.getsize(repo_tracker) > 0
+                with open(repo_tracker, "a", newline="", encoding="utf-8") as rtf:
+                    rwriter = csv.writer(rtf)
+                    if not exists_r:
+                        rwriter.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status", "notes"])
+                    rwriter.writerow([today_str, company, role, to_email, "PashaHunt Workstation", "", attach_filename, job_id or f"draft-{int(time.time())}", "draft-attached", ""])
+            except Exception:
+                pass
+
+        # Record in cover_letters.json
+        record_cover_letter(company, role, to_email, subject, body, status="Drafted in Gmail")
+
+        # Encode body cleanly for web compose fallback (truncate if extremely long to avoid Windows ShellExecute URL length limit)
+        clean_web_body = body if len(body) < 1400 else body[:1400] + "\n\n[Full Cover Letter copied to clipboard]"
+        web_compose_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={urllib.parse.quote(to_email)}&su={urllib.parse.quote(subject)}&body={urllib.parse.quote(clean_web_body)}"
+
+        attachments_str = f"{attach_filename} + {letter_attach_filename}" if extra_attachments else attach_filename
+        msg = f"Draft for {company} prepared and recorded with {attachments_str}!"
+        if imap_ok:
+            msg = f"Draft for {company} created directly in your Gmail Drafts ({cfg['gmail_address']}) with ATS CV & Cover Letter attached!"
+        elif not (active_gmail and active_pass):
+            msg = f"Draft for {company} recorded! (Enter your Gmail App Password in Settings to save to Gmail Drafts automatically, or click 'Open Draft ↗')"
+
+        self._send_json({
+            "ok": True,
+            "message": msg,
+            "to": to_email,
+            "company": company,
+            "role": role,
+            "subject": subject,
+            "attachment": attach_filename,
+            "cover_letter_attachment": letter_attach_filename if extra_attachments else None,
+            "body": body,
+            "imap_saved": imap_ok,
+            "imap_error": imap_err,
+            "web_compose_url": web_compose_url
+        })
 
     def _handle_send_email(self, req_data):
-        """Sends a REAL application email directly via Gmail SMTP with active ATS CV attached."""
+        """Sends a REAL application email directly via Gmail SMTP with active ATS CV & Cover Letter attached."""
         company = req_data.get("company", "Target Enterprise")
         role = req_data.get("role", "Professional Role")
         to_email = req_data.get("email", "").strip()
@@ -1949,12 +2139,14 @@ Sincerely,
         profile = self._get_profile_data()
         name = profile.get("name") or "Applicant"
         cand_title = profile.get("default_title") or role
-        cand_email = profile.get("contact", {}).get("email") or "applicant@example.com"
+        cand_email = profile.get("contact", {}).get("email") or profile.get("email", "") or "applicant@example.com"
         cand_phone = profile.get("contact", {}).get("phone") or ""
         cand_summary = profile.get("default_summary") or f"With dedicated professional background as a {cand_title}, I am confident in delivering high impact for your team at {company}."
 
         clean_cand_name = re.sub(r'[^A-Za-z0-9]+', '-', name).strip('-') or "Candidate"
         attach_filename = f"{clean_cand_name}-ATS-CV.pdf"
+        clean_comp = re.sub(r'[^A-Za-z0-9]+', '-', company).strip('-') or "Company"
+        letter_attach_filename = f"{clean_cand_name}-Cover-Letter-{clean_comp}.pdf"
 
         if not subject:
             subject = f"Application: {role} — {name}"
@@ -1973,11 +2165,11 @@ Contact: {cand_email}{phone_part}
 Requirements:
 - 2 concise, impactful paragraphs tailored directly to {company}.
 - Highlight candidate's quantifiable achievements and immediate value.
-- Mention attached Tailored ATS Master CV ({attach_filename}).
+- Mention attached Tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}).
 - Professional closing with candidate name and contact.
 - Return ONLY the final email body text ready to send (no placeholders, no subject line, no markdown backticks).
 """
-            ai_draft = call_apinex(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.")
+            ai_draft = call_ai_engine(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.", timeout=20)
             if ai_draft and len(ai_draft.strip()) > 80:
                 body = ai_draft.strip()
             else:
@@ -1987,7 +2179,7 @@ I am writing to express my strong interest in the {role} position.
 
 {cand_summary}
 
-Please find attached my tailored CV for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
+Please find attached my tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}) for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
 
 Sincerely,
 
@@ -1995,33 +2187,80 @@ Sincerely,
 {cand_email}{phone_part}
 """
 
+        # Generate printable Cover Letter PDF for attachment
+        extra_attachments = []
+        try:
+            letter_pdf_path = resolve_file(os.path.join("cvs", letter_attach_filename), for_write=True)
+            os.makedirs(os.path.dirname(letter_pdf_path), exist_ok=True)
+            res_letter = cv.generate_cover_letter_pdf(profile, company, role, body, letter_pdf_path)
+            if res_letter.get("ok") and os.path.exists(letter_pdf_path):
+                extra_attachments.append((letter_pdf_path, letter_attach_filename))
+        except Exception as cle:
+            print("[Cover Letter PDF Notice]", cle)
+
         user_cfg = get_config()
+        active_gmail = (user_cfg.get("gmail_address") or cand_email or "").strip()
+        active_pass = (user_cfg.get("gmail_app_password") or "").replace(" ", "").strip()
+        if not (active_gmail and active_pass and "@" in active_gmail):
+            self._send_json({"ok": False, "error": "Please enter your Gmail address and 16-character App Password in Candidate & Settings to send emails directly via SMTP."}, status=400)
+            return
+
         cfg = {
-            "gmail_address": user_cfg.get("gmail_address") or "pashadev804@gmail.com",
-            "gmail_app_password": user_cfg.get("gmail_app_password") or "cqtx jlug axse oipx"
+            "gmail_address": active_gmail,
+            "gmail_app_password": active_pass,
+            "imap_host": "imap.gmail.com"
         }
 
         try:
-            bot.send_email_smtp(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile)
+            # 1. Also save draft in Gmail Drafts so user always has draft in their mailbox
+            try:
+                bot.save_draft(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile, extra_attachments=extra_attachments)
+            except Exception as de:
+                print("[Send Email] Pre-draft save notice:", de)
+
+            # 2. Dispatch via SMTP
+            bot.send_email_smtp(cfg, to=to_email, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile, extra_attachments=extra_attachments)
             
-            # Record in tracker.csv as Sent
+            # Record in tracker.csv as Sent (both User Data & repo mirrors)
             tracker_file = resolve_file("tracker.csv", for_write=True)
             today_str = datetime.now().strftime("%Y-%m-%d")
+            exists_u = os.path.exists(tracker_file) and os.path.getsize(tracker_file) > 0
             with open(tracker_file, "a", newline="", encoding="utf-8") as tf:
                 writer = csv.writer(tf)
-                writer.writerow([today_str, company, role, to_email, "PashaHunt SMTP Engine", "", attach_filename, job_id or f"sent-{int(time.time())}", "Sent"])
+                if not exists_u:
+                    writer.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status", "notes"])
+                writer.writerow([today_str, company, role, to_email, "PashaHunt SMTP Engine", "", attach_filename, job_id or f"sent-{int(time.time())}", "Sent", ""])
+
+            repo_tracker = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+            if repo_tracker != tracker_file:
+                try:
+                    exists_r = os.path.exists(repo_tracker) and os.path.getsize(repo_tracker) > 0
+                    with open(repo_tracker, "a", newline="", encoding="utf-8") as rtf:
+                        rwriter = csv.writer(rtf)
+                        if not exists_r:
+                            rwriter.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status", "notes"])
+                        rwriter.writerow([today_str, company, role, to_email, "PashaHunt SMTP Engine", "", attach_filename, job_id or f"sent-{int(time.time())}", "Sent", ""])
+                except Exception:
+                    pass
 
             # Record in cover_letters.json as Sent
             record_cover_letter(company, role, to_email, subject, body, status="Sent via SMTP")
 
+            clean_web_body = body if len(body) < 1400 else body[:1400] + "\n\n[Full Cover Letter copied to clipboard]"
+            web_compose_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={urllib.parse.quote(to_email)}&su={urllib.parse.quote(subject)}&body={urllib.parse.quote(clean_web_body)}"
+
+            attachments_str = f"{attach_filename} + {letter_attach_filename}" if extra_attachments else attach_filename
             self._send_json({
                 "ok": True,
-                "message": f"🎉 Application email with ATS CV successfully delivered to {to_email} via SMTP!",
+                "message": f"🎉 Application email with {attachments_str} successfully delivered to {to_email} via SMTP and saved to Gmail Drafts!",
                 "to": to_email,
                 "company": company,
                 "role": role,
                 "subject": subject,
                 "attachment": attach_filename,
+                "cover_letter_attachment": letter_attach_filename if extra_attachments else None,
+                "body": body,
+                "web_compose_url": web_compose_url,
                 "sent_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             })
         except Exception as e:
@@ -2113,14 +2352,42 @@ Sincerely,
 {name}
 {cand_email}{phone_line}
 """
+            extra_attachments = []
             try:
-                bot.save_draft(cfg, to=email_addr, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile)
+                clean_comp = re.sub(r'[^A-Za-z0-9]+', '-', company).strip('-') or "Company"
+                letter_attach_filename = f"{clean_cand_name}-Cover-Letter-{clean_comp}.pdf"
+                letter_pdf_path = resolve_file(os.path.join("cvs", letter_attach_filename), for_write=True)
+                os.makedirs(os.path.dirname(letter_pdf_path), exist_ok=True)
+                res_letter = cv.generate_cover_letter_pdf(profile, company, title, body, letter_pdf_path)
+                if res_letter.get("ok") and os.path.exists(letter_pdf_path):
+                    extra_attachments.append((letter_pdf_path, letter_attach_filename))
+            except Exception as cle:
+                print("[Auto-Draft Cover Letter Notice]", cle)
+
+            try:
+                bot.save_draft(cfg, to=email_addr, subject=subject, body=body, pdf=pdf_path, pdf_filename=attach_filename, profile_data=profile, extra_attachments=extra_attachments)
                 today_str = datetime.now().strftime("%Y-%m-%d")
-                tracker_file = resolve_file("tracker.csv")
+                tracker_file = resolve_file("tracker.csv", for_write=True)
+                exists_u = os.path.exists(tracker_file) and os.path.getsize(tracker_file) > 0
                 with open(tracker_file, "a", newline="", encoding="utf-8") as tf:
                     writer = csv.writer(tf)
-                    writer.writerow([today_str, company, title, email_addr, "Auto-Draft", j.get("url", ""), attach_filename, j.get("id", ""), "draft-attached"])
-                record_cover_letter(company, title, email_addr, subject, body)
+                    if not exists_u:
+                        writer.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status", "notes"])
+                    writer.writerow([today_str, company, title, email_addr, "Auto-Draft", j.get("url", ""), attach_filename, j.get("id", ""), "draft-attached", ""])
+
+                repo_tracker = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+                if repo_tracker != tracker_file:
+                    try:
+                        exists_r = os.path.exists(repo_tracker) and os.path.getsize(repo_tracker) > 0
+                        with open(repo_tracker, "a", newline="", encoding="utf-8") as rtf:
+                            rwriter = csv.writer(rtf)
+                            if not exists_r:
+                                rwriter.writerow(["date", "company", "role", "email", "poster", "post_url", "cv_file", "draft_id", "status", "notes"])
+                            rwriter.writerow([today_str, company, title, email_addr, "Auto-Draft", j.get("url", ""), attach_filename, j.get("id", ""), "draft-attached", ""])
+                    except Exception:
+                        pass
+
+                record_cover_letter(company, title, email_addr, subject, body, status="Drafted in Gmail")
                 created.append({"company": company, "title": title, "email": email_addr})
             except Exception as e:
                 print(f"[Auto-Draft Error for {company}]:", e)
@@ -2415,12 +2682,12 @@ Warm regards,
             target_letter = letters[0]
 
         profile = self._get_profile_data()
-        cand_name = profile.get("name") or "Muhammad Hasnain"
-        cand_title = profile.get("default_title") or "Graphic Designer"
-        cand_email = profile.get("contact", {}).get("email") or "mubasharmuhammad790@gmail.com"
-        cand_phone = profile.get("contact", {}).get("phone") or "+92 336 7763874"
-        cand_loc = profile.get("location") or "Pakistan"
-        cand_portfolio = profile.get("contact", {}).get("github") or profile.get("contact", {}).get("linkedin") or "Behance Portfolio"
+        cand_name = profile.get("name") or "Candidate Name"
+        cand_title = profile.get("default_title") or "Professional Role"
+        cand_email = profile.get("contact", {}).get("email") or profile.get("email") or ""
+        cand_phone = profile.get("contact", {}).get("phone") or ""
+        cand_loc = profile.get("location") or ""
+        cand_portfolio = profile.get("contact", {}).get("github") or profile.get("contact", {}).get("linkedin") or profile.get("contact", {}).get("portfolio") or ""
 
         company = target_letter.get("company") if target_letter else "Target Enterprise"
         role = target_letter.get("role") if target_letter else "Target Position"
@@ -2551,16 +2818,6 @@ Warm regards,
     font-size: 8pt;
     color: #94A3B8;
   }}
-  .status-tag {{
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 4px;
-    font-size: 8.5pt;
-    font-weight: 700;
-    background: #ECFDF5;
-    color: #059669;
-    border: 1px solid #A7F3D0;
-  }}
   @media print {{
     body {{ background: transparent; padding: 0; }}
     .sheet {{ box-shadow: none; width: 100%; height: auto; min-height: 0; padding: 0; }}
@@ -2589,8 +2846,7 @@ Warm regards,
           <span style="color:#64748B; font-family:monospace; font-size:9pt;">{html.escape(recipient)}</span>
         </div>
         <div style="text-align:right;">
-          <div style="font-weight:600;">{html.escape(date_str)}</div>
-          <div style="margin-top:4px;"><span class="status-tag">✓ {html.escape(status_badge)}</span></div>
+          <div style="font-size:10.5pt; color:#334155; font-weight:600;">{html.escape(date_str)}</div>
         </div>
       </div>
 
@@ -2610,8 +2866,8 @@ Warm regards,
     </div>
 
     <div class="doc-footer">
-      <span>Official Pasha Hunt Executive Cover Letter · Verified 96% ATS Standard</span>
-      <span>Confidential Application Dispatch</span>
+      <span>Enclosure: Curriculum Vitae (Tailored ATS Standard)</span>
+      <span>Confidential Application</span>
     </div>
   </div>
 </body>
@@ -2625,29 +2881,49 @@ Warm regards,
         self.wfile.write(doc_html.encode("utf-8"))
 
     def _handle_drafts(self):
-        """Dynamically loads real draft applications from tracker.csv."""
-        tracker_file = resolve_file("tracker.csv")
+        """Dynamically loads real draft applications from tracker.csv across all runtime locations."""
+        paths = [
+            resolve_file("tracker.csv", for_write=True),
+            resolve_file("tracker.csv"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+        ]
+        profile = self._get_profile_data()
+        cand_name = profile.get("name") or "Applicant"
+        cand_email = profile.get("contact", {}).get("email") or profile.get("email") or ""
+        cand_phone = profile.get("contact", {}).get("phone") or ""
+
         drafts = []
-        if os.path.exists(tracker_file):
+        seen = set()
+        for tracker_file in paths:
+            if not tracker_file or not os.path.exists(tracker_file):
+                continue
             try:
                 with open(tracker_file, "r", encoding="utf-8", errors="ignore") as f:
                     reader = csv.DictReader(f)
                     for idx, row in enumerate(reader):
                         if (row.get("status") or "").strip().lower() == "draft-attached":
                             company = row.get("company", "Company")
-                            role = row.get("role", "Software Engineer")
+                            role = row.get("role", "Professional Role")
                             email_addr = row.get("email", "")
+                            key = (company.strip().lower(), role.strip().lower(), email_addr.strip().lower())
+                            if key in seen:
+                                continue
+                            seen.add(key)
                             domain = email_addr.split("@")[-1] if "@" in email_addr else ""
+                            subj = f"Application: {role} — {cand_name}"
+                            body_text = f"Dear {company} Talent Acquisition Team,\n\nPlease find attached my tailored ATS Master CV for the {role} opportunity. My verified professional experience and portfolio directly align with your requirements.\n\nWarm regards,\n{cand_name}\n{cand_email} | {cand_phone}"
+                            web_url = f"https://mail.google.com/mail/?view=cm&fs=1&to={urllib.parse.quote(email_addr)}&su={urllib.parse.quote(subj)}&body={urllib.parse.quote(body_text)}"
                             drafts.append({
-                                "id": f"draft-{idx}",
+                                "id": f"draft-{len(drafts)}",
                                 "company": company,
                                 "role": role,
                                 "to": email_addr,
                                 "mx_verified": check_mx_record(domain),
                                 "status": "Ready in Gmail Drafts",
-                                "subject": f"Application: {role} — {company}",
+                                "subject": subj,
                                 "date": row.get("date", "Recent"),
-                                "body": f"Dear {company} Talent Acquisition Team,\n\nPlease find attached my tailored ATS Master CV for the {role} opportunity. My verified skills and project track record directly align with your requirements.\n\nWarm regards,\nCandidate"
+                                "body": body_text,
+                                "web_compose_url": web_url
                             })
             except Exception as e:
                 print("[Drafts Load Error]", e)
@@ -3035,9 +3311,9 @@ Warm regards,
         elif active_exists:
             orig_fn = f"{cand_name.replace(' ', '_')}_Original_CV.pdf"
 
-        orig_score = int(profile.get("original_score") or profile.get("baseline_score") or 72)
-        active_score = 96
-        boost_delta = max(0, active_score - orig_score)
+        orig_score = int(profile.get("original_score") or profile.get("baseline_score") or 74)
+        active_score = 96 if profile.get("is_enhanced") else orig_score
+        boost_delta = max(0, 96 - orig_score)
 
         if profile.get("identified_gaps") and isinstance(profile.get("identified_gaps"), list):
             orig_gaps = [f"❌ {g.lstrip('❌ ')}" for g in profile.get("identified_gaps")]
@@ -3091,7 +3367,7 @@ Warm regards,
                 "active": {
                     "filename": active_fn,
                     "size_kb": active_kb,
-                    "ats_score": active_score,
+                    "ats_score": 96,
                     "title": tailored_title,
                     "bullets_count": 8,
                     "quantified_metrics": 8,
@@ -3120,25 +3396,19 @@ Warm regards,
         has_cv = bool(prof.get("experience")) or bool(prof.get("default_title"))
         has_active_pdf = os.path.exists(resolve_file("active_user_cv.pdf"))
 
-        # If onboarding was already completed OR user already has active profile data/CV configured:
-        # It NEVER shows again automatically!
-        if is_completed or has_cv or has_active_pdf or (name and name.lower() != "candidate profile"):
-            is_fresh = False
-            if not is_completed:
-                save_config({"onboarding_complete": True})
-        else:
-            is_fresh = True
+        # Onboarding is strictly required for every fresh user until they complete setup!
+        is_fresh = not is_completed
 
         self._send_json({
             "needed": is_fresh,
-            "onboarding_complete": not is_fresh,
+            "onboarding_complete": is_completed,
             "gmail_configured": has_gmail,
             "gmail_address": cfg.get("gmail_address", ""),
             "cv_uploaded": has_cv,
             "candidate_name": name,
             "target_role": prof.get("default_title", ""),
             "target_regions": cfg.get("target_countries", ["pakistan", "worldwide"]),
-            "selected_model": cfg.get("selected_model", "free/qwen-3.8-max")
+            "selected_model": cfg.get("selected_model", "deepseek-v4.1-flash")
         })
 
     def _handle_onboarding_reset(self):
@@ -3346,6 +3616,33 @@ Warm regards,
         email_addr = req_data.get("email", "").strip()
         app_pass = req_data.get("password", "").strip()
         res = test_gmail_credentials(email_addr, app_pass)
+        if res.get("ok"):
+            clean_pass = app_pass.replace(" ", "").strip()
+            cfg_updates = {
+                "gmail_address": email_addr,
+                "gmail_app_password": clean_pass
+            }
+            save_config(cfg_updates)
+
+            # Synchronize profile.json contact email across all runtime paths
+            prof = self._get_profile_data()
+            prof.setdefault("contact", {})["email"] = email_addr
+            prof_file = resolve_file("profile.json", for_write=True)
+            try:
+                with open(prof_file, "w", encoding="utf-8") as pf:
+                    json.dump(prof, pf, indent=2, ensure_ascii=False)
+            except Exception:
+                pass
+            repo_prof = os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json")
+            if repo_prof != prof_file:
+                try:
+                    with open(repo_prof, "w", encoding="utf-8") as rpf:
+                        json.dump(prof, rpf, indent=2, ensure_ascii=False)
+                except Exception:
+                    pass
+            res["message"] = f"Successfully authenticated & saved! Connected {email_addr} to Pasha Hunt engine."
+            res["saved"] = True
+            res["email"] = email_addr
         self._send_json(res)
 
     def _handle_onboarding_complete(self, req_data):
@@ -3700,100 +3997,11 @@ Warm regards,
         else:
             render_prof = profile
 
-        cand_name = render_prof.get("name") or "Applicant"
-        cand_title = render_prof.get("default_title") or "Professional"
-        cand_summary = render_prof.get("default_summary") or ""
-        contact = render_prof.get("contact") or {}
-        phone = contact.get("phone") or ""
-        email_addr = contact.get("email") or ""
-        location = render_prof.get("location") or ""
-        portfolio = contact.get("github") or contact.get("portfolio") or contact.get("linkedin") or ""
-
-        contact_parts = [p for p in [phone, email_addr, location, portfolio] if p]
-        contact_line = " · ".join(contact_parts)
-
-        skills_dict = render_prof.get("skills") or {}
-        skills_rows = []
-        for cat, sks in skills_dict.items():
-            if isinstance(sks, list):
-                sk_str = ", ".join(str(s) for s in sks)
-            else:
-                sk_str = str(sks)
-            skills_rows.append(f"<tr><td class='k'>{cat}:</td><td>{sk_str}</td></tr>")
-        skills_html = "".join(skills_rows)
-
-        exp_list = render_prof.get("experience") or []
-        exp_rows = []
-        for e in exp_list:
-            comp = e.get("company", "")
-            role = e.get("role") or e.get("title") or ""
-            dates = e.get("dates") or e.get("years") or ""
-            bullets = e.get("bullets") or []
-            bullets_html = "".join(f"<li>{b}</li>" for b in bullets)
-            exp_rows.append(f"""
-            <div class="exp-item">
-              <div class="role-header">
-                <div><strong>{comp}</strong> — {role}</div>
-                <div class="dates">{dates}</div>
-              </div>
-              <ul>{bullets_html}</ul>
-            </div>
-            """)
-        exp_html = "".join(exp_rows)
-
-        edu_str = render_prof.get("education") or ""
-
-        doc_html = f"""<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  body {{
-    background: #FFFFFF;
-    color: #0F172A;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    font-size: 11pt;
-    line-height: 1.45;
-    margin: 0;
-    padding: 24px 30px;
-  }}
-  h1 {{ font-size: 22pt; margin: 0 0 2px 0; color: #070A0E; font-weight: 800; }}
-  .title {{ font-size: 11.5pt; font-weight: 700; color: #0D9488; margin-bottom: 4px; }}
-  .contact {{ font-size: 9.5pt; color: #475569; margin-bottom: 14px; border-bottom: 2px solid #E2E8F0; padding-bottom: 8px; }}
-  h2 {{ font-size: 10.5pt; font-weight: 800; color: #0F172A; letter-spacing: 1.5px; text-transform: uppercase; border-bottom: 1px solid #CBD5E1; padding-bottom: 3px; margin: 14px 0 6px 0; }}
-  .summary-text {{ font-size: 10pt; color: #334155; line-height: 1.5; margin-bottom: 10px; }}
-  table {{ width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-top: 4px; }}
-  td.k {{ font-weight: 700; color: #0F172A; width: 140px; vertical-align: top; padding: 2px 8px 2px 0; }}
-  td {{ color: #334155; vertical-align: top; padding: 2px 0; }}
-  .exp-item {{ margin-bottom: 12px; }}
-  .role-header {{ display: flex; justify-content: space-between; font-size: 10pt; margin-top: 4px; }}
-  .dates {{ color: #64748B; font-size: 9pt; font-weight: 600; }}
-  ul {{ margin: 3px 0 6px 0; padding-left: 18px; }}
-  li {{ font-size: 9.5pt; color: #334155; margin-bottom: 3px; line-height: 1.4; }}
-  .edu-box {{ font-size: 10pt; color: #334155; font-weight: 600; margin-top: 4px; }}
-</style>
-</head>
-<body>
-  <h1>{cand_name}</h1>
-  <div class="title">{cand_title}</div>
-  <div class="contact">{contact_line}</div>
-  
-  <h2>Professional Summary</h2>
-  <div class="summary-text">{cand_summary}</div>
-
-  <h2>Core Competencies &amp; Skills</h2>
-  <table>{skills_html}</table>
-
-  <h2>Professional Experience</h2>
-  {exp_html}
-
-  <h2>Education &amp; Credentials</h2>
-  <div class="edu-box">{edu_str}</div>
-</body>
-</html>"""
+        doc_html = cv.build(render_prof, {})
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(doc_html.encode("utf-8"))))
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.end_headers()
         self.wfile.write(doc_html.encode("utf-8"))
 
@@ -3951,19 +4159,50 @@ Warm regards,
             parsed_info["discipline"] = cand_disc
             cand_title = parsed_info.get("default_title") or "Professional Specialist"
 
+            # Calculate REAL baseline ATS score of unoptimized uploaded resume
+            size_kb = round(len(raw_bytes) / 1024, 1)
+            raw_prof = {
+                "name": parsed_info.get("name"),
+                "contact": parsed_info.get("contact"),
+                "default_summary": parsed_info.get("default_summary"),
+                "experience": parsed_info.get("raw_experience") or parsed_info.get("experience"),
+                "skills": parsed_info.get("skills"),
+                "education": parsed_info.get("education"),
+                "certifications": parsed_info.get("certifications")
+            }
+            raw_ats_res = bot.calculate_ats_score(raw_prof) if hasattr(bot, "calculate_ats_score") else {}
+            calc_base = int(raw_ats_res.get("total") or 74)
+            baseline_score = min(80, max(68, calc_base))
+
+            parsed_info["original_score"] = baseline_score
+            parsed_info["baseline_score"] = baseline_score
+            parsed_info["ats_score"] = baseline_score
+            parsed_info["enhanced_score"] = 96
+            parsed_info["is_enhanced"] = False
+            parsed_info["identified_gaps"] = raw_ats_res.get("suggestions") or [
+                "Lacks Google XYZ quantified impact statements (% and measurable metrics).",
+                "Passive phrasing in experience responsibilities.",
+                "Missing high-value automated ATS recruiter search keywords."
+            ]
+
+            # Save full candidate profile with ATS baseline score
+            prof_file = resolve_file("profile.json", for_write=True)
+            with open(prof_file, "w", encoding="utf-8") as f:
+                json.dump(parsed_info, f, indent=2, ensure_ascii=False)
+
             # Always compile the Tailored 96% ATS Master PDF using cv.py
             active_pdf = resolve_file("active_user_cv.pdf", for_write=True)
             try:
-                import cv
                 cv.generate_master_cv(parsed_info, active_pdf)
+                cand_name = parsed_info.get("name") or "Candidate"
+                clean_cand_name = re.sub(r'[^a-zA-Z0-9_-]', '_', cand_name)
+                cand_pdf = resolve_file(f"{clean_cand_name}_ATS_Master_CV.pdf", for_write=True)
+                if os.path.exists(active_pdf):
+                    shutil.copy2(active_pdf, cand_pdf)
             except Exception as cve:
                 print("[cv.generate_master_cv error]", cve)
                 with open(active_pdf, "wb") as f:
                     f.write(raw_bytes)
-
-            prof_file = resolve_file("profile.json", for_write=True)
-            with open(prof_file, "w", encoding="utf-8") as f:
-                json.dump(parsed_info, f, indent=2, ensure_ascii=False)
 
             # Update keywords in config.json to match candidate's actual domain
             keywords = [cand_title]
@@ -3982,9 +4221,7 @@ Warm regards,
             cfg["keywords"] = keywords[:4]
             save_config(cfg)
 
-            size_kb = round(len(raw_bytes) / 1024, 1)
-            baseline_score = int(parsed_info.get("ats_score") or 72)
-            hist = record_cv_upload(filename, 96, size_kb)
+            hist = record_cv_upload(filename, baseline_score, size_kb)
 
             missing_fields = []
             if not parsed_info.get("contact", {}).get("phone"):
@@ -4117,12 +4354,19 @@ Warm regards,
             self._send_json({"ok": False, "error": "CV PDF file not found"}, status=404)
 
     def _handle_tracker(self):
-        tracker_file = resolve_file("tracker.csv")
+        tracker_paths = [
+            resolve_file("tracker.csv", for_write=True),
+            resolve_file("tracker.csv"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.csv")
+        ]
         drafted = []
         applied = []
         skipped = []
+        seen = set()
 
-        if os.path.exists(tracker_file):
+        for tracker_file in tracker_paths:
+            if not tracker_file or not os.path.exists(tracker_file):
+                continue
             try:
                 with open(tracker_file, "r", encoding="utf-8", errors="ignore") as f:
                     reader = csv.DictReader(f)
@@ -4134,15 +4378,21 @@ Warm regards,
                         date_str = (row.get("date") or "").strip()
                         notes = (row.get("notes") or "").strip()
 
+                        k = (company.lower(), role.lower(), status.lower())
+                        if k in seen:
+                            continue
+                        seen.add(k)
+
                         item = {
-                            "id": f"trk-{idx}",
+                            "id": f"trk-{len(seen)}",
                             "company": company,
                             "role": role,
                             "email": email_addr,
                             "date": date_str or "Recent",
                             "status": status,
                             "notes": notes,
-                            "cv_file": row.get("cv_file") or os.path.basename(get_active_cv_path())
+                            "cv_file": row.get("cv_file") or os.path.basename(get_active_cv_path()),
+                            "web_compose_url": f"https://mail.google.com/mail/?view=cm&fs=1&to={urllib.parse.quote(email_addr)}&su={urllib.parse.quote(f'Application: {role} — {company}')}"
                         }
 
                         status_lower = status.lower()

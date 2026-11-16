@@ -2155,7 +2155,7 @@ def drafts_folder(imap):
     return "[Gmail]/Drafts"
 
 
-def save_draft(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None):
+def save_draft(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None, extra_attachments=None):
     prof = profile_data or {}
     if not prof:
         try:
@@ -2181,8 +2181,14 @@ def save_draft(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None
     msg["Date"] = email.utils.formatdate(time.time(), localtime=True)
     msg["Message-ID"] = email.utils.make_msgid(domain="gmail.com")
     msg.set_content(body)
-    with open(pdf, "rb") as f:
-        msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=attach_name)
+    if pdf and os.path.exists(pdf):
+        with open(pdf, "rb") as f:
+            msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=attach_name)
+    if extra_attachments:
+        for extra_path, extra_name in extra_attachments:
+            if extra_path and os.path.exists(extra_path):
+                with open(extra_path, "rb") as f:
+                    msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=extra_name)
     imap = imaplib.IMAP4_SSL(cfg["imap_host"], timeout=60)
     try:
         imap.login(cfg["gmail_address"], cfg["gmail_app_password"].replace(" ", ""))
@@ -2198,7 +2204,7 @@ def save_draft(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None
             pass
 
 
-def send_email_smtp(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None):
+def send_email_smtp(cfg, to, subject, body, pdf, pdf_filename=None, profile_data=None, extra_attachments=None):
     """Sends a real email directly via Gmail SMTP with the tailored ATS CV attached.
     Ensures message is delivered to the recipient and a copy is saved in Sent."""
     prof = profile_data or {}
@@ -2235,6 +2241,11 @@ def send_email_smtp(cfg, to, subject, body, pdf, pdf_filename=None, profile_data
     if pdf and os.path.exists(pdf):
         with open(pdf, "rb") as f:
             msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=attach_name)
+    if extra_attachments:
+        for extra_path, extra_name in extra_attachments:
+            if extra_path and os.path.exists(extra_path):
+                with open(extra_path, "rb") as f:
+                    msg.add_attachment(f.read(), maintype="application", subtype="pdf", filename=extra_name)
 
     # First attempt: SMTP_SSL over port 465
     last_err = None

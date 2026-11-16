@@ -15,7 +15,7 @@ AppUpdatesURL=https://apinex.bond
 AppMutex=PashaHuntMutex
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-DefaultDirName={autopf}\Pasha Hunt
+DefaultDirName={localappdata}\Programs\Pasha Hunt
 DisableProgramGroupPage=yes
 LicenseFile=..\LICENSE
 OutputDir=E:\Job Hunt\Pasha_Hunt_Release
@@ -49,6 +49,15 @@ Filename: "{app}\PashaHunt.exe"; Flags: nowait runasoriginaluser; Check: IsUpdat
 [UninstallRun]
 Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /TN ""Remote Job Hunter"" /F"; Flags: runhidden; RunOnceId: "DeleteAutoRun"
 
+[UninstallDelete]
+Type: filesandordirs; Name: "{localappdata}\Pasha Hunt"
+Type: filesandordirs; Name: "{localappdata}\Pasha Hunt 2.0"
+Type: filesandordirs; Name: "{localappdata}\PashaHunt"
+Type: filesandordirs; Name: "{userappdata}\Job Hunter"
+Type: filesandordirs; Name: "{localappdata}\Programs\Pasha Hunt"
+Type: filesandordirs; Name: "{app}"
+Type: files; Name: "{autodesktop}\Pasha Hunt.lnk"
+
 [Code]
 function IsUpdate: Boolean;
 var
@@ -58,4 +67,17 @@ begin
   for I := 1 to ParamCount do
     if CompareText(ParamStr(I), '/UPDATE') = 0 then
       Result := True;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    DelTree(ExpandConstant('{localappdata}\Pasha Hunt'), True, True, True);
+    DelTree(ExpandConstant('{localappdata}\Pasha Hunt 2.0'), True, True, True);
+    DelTree(ExpandConstant('{localappdata}\PashaHunt'), True, True, True);
+    DelTree(ExpandConstant('{userappdata}\Job Hunter'), True, True, True);
+    DelTree(ExpandConstant('{localappdata}\Programs\Pasha Hunt'), True, True, True);
+    DelTree(ExpandConstant('{app}'), True, True, True);
+  end;
 end;
