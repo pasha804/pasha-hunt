@@ -10,6 +10,32 @@ From source, keep using python -I desktop_app.py / bot.py / cv.py.
 import io
 import os
 import sys
+import traceback
+
+
+def log_crash(error_msg):
+    """Write crash diagnostics to disk and display a user-friendly message."""
+    try:
+        local_app = os.environ.get("LOCALAPPDATA", "")
+        log_dir = os.path.join(local_app, "Pasha Hunt") if local_app else os.path.expanduser("~")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "crash.log")
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(f"\n--- CRASH AT {os.path.basename(sys.executable)} ---\n")
+            f.write(error_msg + "\n")
+    except Exception:
+        pass
+
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(
+            0,
+            f"Pasha Hunt encountered an error starting the workstation:\n\n{error_msg[:400]}\n\nSee {log_file} for details.",
+            "Pasha Hunt Startup Error",
+            0x10  # MB_ICONERROR
+        )
+    except Exception:
+        pass
 
 
 def main():
@@ -58,8 +84,13 @@ def main():
                 import desktop_app
                 desktop_app.main()
         except Exception as e:
-            import gui
-            gui.App().mainloop()
+            tb = traceback.format_exc()
+            log_crash(f"{e}\n{tb}")
+            try:
+                import gui
+                gui.App().mainloop()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":
