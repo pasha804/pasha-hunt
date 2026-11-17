@@ -1,0 +1,9 @@
+{
+  "$schema": "anna-executa-identity/v1",
+  "host": "https://anna.partners",
+  "executa_id": 1342,
+  "tool_id": "tool-pashahunt-pasha-hunt-tools-s9d8twgw",
+  "slug": "pasha-hunt-tools",
+  "executa_type": "tool",
+  "first_published_at": "2026-11-17T06:34:31.956Z"
+}

@@ -280,8 +280,7 @@ def set_replay_intro_callback(cb):
 
 # Multi-Tier Google Gemini AI Studio Key Pool with Automatic Quota Failover
 GEMINI_API_KEYS = [
-    "",  # Primary Key 1: ATSs (500 RPD)
-    ""   # Secondary Key 2: ATSS2 (500 RPD Fallback)
+    k.strip() for k in (os.environ.get("GEMINI_API_KEY") or "").split(",") if k.strip()
 ]
 GEMINI_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
 
