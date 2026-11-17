@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tool-dev-pasha-hunt-tools"
+version = "0.1.0"
+description = "Executa plugin: pasha-hunt-tools"
+requires-python = ">=3.10"
+
+[project.scripts]
+"tool-dev-pasha-hunt-tools" = "pasha_hunt_tools_plugin:main"
+
+[tool.setuptools]
+py-modules = ["pasha_hunt_tools_plugin"]

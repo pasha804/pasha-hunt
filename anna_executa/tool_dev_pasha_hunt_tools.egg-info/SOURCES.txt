@@ -1,0 +1,8 @@
+README.md
+pasha_hunt_tools_plugin.py
+pyproject.toml
+tool_dev_pasha_hunt_tools.egg-info/PKG-INFO
+tool_dev_pasha_hunt_tools.egg-info/SOURCES.txt
+tool_dev_pasha_hunt_tools.egg-info/dependency_links.txt
+tool_dev_pasha_hunt_tools.egg-info/entry_points.txt
+tool_dev_pasha_hunt_tools.egg-info/top_level.txt

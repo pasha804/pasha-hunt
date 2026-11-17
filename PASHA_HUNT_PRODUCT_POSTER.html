@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pasha Hunt 2.0 / 3.0 — Autonomous Career OS Poster</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    :root {
+      --bg: #0A0D14;
+      --card-bg: rgba(18, 24, 38, 0.95);
+      --border: rgba(255, 107, 0, 0.25);
+      --accent: #FF6B00;
+      --accent-glow: rgba(255, 107, 0, 0.4);
+      --green: #00E676;
+      --blue: #00B4D8;
+      --purple: #8B5CF6;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #05070B;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Standard A4 Dimensions */
+    .poster-a4 {
+      width: 210mm;
+      min-height: 297mm;
+      background: radial-gradient(circle at 10% 10%, rgba(255, 107, 0, 0.08), transparent 40%),
+                  radial-gradient(circle at 90% 90%, rgba(0, 180, 216, 0.06), transparent 40%),
+                  #0A0D14;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 107, 0, 0.15);
+      padding: 12mm 14mm;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Header Section */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid rgba(255, 107, 0, 0.3);
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      background: linear-gradient(135deg, #FF6B00, #FF9100);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 20px rgba(255, 107, 0, 0.5);
+    }
+
+    .brand-text h1 {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #FFFFFF, #E2E8F0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text span {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .badge-pills {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+
+    .pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      border: 1px solid;
+    }
+
+    .pill-green {
+      background: rgba(0, 230, 118, 0.1);
+      color: var(--green);
+      border-color: rgba(0, 230, 118, 0.3);
+    }
+
+    .pill-orange {
+      background: rgba(255, 107, 0, 0.1);
+      color: var(--accent);
+      border-color: rgba(255, 107, 0, 0.3);
+    }
+
+    /* Hero Headline */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(255, 107, 0, 0.12), rgba(0, 180, 216, 0.08));
+      border: 1px solid rgba(255, 107, 0, 0.3);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hero-text h2 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #FFF;
+      margin-bottom: 2px;
+    }
+
+    .hero-text p {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .hero-stat {
+      text-align: right;
+    }
+
+    .hero-stat .stat-num {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--green);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .hero-stat .stat-lbl {
+      font-size: 8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* Core Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 10px 12px;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .feature-card.highlight {
+      border-color: rgba(255, 107, 0, 0.4);
+      background: linear-gradient(180deg, rgba(255, 107, 0, 0.05), rgba(18, 24, 38, 0.95));
+    }
+
+    .feature-icon {
+      font-size: 18px;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+
+    .feature-card h3 {
+      font-size: 11px;
+      font-weight: 800;
+      color: #FFF;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .feature-card p {
+      font-size: 9px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .feature-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-top: 6px;
+      display: block;
+      text-transform: uppercase;
+    }
+
+    /* Architecture Flow Strip */
+    .flow-strip {
+      background: #0E131F;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 14px;
+    }
+
+    .flow-title {
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .flow-steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      position: relative;
+    }
+
+    .step-box {
+      background: #141B2D;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .step-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .step-name {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #FFF;
+      margin: 2px 0;
+    }
+
+    .step-sub {
+      font-size: 7.5px;
+      color: var(--text-muted);
+    }
+
+    /* Comparison Table: Traditional vs Pasha Hunt */
+    .comparison-section {
+      margin-bottom: 14px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5px;
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .comparison-table th {
+      background: #141A29;
+      color: #FFF;
+      padding: 6px 10px;
+      text-align: left;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .comparison-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .comparison-table .highlight-col {
+      color: var(--green);
+      font-weight: 700;
+      background: rgba(0, 230, 118, 0.03);
+    }
+
+    .comparison-table .bad-col {
+      color: #EF4444;
+      text-decoration: line-through;
+    }
+
+    /* Footer Strip */
+    .footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      padding-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8.5px;
+      color: var(--text-muted);
+    }
+
+    .creator-tag {
+      font-size: 9px;
+      color: #FFF;
+      font-weight: 700;
+    }
+
+    .creator-tag span {
+      color: var(--accent);
+    }
+
+    .tech-stack-badges {
+      display: flex;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px;
+    }
+
+    .stack-badge {
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Print Optimization */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      .poster-a4 {
+        box-shadow: none;
+        border: none;
+        width: 100%;
+        min-height: 100vh;
+        padding: 10mm;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+
+    .print-bar {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #FF6B00;
+      color: #000;
+      font-weight: 800;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(255, 107, 0, 0.5);
+      font-family: inherit;
+      font-size: 12px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <button class="print-bar no-print" onclick="window.print()">🖨️ Print / Save as A4 PDF</button>
+
+  <div class="poster-a4">
+    <!-- 1. Header -->
+    <div class="header">
+      <div class="brand-title">
+        <div class="brand-logo">⚡</div>
+        <div class="brand-text">
+          <h1>PASHA HUNT 2.0 / 3.0</h1>
+          <span>Autonomous AI Career Workstation & Job Engine</span>
+        </div>
+      </div>
+      <div class="badge-pills">
+        <span class="pill pill-green">● PRODUCTION CERTIFIED</span>
+        <span class="pill pill-orange">D4VINCI SCRAPLING INSIDE</span>
+      </div>
+    </div>
+
+    <!-- 2. Hero Headline Banner -->
+    <div class="hero-banner">
+      <div class="hero-text">
+        <h2>From 0 Applications to High-Paying Tech Job Offers — 100% Autonomous</h2>
+        <p>Eliminates repetitive job hunting. Ingests, tailors, attaches 2-page ATS CVs, and creates real Gmail drafts in seconds.</p>
+      </div>
+      <div class="hero-stat">
+        <div class="stat-num">96%</div>
+        <div class="stat-lbl">Average ATS Score</div>
+      </div>
+    </div>
+
+    <!-- 3. Key Feature Grid (6 Pillars) -->
+    <div class="features-grid">
+      <!-- 1 -->
+      <div class="feature-card highlight">
+        <span class="feature-icon">🕷️</span>
+        <h3>Scrapling Stealth Harvester</h3>
+        <p>Bypasses Cloudflare Turnstile, Akamai & 5s bot challenges. Auto-crawls any LinkedIn, Lever or Greenhouse URL with adaptive selectors.</p>
+        <span class="feature-tag">D4Vinci/Scrapling v0.5.1</span>
+      </div>
+
+      <!-- 2 -->
+      <div class="feature-card">
+        <span class="feature-icon">📄</span>
+        <h3>2-Page ATS Master CV</h3>
+        <p>Deterministic parsing engine with zero-truncation guarantee. Renders multi-page printable PDFs with Google XYZ achievement metrics.</p>
+        <span class="feature-tag">cv.py Multi-Page Engine</span>
+      </div>
+
+      <!-- 3 -->
+      <div class="feature-card">
+        <span class="feature-icon">✉️</span>
+        <h3>Tailored Cover Letter Studio</h3>
+        <p>AI writes hyper-personalized executive pitches per company, compiling matching PDF cover letters automatically.</p>
+        <span class="feature-tag">1-Click PDF Generator</span>
+      </div>
+
+      <!-- 4 -->
+      <div class="feature-card">
+        <span class="feature-icon">📬</span>
+        <h3>Gmail IMAP Dual-Attachment</h3>
+        <p>Direct socket injection into candidate's real Gmail drafts. Attaches both CV & Cover Letter PDFs ready for 1-click review & send.</p>
+        <span class="feature-tag">Zero-Click Draft Pipeline</span>
+      </div>
+
+      <!-- 5 -->
+      <div class="feature-card">
+        <span class="feature-icon">🔍</span>
+        <h3>Recruiter Email & DNS MX Hunter</h3>
+        <p>Deep-crawls career sites to find unlisted hiring manager emails. Validates DNS MX records for 0% bounce delivery.</p>
+        <span class="feature-tag">Zero-Bounce Delivery</span>
+      </div>
+
+      <!-- 6 -->
+      <div class="feature-card highlight">
+        <span class="feature-icon">🤖</span>
+        <h3>Autonomous Web Form Applier</h3>
+        <p>Track A automation: automatically fills online forms on Workday, Lever & Greenhouse, uploads CV, and answers screening Q&A.</p>
+        <span class="feature-tag">Browser-Use & Playwright</span>
+      </div>
+    </div>
+
+    <!-- 4. End-to-End Autonomous Pipeline Flow -->
+    <div class="flow-strip">
+      <div class="flow-title">
+        <span>⚡ THE END-TO-END AUTONOMOUS PIPELINE</span>
+        <span style="color:var(--green)">100% Hands-Free Flow</span>
+      </div>
+      <div class="flow-steps">
+        <div class="step-box">
+          <div class="step-num">01</div>
+          <div class="step-name">Radar Scan</div>
+          <div class="step-sub">18 live feeds + Scrapling stealth crawler</div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">02</div>
+          <div class="step-name">ATS Match</div>
+          <div class="step-sub">Calculates fit against candidate profile</div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">03</div>
+          <div class="step-name">Tailor Docs</div>
+          <div class="step-sub">Compiles 2-Page CV & Cover Letter PDF</div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">04</div>
+          <div class="step-name">Gmail Draft</div>
+          <div class="step-sub">Injects draft with 2 PDFs attached via IMAP</div>
+        </div>
+        <div class="step-box">
+          <div class="step-num">05</div>
+          <div class="step-name">Track & Ping</div>
+          <div class="step-sub">Real-time status tracking & interview alerts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Value Proof: Traditional Job Hunting vs Pasha Hunt 2.0 -->
+    <div class="comparison-section">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Workflow Dimension</th>
+            <th>Traditional Manual Job Hunt</th>
+            <th>Pasha Hunt 2.0 / 3.0 Workstation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Application Speed</strong></td>
+            <td class="bad-col">45 minutes per application</td>
+            <td class="highlight-col">⚡ Under 5 seconds per job (100% automated)</td>
+          </tr>
+          <tr>
+            <td><strong>Resume Tailoring</strong></td>
+            <td class="bad-col">Generic single CV sent to 100s of companies</td>
+            <td class="highlight-col">🎯 Dynamic ATS tailoring with Google XYZ metrics</td>
+          </tr>
+          <tr>
+            <td><strong>Recruiter Outreach</strong></td>
+            <td class="bad-col">Blind portal forms lost in 2,000+ spam queues</td>
+            <td class="highlight-col">📬 Direct verified hiring email + Gmail Draft with 2 PDFs</td>
+          </tr>
+          <tr>
+            <td><strong>Bot Evasion</strong></td>
+            <td class="bad-col">Blocked by Cloudflare, Turnstile & 403 errors</td>
+            <td class="highlight-col">🛡️ D4Vinci/Scrapling stealth browser fingerprinting</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 6. Footer / Architect Strip -->
+    <div class="footer">
+      <div>
+        <div class="creator-tag">Architected by <span>Muhammad Mubashar</span> • AI Full-Stack Developer</div>
+        <div>Pasha Hunt Workstation • Enterprise Autonomous Career Platform</div>
+      </div>
+      <div class="tech-stack-badges">
+        <span class="stack-badge">Python 3.14</span>
+        <span class="stack-badge">Scrapling v0.5.1</span>
+        <span class="stack-badge">APINEX / Gemini</span>
+        <span class="stack-badge">IMAP / SMTP</span>
+        <span class="stack-badge">PyMuPDF</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

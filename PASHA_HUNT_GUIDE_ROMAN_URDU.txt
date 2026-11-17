@@ -1,0 +1,168 @@
+========================================================================================
+   🚀 PASHA HUNT 2.0 / 3.0 — AUTONOMOUS AI CAREER WORKSTATION & JOB HUNT ENGINE
+                  MUKAMMAL GUIDE & PRESENTATION SCRIPT (ROMAN URDU)
+========================================================================================
+Architect & Lead Developer: Muhammad Mubashar (AI Full-Stack Developer)
+Edition: APINEX & D4Vinci/Scrapling Stealth Edition
+Platform: Windows Desktop Workstation (.exe / Portable)
+========================================================================================
+
+----------------------------------------------------------------------------------------
+📌 1. PASHA HUNT KYA HAI? (1-MINUTE ELEVATOR PITCH)
+----------------------------------------------------------------------------------------
+Pasha Hunt aik aesa "Autonomous AI Career Robot" hai jo ek aam candidate ya developer
+ke liye dunya ki tamam job portals se jobs dhoondta hai, unke mutabiq 2-Page ATS CV aur 
+tailored Cover Letter PDF banata hai, aur bina candidate ke hath lagaye direct unke 
+Gmail account ke Drafts mein dono files attach kar ke tayar email save kar deta hai!
+
+Yani candidate ko rozana 4 ghantay baith kar:
+❌ Alag alag websites par CV upload nahi karni parti.
+❌ Har company ke liye alag Word file mein cover letter nahi likhna parta.
+❌ Recruiter ka email dhoondne ke liye dhakke nahi khaney parte.
+
+Pasha Hunt yeh saara mushkil aur thaka dene wala kaam sirf 5 second mein 100% 
+automatically kar deta hai!
+
+
+----------------------------------------------------------------------------------------
+📌 2. TRADITIONAL JOB HUNT KA RONA VS PASHA HUNT KA JADOO
+----------------------------------------------------------------------------------------
+Aam Job Hunter ka Rona:
+1. Rozana 50 jagah apply karta hai, 3 hafte baad bhi 0 replies aate hain kyunke uski 
+   CV "ATS Scanner" (Applicant Tracking System) mein 50% score par hi reject ho jati hai.
+2. Portals par form bharte bharte aadha ghanta zaya hota hai aur aage se 2,000 bots ki 
+   bheed mein application gum ho jati hai.
+3. HR ka direct verified email nahi milta.
+
+Pasha Hunt ka Jadoo:
+1. Target Company ke mutabiq Google ke XYZ formula par based 2-Page ATS CV generate 
+   karta hai jiska score 90% se 96% ke darmiyan hota hai.
+2. Company ki website aur career portal ko deep crawl kar ke direct Hiring Manager / HR
+   ka verified email nikalta hai.
+3. Candidate ke Gmail ke andar dono PDFs (ATS CV + Tailored Cover Letter) attach kar ke 
+   draft tayar khada kar deta hai. Candidate bas 1 click se send karta hai!
+
+
+----------------------------------------------------------------------------------------
+📌 3. YE APP KAISE KAAM KARTI HAI? (STEP-BY-STEP WORKFLOW)
+----------------------------------------------------------------------------------------
+Step 1: One-Time Candidate Profile Setup
+Candidate sirf aik dafa apni basic information daalta hai (Naam, Skills, Experience, 
+Projects, LinkedIn, aur apna Gmail App Password).
+
+Step 2: 18-Channel Live Radar Sweep
+App aik click par 18 different global aur local job feeds scan karti hai (Remotive, 
+RemoteOK, Rozee.pk, Arbeitnow, Greenhouse, Lever, Ashby, aur Tech Software Houses).
+
+Step 3: D4Vinci / Scrapling Stealth Ingestion Engine
+Agar kisi website par Cloudflare ya bot-blockers lage hon, toh app ka Scrapling engine
+stealth browser fingerprint ke zariye unhe bypass kar ke 100% fresh job spec aur 
+requirements nikal leta hai (bina IP block ya captcha huye).
+
+Step 4: Missing Email Hunter & Real DNS MX Verification
+Agar job post mein email na ho, toh Scrapling company ki career website par deep-scan 
+karta hai aur unka direct email dhoondta hai. Saath hi DNS MX check karta hai taake 
+koi bhi email bounce na ho aur candidate ka domain safe rahay.
+
+Step 5: Deterministic 2-Page Master ATS CV Builder (`cv.py`)
+Job ke requirements ko candidate ke profile ke sath match karta hai aur multi-page 
+printable PDF CV compile karta hai (Zero truncation guarantee — koi experience ya project 
+cut nahi hota).
+
+Step 6: Executive Tailored Cover Letter Generation
+Har specific company ke liye customized 3-paragraph executive cold outreach pitch 
+likhta hai aur matching PDF Cover Letter create karta hai.
+
+Step 7: 0-Click Gmail IMAP Dual-Attachment Draft Injection
+App direct Google ke secure IMAP socket (`imap.gmail.com:993`) par connect karti hai.
+Candidate ke Gmail ke andar:
+  - Subject Line: "[Job Title] Application — [Candidate Name]"
+  - Email Body: Tailored Cold Pitch with accomplishments
+  - Attachment 1: [Candidate-Name]-ATS-CV.pdf
+  - Attachment 2: [Candidate-Name]-Cover-Letter-[Company].pdf
+dono files attach kar ke draft save kar deti hai!
+
+Step 8: Live Dashboard & Application Tracker
+Dashboard par candidate live dekh sakta hai: kitni jobs apply hui hain, kitne drafts banay 
+hain, aur kis recruiter ka reply kab aya hai.
+
+
+----------------------------------------------------------------------------------------
+📌 4. PASHA HUNT KE TOP 8 SUPER-POWERS (FEATURE BREAKDOWN)
+----------------------------------------------------------------------------------------
+1. ⚡ Scrapling Stealth Harvester:
+   Dunya ka sab se tez aur unblockable web scraping engine jo Cloudflare Turnstile aur 
+   Akamai challenges ko bypass kar ke kisi bhi portal se data nikal leta hai.
+
+2. 📄 Multi-Page Deterministic ATS CV Engine:
+   A4 standard sheets par based ATS formatting jo kisi bhi company ke scanning software 
+   (Workday, Greenhouse, Taleo) mein 95%+ pass rate deti hai.
+
+3. ✉️ Instant Tailored Cover Letter Studio:
+   Bina kisi mehnat ke har application ke liye tailored executive cover letter PDF.
+
+4. 📬 Real Gmail Draft Injection with Dual Attachments:
+   Poori dunya ke kisi bhi ordinary job tool mein yeh feature nahi hai ke woh aap ke real 
+   Gmail account ke drafts mein CV aur Cover Letter dono attach kar ke save kar de.
+
+5. 🔍 Recruiter Email Hunter & 0% Bounce DNS MX Verifier:
+   Generic `info@` ke bajaye direct decision makers ka email nikalna aur check karna 
+   ke email server active hai ya nahi.
+
+6. 🤖 Track A: Autonomous Web Form Applier:
+   Jin jobs par email nahi hoti (Workday, Lever, Greenhouse, LinkedIn Easy Apply), 
+   wahan bot khud portal par ja kar form fill karta hai, CV upload karta hai, aur 
+   screening questions solve karta hai.
+
+7. 📊 Live ATS Compatibility Visualizer:
+   Har job ke samne real-time match score (e.g. 96% Match, 88% Match) show karta hai 
+   taake candidate sirf high-probability jobs par focus kare.
+
+8. 🛡️ 100% Local & Privacy Focused Workstation:
+   Aap ka data kisi third-party cloud server par leak nahi hota; saara code aap ke apne 
+   computer par safely run hota hai.
+
+
+----------------------------------------------------------------------------------------
+📌 5. USERS YA CLIENTS KO PRESENT KARNE KE LIYE TALKING POINTS (PITCH SCRIPT)
+----------------------------------------------------------------------------------------
+Agar aap kisi dost, client, software house, ya job seeker ko ye dikhana chahein, toh 
+ye 4 lines bolen:
+
+"Bhai, tum rozana 5 ghante zaya karte ho jobs dhundhne aur generic CV bhejte ho jiska 
+koi reply nahi aata. 
+
+Yeh software dekho: Isme bas apni profile daalo aur 'Scan' dabao. 
+Yeh internet se high-paying jobs dhoondta hai, unke mutabiq 2-page ATS CV aur cover letter 
+banata hai, aur direct tumhare Gmail ke Drafts folder mein dono PDF files attach kar ke 
+email tayar rakh deta hai. 
+
+Tumhe bas subah uth kar Gmail kholna hai aur 'Send' dabana hai. Rozana 5 ghante ka kaam 
+ab 5 second mein ho jata hai!"
+
+
+----------------------------------------------------------------------------------------
+📌 6. FREQUENTLY ASKED QUESTIONS (FAQS)
+----------------------------------------------------------------------------------------
+Q1: Kya mera Gmail account block ya ban ho sakta hai?
+A1: Hargiz nahi! Pasha Hunt koi spam bot nahi hai. Yeh aap ke official Gmail App Password 
+    ke zariye sirf aap ke apne "Drafts" folder mein email save karta hai. Email send karne 
+    ka ultimate control candidate ke apne hath mein hota hai.
+
+Q2: Kya yeh sirf Pakistan ke liye hai ya international jobs ke liye?
+A2: Yeh dono ke liye hai! Yeh Pakistan ke top software houses (Systems Ltd, Arbisoft, Devsinc) 
+    ke sath sath US, UK, Germany aur Worldwide remote jobs ko real-time index karta hai.
+
+Q3: Agar kisi job par recruiter ka email na ho, toh kya hoga?
+A3: App ka Scrapling engine company ki website scan kar ke email dhoondta hai. Agar phir bhi 
+    email na mile, toh hamara "Track A: Autonomous Web Form Applier" direct portal 
+    (Greenhouse/Lever/Workday) par ja kar form fill aur CV upload kar deta hai.
+
+Q4: ATS Score 96% kaise aata hai?
+A4: Kyunke hamara CV engine Google ke verified XYZ formula ("Accomplished X measured by Y 
+    by doing Z") aur relevant technical keywords ko candidate ke real experience ke sath 
+    synthesize karta hai. Zero fake claims, 100% verified facts.
+
+========================================================================================
+                   🏆 PASHA HUNT — THE FUTURE OF AUTONOMOUS HIRING 🏆
+========================================================================================

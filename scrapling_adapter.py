@@ -224,10 +224,13 @@ def stealth_fetch(url: str, timeout: int = 12, use_stealth_browser: bool = False
     if use_stealth_browser and HAS_STEALTHY_FETCHER:
         try:
             resp = StealthyFetcher.fetch(url, headless=True)
-            if resp and hasattr(resp, "text") and resp.text:
-                return resp.text
-            if resp and hasattr(resp, "body") and resp.body:
-                return resp.body.decode("utf-8", errors="ignore") if isinstance(resp.body, bytes) else str(resp.body)
+            if resp:
+                if hasattr(resp, "html_content") and resp.html_content:
+                    return resp.html_content
+                if hasattr(resp, "body") and resp.body:
+                    return resp.body.decode("utf-8", errors="ignore") if isinstance(resp.body, bytes) else str(resp.body)
+                if hasattr(resp, "text") and resp.text:
+                    return str(resp.text)
         except Exception:
             pass
 
@@ -236,17 +239,22 @@ def stealth_fetch(url: str, timeout: int = 12, use_stealth_browser: bool = False
         try:
             resp = Fetcher.get(url, timeout=timeout)
             if resp:
-                if hasattr(resp, "text") and resp.text:
-                    return resp.text
+                if hasattr(resp, "html_content") and resp.html_content:
+                    return resp.html_content
                 if hasattr(resp, "body") and resp.body:
                     return resp.body.decode("utf-8", errors="ignore") if isinstance(resp.body, bytes) else str(resp.body)
+                if hasattr(resp, "text") and resp.text:
+                    return str(resp.text)
         except Exception:
             # If fast fetcher failed due to anti-bot challenge and we haven't tried stealth browser yet
             if HAS_STEALTHY_FETCHER:
                 try:
                     resp = StealthyFetcher.fetch(url, headless=True)
-                    if resp and hasattr(resp, "text") and resp.text:
-                        return resp.text
+                    if resp:
+                        if hasattr(resp, "html_content") and resp.html_content:
+                            return resp.html_content
+                        if hasattr(resp, "body") and resp.body:
+                            return resp.body.decode("utf-8", errors="ignore") if isinstance(resp.body, bytes) else str(resp.body)
                 except Exception:
                     pass
 

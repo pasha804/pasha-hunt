@@ -1,0 +1,2 @@
+[console_scripts]
+tool-dev-pasha-hunt-tools = pasha_hunt_tools_plugin:main

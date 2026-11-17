@@ -1,0 +1,23 @@
+# pasha-hunt-tools
+
+A standalone Executa plugin scaffolded by `anna-app executa init`.
+
+## Develop locally
+
+```sh
+# Smoke-test (no LLM):
+anna-app executa dev --describe
+anna-app executa dev --invoke ping
+
+# With host sampling against a mock fixture:
+anna-app executa dev \
+  --mock-sampling ./sampling-fixture.jsonl \
+  --invoke summarize --args '{"text":"Anna is a multi-app workspace."}'
+
+# With real nexus sampling (after `anna-app login --host <nexus>`):
+anna-app executa dev \
+  --app-slug my-app \
+  --invoke summarize --args '{"text":"…"}'
+```
+
+See `pasha_hunt_tools_plugin.py` for the JSON-RPC protocol.
