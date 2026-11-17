@@ -12,7 +12,7 @@ AppVersion={#AppVersion}
 AppVerName=Job Hunter {#AppVersion}
 AppPublisher=Code Projects Official
 AppPublisherURL=https://www.codeprojectsofficial.com/tools/job-hunter
-AppSupportURL=https://github.com/Ahsan483/job-hunter/issues
+AppSupportURL=https://github.com/pasha804/pasha-hunt/issues
 AppUpdatesURL=https://www.codeprojectsofficial.com/tools/job-hunter
 ; Installs for the current user only: no admin prompt. Your files stay in %APPDATA%\Job Hunter.
 PrivilegesRequired=lowest
