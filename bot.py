@@ -606,10 +606,16 @@ def src_remotive():
 
 
 def src_remoteok():
-    d = fetch("https://remoteok.com/api", as_json=True)
+    try:
+        d = fetch("https://remoteok.com/api", as_json=True)
+    except Exception as e:
+        log(f"  remoteok fetch failed: {e}")
+        return []
     out = []
+    if not isinstance(d, list):
+        return []
     for j in d:
-        if "position" not in j:
+        if not isinstance(j, dict) or "position" not in j:
             continue
         out.append(dict(source="remoteok", id=f"remoteok-{j['id']}", title=j["position"], company=j.get("company", ""),
                         url=j.get("url", ""), location=j.get("location", "") or "Remote",
@@ -628,7 +634,10 @@ def office_mode(remote, title, location):
 def src_arbeitnow():
     out = []
     for page in (1, 2, 3):
-        d = fetch(f"https://www.arbeitnow.com/api/job-board-api?page={page}", as_json=True)
+        try:
+            d = fetch(f"https://www.arbeitnow.com/api/job-board-api?page={page}", as_json=True)
+        except Exception:
+            break
         for j in d.get("data", []):
             if not j.get("remote") and MODES == {"remote"}:
                 continue
@@ -655,13 +664,19 @@ def _himalayas(j):
 def src_himalayas():
     out = []
     for offset in (0, 20, 40, 60):
-        d = fetch(f"https://himalayas.app/jobs/api?limit=20&offset={offset}", as_json=True)
-        out += [_himalayas(j) for j in d.get("jobs", [])]
+        try:
+            d = fetch(f"https://himalayas.app/jobs/api?limit=20&offset={offset}", as_json=True)
+            out += [_himalayas(j) for j in d.get("jobs", [])]
+        except Exception:
+            pass
     # Keyword search finds older posts the latest-jobs feed has already pushed out.
     for term in SEARCH:
         for page in ((1, 2, 3) if len(SEARCH) <= 3 else (1, 2)):
-            d = fetch(f"https://himalayas.app/jobs/api/search?q={q(term)}&limit=20&page={page}", as_json=True)
-            out += [_himalayas(j) for j in d.get("jobs", [])]
+            try:
+                d = fetch(f"https://himalayas.app/jobs/api/search?q={q(term)}&limit=20&page={page}", as_json=True)
+                out += [_himalayas(j) for j in d.get("jobs", [])]
+            except Exception:
+                pass
     return out
 
 
@@ -671,8 +686,8 @@ def src_jobicy():
         tag = term.lower().replace("c#", "c-sharp").replace(" ", "-")
         try:
             d = fetch(f"https://jobicy.com/api/v2/remote-jobs?count=50&tag={q(tag)}", as_json=True)
-        except urllib.error.HTTPError as e:
-            log(f"  jobicy tag '{tag}': HTTP {e.code}, skipped")
+        except Exception as e:
+            log(f"  jobicy tag '{tag}': {e}, skipped")
             continue
         for j in d.get("jobs", []):
             out.append(dict(source="jobicy", id=f"jobicy-{j['id']}", title=html.unescape(j["jobTitle"]),
@@ -689,7 +704,12 @@ def src_jobicy():
 def rss_items(url):
     """Each <item> of an RSS feed as {tag: text}, with CDATA unwrapped and entities decoded."""
     out = []
-    for item in re.findall(r"(?s)<item>(.*?)</item>", fetch(url)):
+    try:
+        content = fetch(url)
+    except Exception as e:
+        log(f"  RSS fetch failed for {url}: {e}")
+        return []
+    for item in re.findall(r"(?s)<item>(.*?)</item>", content):
         d = {}
         for tag, body in re.findall(r"(?s)<([\w:]+)[^>]*>(.*?)</\1>", item):
             d.setdefault(tag, html.unescape(re.sub(r"(?s)<!\[CDATA\[(.*?)\]\]>", r"\1", body)).strip())
@@ -705,13 +725,16 @@ def src_weworkremotely():
     out = []
     feeds = dict.fromkeys(c for f in (WWR_FEEDS if "all" in FIELDS else FIELDS) for c in WWR_FEEDS[f])
     for cat in feeds:
-        for it in rss_items(f"https://weworkremotely.com/categories/{cat}.rss"):
-            company, _, title = it.get("title", "").partition(": ")
-            link = it.get("link") or it.get("guid", "")
-            out.append(dict(source="weworkremotely", id=f"wwr-{last_part(link)}", title=title or company,
-                            company=company if title else "", url=link, location=it.get("region") or "Remote",
-                            text=text_of(it.get("description")), date=parse_date(it.get("pubDate")),
-                            job_type=it.get("type", ""), tags=it.get("skills", "")))
+        try:
+            for it in rss_items(f"https://weworkremotely.com/categories/{cat}.rss"):
+                company, _, title = it.get("title", "").partition(": ")
+                link = it.get("link") or it.get("guid", "")
+                out.append(dict(source="weworkremotely", id=f"wwr-{last_part(link)}", title=title or company,
+                                company=company if title else "", url=link, location=it.get("region") or "Remote",
+                                text=text_of(it.get("description")), date=parse_date(it.get("pubDate")),
+                                job_type=it.get("type", ""), tags=it.get("skills", "")))
+        except Exception:
+            continue
     return out
 
 
@@ -793,7 +816,10 @@ def src_themuse():
 def src_4dayweek():
     out = []
     for page in (1, 2, 3):
-        d = fetch(f"https://4dayweek.io/api?page={page}", as_json=True)
+        try:
+            d = fetch(f"https://4dayweek.io/api?page={page}", as_json=True)
+        except Exception:
+            break
         for j in d.get("jobs", []):
             remote = str(j.get("is_remote")).lower() == "true"
             if not remote and MODES == {"remote"}:
