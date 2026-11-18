@@ -227,11 +227,8 @@ def get_cv_history():
             with open(hist_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict):
-                    # Filter out any legacy test personas
-                    archive = [a for a in data.get("archive", []) if isinstance(a, dict) and not any(k in str(a.get("filename", "")).lower() for k in ["hamza", "fatima", "mubashar"])]
+                    archive = [a for a in data.get("archive", []) if isinstance(a, dict)]
                     active = data.get("active")
-                    if active and isinstance(active, dict) and any(k in str(active.get("filename", "")).lower() for k in ["hamza", "fatima", "mubashar"]):
-                        active = None
                     return {"active": active, "archive": archive}
         except Exception:
             pass
@@ -242,13 +239,11 @@ def record_cv_upload(new_filename, score=96, size_kb=50.0):
     current = get_cv_history()
     old_active = current.get("active")
     if old_active and isinstance(old_active, dict) and old_active.get("filename") != new_filename:
-        old_fn = old_active.get("filename", "").lower()
-        if not any(k in old_fn for k in ["hamza", "fatima", "mubashar"]):
-            old_copy = dict(old_active)
-            old_copy["status"] = "Archived Master"
-            archive_list = current.get("archive", [])
-            archive_list.insert(0, old_copy)
-            current["archive"] = archive_list[:6]
+        old_copy = dict(old_active)
+        old_copy["status"] = "Archived Master"
+        archive_list = current.get("archive", [])
+        archive_list.insert(0, old_copy)
+        current["archive"] = archive_list[:6]
 
     clean_kb = 45.0
     try:
@@ -1492,40 +1487,39 @@ def get_profile_data():
         if not data.get("title") and data.get("default_title"):
             data["title"] = data["default_title"]
         elif not data.get("title"):
-            data["title"] = "AI Agentic Developer | Full-Stack Software Engineer | QA & Software Tester"
+            data["title"] = data.get("default_title") or "Professional Specialist"
         if not data.get("target_role"):
             data["target_role"] = data.get("title")
         if not data.get("experiences") and data.get("experience"):
             data["experiences"] = data["experience"]
         if not data.get("ats_score"):
-            data["ats_score"] = 94
+            data["ats_score"] = 92
         if not data.get("baseline_score"):
-            data["baseline_score"] = 84
+            data["baseline_score"] = 80
         data["is_enhanced"] = True
-        data["is_already_ats"] = True
         return data
 
     return {
-        "name": "Muhammad Mubashar",
-        "default_title": "AI Full-Stack Developer | QA & Software Tester",
+        "name": "Candidate Profile",
+        "default_title": "Professional Specialist",
         "discipline": "dev",
         "contact": {
-            "email": "pashadev804@gmail.com",
-            "phone": "+92 308 4453846",
-            "location": "Lahore, Pakistan",
-            "linkedin": "linkedin.com/in/pasha-dev",
-            "github": "github.com/pasha804",
-            "portfolio": "pasha-portfolio-v6.netlify.app"
+            "email": "",
+            "phone": "",
+            "location": "Worldwide",
+            "linkedin": "",
+            "github": "",
+            "portfolio": ""
         },
-        "location": "Lahore, Pakistan",
-        "default_summary": "AI Full-Stack Software Engineer & QA Specialist who builds and deploys scalable web applications, autonomous AI agents, and desktop products.",
+        "location": "Worldwide",
+        "default_summary": "Results-driven professional with proven expertise in end-to-end execution, cross-functional collaboration, and delivering quantifiable impact.",
         "skills": {
-            "Core Competencies": ["Python", "TypeScript", "JavaScript", "React", "FastAPI", "SQL", "Docker", "QA Automation"]
+            "Core Competencies": ["Problem Solving", "Strategic Planning", "Project Management", "Technical Execution"]
         },
-        "ats_score": 94,
+        "ats_score": 88,
         "baseline_score": 80,
         "is_enhanced": True,
-        "is_already_ats": True
+        "is_already_ats": False
     }
 
 class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):

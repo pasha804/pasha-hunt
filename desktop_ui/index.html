@@ -5156,7 +5156,9 @@
 
       const cvDocEl = document.getElementById('modalCvDocName');
       const coverDocEl = document.getElementById('modalCoverDocName');
-      const candName = (candidateProfile && candidateProfile.name) ? candidateProfile.name.replace(/\s+/g, '_') : 'Muhammad_Mubashar';
+      const candName = (candidateProfile && candidateProfile.name && candidateProfile.name !== 'Candidate Profile') 
+        ? candidateProfile.name.replace(/\s+/g, '_') 
+        : 'Candidate';
       const compClean = (job.company || 'Company').replace(/[^a-zA-Z0-9]/g, '_');
       if (cvDocEl) cvDocEl.innerText = `Master_ATS_CV_${candName}.pdf`;
       if (coverDocEl) coverDocEl.innerText = `Cover_Letter_${compClean}.pdf`;

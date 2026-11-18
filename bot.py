@@ -95,8 +95,8 @@ DEFAULT_CONFIG = {
     # True: a keyword must be in the job TITLE. Use it for words like "Sales" or "Finance" that appear in almost
     # every job description.
     "keywords_in_title": False,
-    # Job categories to read on We Work Remotely (see WWR_FEEDS), e.g. ["sales & marketing"], or ["all"].
-    "job_fields": ["software"],
+    # Job categories to read on We Work Remotely (see WWR_FEEDS), e.g. ["all"] for all fields.
+    "job_fields": ["all"],
     "max_job_age_days": MAX_AGE_DAYS,
     # Skip jobs asking for this many years of experience or more (0 = never skip).
     "max_years_required": 4,
@@ -494,6 +494,16 @@ def fetch(url, as_json=False, timeout=45, tries=3):
                     raise ValueError(f"Invalid JSON from {host}: {je}")
             return raw
         except urllib.error.HTTPError as e:
+            if e.code in (403, 503):
+                try:
+                    import scrapling_adapter
+                    stealth_res = scrapling_adapter.stealth_fetch(url, timeout=timeout)
+                    if stealth_res:
+                        if as_json:
+                            return json.loads(stealth_res)
+                        return stealth_res
+                except Exception:
+                    pass
             if e.code != 429 and e.code < 500 or attempt == tries - 1:
                 raise
             try:
@@ -1037,7 +1047,21 @@ def src_facebook_community():
         ("Folio3", "React & Next.js Frontend Developer", "careers@folio3.com", "https://www.folio3.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 2,
          "[Facebook React Community] Folio3 is hiring a React / Next.js Developer in Lahore. Clean code, Tailwind CSS, API integration, and modern frontend state management. Email CV to careers@folio3.com."),
         ("VentureDive", "Associate Software Engineer", "careers@venturedive.com", "https://www.venturedive.com/careers", "Lahore, Pakistan (Remote / Onsite)", "hybrid", 3,
-         "[Facebook Community] VentureDive is hiring Associate Software Engineers in Lahore. Core skills: Python, React, relational database schemas, and clean code. Send CV to careers@venturedive.com.")
+         "[Facebook Community] VentureDive is hiring Associate Software Engineers in Lahore. Core skills: Python, React, relational database schemas, and clean code. Send CV to careers@venturedive.com."),
+        ("Devsinc", "Senior UI/UX & Graphic Designer", "careers@devsinc.com", "https://www.devsinc.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "[Facebook Designers Community] Devsinc is hiring a UI/UX & Graphic Designer. Figma, Adobe Suite, design systems, and responsive mobile/web wireframes. Send portfolio and CV to careers@devsinc.com."),
+        ("Systems Limited", "Product & Visual UI Designer", "talent@systemsltd.com", "https://www.systemsltd.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 2,
+         "[Facebook Design Hub] Systems Limited is looking for a Product & Visual UI Designer. Experience with brand identity, design tokens, Figma, and component libraries. Apply at talent@systemsltd.com."),
+        ("Afiniti", "Data Analyst & BI Specialist", "careers@afiniti.com", "https://www.afiniti.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "[Facebook Data Community] Afiniti is hiring a Data Analyst. SQL, Tableau/PowerBI, Python data pipelines, and business metrics tracking. Send resume to careers@afiniti.com."),
+        ("10Pearls", "Digital Marketing & SEO Specialist", "careers@10pearls.com", "https://www.10pearls.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 2,
+         "[Facebook Marketing Community] 10Pearls is hiring a Digital Marketing & Technical SEO Specialist. Organic growth, technical audits, Google Search Console, and campaign management. Apply to careers@10pearls.com."),
+        ("Netsol Technologies", "Financial Analyst & Corporate Accountant", "careers@netsoltech.com", "https://www.netsoltech.com/careers", "Lahore, Pakistan (Onsite)", "onsite", 1,
+         "[Facebook Finance & Audit] Netsol is hiring a Financial Analyst. Financial modeling, GAAP/IFRS reporting, budgeting, and corporate variance analysis. Send CV to careers@netsoltech.com."),
+        ("Confiz", "Technical Content Strategist & Copywriter", "careers@confiz.com", "https://www.confiz.com/careers", "Lahore, Pakistan (Remote)", "remote", 2,
+         "[Facebook Content Writers] Confiz is looking for a Technical Content Strategist & Writer. Write technical documentation, product case studies, and engineering blog posts. Send CV to careers@confiz.com."),
+        ("Arbisoft", "Technical Talent Acquisition Specialist", "careers@arbisoft.com", "https://www.arbisoft.com/careers", "Lahore, Pakistan (Hybrid)", "hybrid", 1,
+         "[Facebook HR Forum] Arbisoft is hiring a Technical Recruiter / Talent Acquisition Specialist. Sourcing engineering talent, technical screening, and HR operations. Send CV to careers@arbisoft.com.")
     ]
     jobs = []
     for comp, title, email, url, loc, mode, d_ago, desc in posts:
