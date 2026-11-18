@@ -19,9 +19,11 @@ letter.json fields: company, role, text (paragraphs separated by blank lines)
 """
 import datetime as dt
 import html
+import io
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -102,11 +104,52 @@ def esc(s):
     return html.escape(s, quote=False)
 
 
+def format_contact_links(profile):
+    c = dict(profile.get("contact") or {})
+    for key in ("email", "phone", "location", "linkedin", "github", "portfolio", "behance"):
+        if not c.get(key) and profile.get(key):
+            c[key] = profile.get(key)
+
+    items = []
+    
+    loc = c.get("location") or profile.get("location")
+    if loc:
+        items.append(f"<span>{esc(loc)}</span>")
+        
+    phone = c.get("phone")
+    if phone:
+        clean_tel = re.sub(r"[^\d+]", "", str(phone))
+        items.append(f"<a href='tel:{clean_tel}' style='color:#334155; text-decoration:none;'>{esc(phone)}</a>")
+        
+    email_addr = c.get("email") or profile.get("email")
+    if email_addr:
+        items.append(f"<a href='mailto:{esc(email_addr)}' style='color:#0f766e; text-decoration:none; font-weight:600;'>{esc(email_addr)}</a>")
+        
+    for k in ("linkedin", "github", "portfolio", "behance"):
+        val = c.get(k)
+        if val:
+            val_str = str(val).strip()
+            link_url = val_str if val_str.startswith(("http://", "https://")) else f"https://{val_str}"
+            display_str = re.sub(r"^https?://(www\.)?", "", val_str).rstrip("/")
+            items.append(f"<a href='{esc(link_url)}' target='_blank' style='color:#0f766e; text-decoration:none;'>{esc(display_str)}</a>")
+            
+    return " · ".join(items) if items else "<span>Contact Info on File</span>"
+
+
+def linkify_text(text):
+    if not text:
+        return ""
+    def repl(m):
+        url = m.group(0)
+        full_url = url if url.startswith(("http://", "https://")) else f"https://{url}"
+        return f"<a href='{esc(full_url)}' target='_blank' style='color:#0f766e; text-decoration:underline;'>{esc(url)}</a>"
+    return re.sub(r'\b(?:https?://|www\.|github\.com/|linkedin\.com/)[^\s<"\'()]+\b', repl, text)
+
+
 def header(profile, title):
-    c = profile.get("contact") or {}
-    return [f"<h1>{esc(profile['name'])}</h1>", f"<div class='title'>{esc(title)}</div>",
-            "<div class='contact'>" + " · ".join(esc(c[k]) for k in
-                ("phone", "email", "linkedin", "github", "portfolio") if c.get(k)) + "</div>"]
+    contact_html = format_contact_links(profile)
+    return [f"<h1>{esc(profile.get('name', 'Applicant'))}</h1>", f"<div class='title'>{esc(title)}</div>",
+            f"<div class='contact'>{contact_html}</div>"]
 
 
 def page(body):
@@ -155,8 +198,10 @@ def build(profile, t):
             p_tech = p.get("technologies") or p.get("tech") or ""
             if isinstance(p_tech, list):
                 p_tech = ", ".join(p_tech)
-            tech_str = f" <em>({esc(p_tech)})</em>" if p_tech else ""
-            proj_items.append(f"<li><b>{esc(p_name)}</b>{tech_str}: {esc(p_desc)}</li>")
+            tech_linked = linkify_text(esc(p_tech))
+            tech_str = f" <em>({tech_linked})</em>" if p_tech else ""
+            desc_linked = linkify_text(esc(p_desc))
+            proj_items.append(f"<li><b>{esc(p_name)}</b>{tech_str}: {desc_linked}</li>")
         out.append("<h2>PROJECTS &amp; PORTFOLIO</h2><ul>" + "".join(proj_items) + "</ul>")
 
     first = [str(s).lower() for s in t.get("skills_first") or []]
@@ -234,6 +279,142 @@ def print_pdf(html_file, out_pdf):
     return error
 
 
+def generate_cover_letter_pdf_reportlab(profile_dict, company, role, letter_text, out_pdf):
+    """Instant pure-python fallback for Cover Letter generation using ReportLab."""
+    try:
+        from reportlab.lib.pagesizes import letter as page_size
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+
+        os.makedirs(os.path.dirname(os.path.abspath(out_pdf)), exist_ok=True)
+        doc = SimpleDocTemplate(out_pdf, pagesize=page_size, leftMargin=54, rightMargin=54, topMargin=54, bottomMargin=54)
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle('Title', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#070A0E'))
+        sub_style = ParagraphStyle('Sub', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=10, leading=14, textColor=colors.HexColor('#0F766E'))
+        meta_style = ParagraphStyle('Meta', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#475569'))
+        body_style = ParagraphStyle('Body', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=15, textColor=colors.HexColor('#1E293B'))
+
+        c = (profile_dict or {}).get("contact") or {}
+        contact_line = " · ".join([str(c[k]) for k in ("phone", "email", "location", "linkedin", "github", "portfolio") if c.get(k)])
+
+        paras = [p.strip() for p in (letter_text or "").replace("\r", "").split("\n\n") if p.strip()]
+        if not paras:
+            paras = [f"I am writing to express my enthusiastic interest in the {role} position at {company}."]
+
+        story = [
+            Paragraph(esc((profile_dict or {}).get("name") or "Applicant"), title_style),
+            Paragraph(esc((profile_dict or {}).get("default_title") or role or "Professional"), sub_style),
+            Paragraph(esc(contact_line), meta_style),
+            Spacer(1, 16),
+            Paragraph(f"{dt.date.today():%d %B %Y}<br/><b>Hiring Team at {esc(company)}</b>" + (f"<br/>Re: {esc(role)}" if role else ""), meta_style),
+            Spacer(1, 16)
+        ]
+        for p in paras:
+            clean_p = esc(p).replace("\n", "<br/>")
+            story.append(Paragraph(clean_p, body_style))
+            story.append(Spacer(1, 10))
+
+        story.append(Spacer(1, 10))
+        story.append(Paragraph(f"Sincerely,<br/><b>{esc((profile_dict or {}).get('name') or 'Applicant')}</b>", body_style))
+
+        doc.build(story)
+        if os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 500:
+            return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    return {"ok": False, "error": "ReportLab build failed"}
+
+
+def generate_master_cv_reportlab(profile_dict, out_pdf):
+    """Instant pure-python fallback for Master ATS CV generation using ReportLab."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+
+        os.makedirs(os.path.dirname(os.path.abspath(out_pdf)), exist_ok=True)
+        doc = SimpleDocTemplate(out_pdf, pagesize=A4, leftMargin=40, rightMargin=40, topMargin=40, bottomMargin=40)
+        styles = getSampleStyleSheet()
+
+        name_style = ParagraphStyle('Name', fontName='Helvetica-Bold', fontSize=18, leading=22, textColor=colors.HexColor('#070A0E'))
+        title_style = ParagraphStyle('Title', fontName='Helvetica-Bold', fontSize=10.5, leading=14, textColor=colors.HexColor('#0F766E'))
+        contact_style = ParagraphStyle('Contact', fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#475569'))
+        h2_style = ParagraphStyle('H2', fontName='Helvetica-Bold', fontSize=9.5, leading=13, textColor=colors.HexColor('#0F766E'), spaceBefore=8, spaceAfter=4)
+        body_style = ParagraphStyle('Body', fontName='Helvetica', fontSize=9, leading=13, textColor=colors.HexColor('#1E293B'))
+        bullet_style = ParagraphStyle('Bullet', fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#334155'), leftIndent=12)
+
+        story = []
+        name_val = (profile_dict or {}).get("name") or "Applicant"
+        title_val = (profile_dict or {}).get("default_title") or "Professional Specialist"
+        story.append(Paragraph(esc(name_val), name_style))
+        story.append(Paragraph(esc(title_val), title_style))
+        
+        c = (profile_dict or {}).get("contact") or {}
+        contact_line = " · ".join([str(c[k]) for k in ("phone", "email", "location", "linkedin", "github", "portfolio") if c.get(k)])
+        story.append(Paragraph(esc(contact_line), contact_style))
+        story.append(Spacer(1, 8))
+
+        summary = (profile_dict or {}).get("default_summary")
+        if summary:
+            story.append(Paragraph("PROFESSIONAL SUMMARY", h2_style))
+            story.append(Paragraph(esc(summary), body_style))
+            story.append(Spacer(1, 6))
+
+        exp = (profile_dict or {}).get("experience") or []
+        if exp:
+            story.append(Paragraph("PROFESSIONAL EXPERIENCE", h2_style))
+            for e in exp:
+                comp = e.get("company", "")
+                role = e.get("role") or e.get("title") or ""
+                dates = e.get("dates") or e.get("years") or ""
+                head = f"<b>{esc(comp)}</b>" + (f" — {esc(role)}" if role else "") + (f" <font color='#64748b'>({esc(dates)})</font>" if dates else "")
+                story.append(Paragraph(head, body_style))
+                for b in e.get("bullets", []):
+                    story.append(Paragraph(f"• {esc(b)}", bullet_style))
+                story.append(Spacer(1, 4))
+
+        projects = (profile_dict or {}).get("projects") or []
+        if isinstance(projects, dict):
+            projects = list(projects.values())
+        if projects:
+            story.append(Paragraph("PROJECTS &amp; PORTFOLIO", h2_style))
+            for p in projects:
+                p_name = p.get("name") or p.get("title") or "Key Initiative"
+                p_desc = p.get("text") or p.get("description") or ""
+                if isinstance(p_desc, list):
+                    p_desc = " · ".join(p_desc)
+                p_tech = p.get("technologies") or p.get("tech") or ""
+                if isinstance(p_tech, list):
+                    p_tech = ", ".join(p_tech)
+                tech_str = f" <font color='#0F766E'>({esc(p_tech)})</font>" if p_tech else ""
+                story.append(Paragraph(f"<b>{esc(p_name)}</b>{tech_str}: {esc(p_desc)}", bullet_style))
+            story.append(Spacer(1, 4))
+
+        skills = (profile_dict or {}).get("skills") or {}
+        if skills:
+            story.append(Paragraph("SKILLS &amp; TECHNOLOGIES", h2_style))
+            for cat, sk in skills.items():
+                sk_str = ", ".join(sk) if isinstance(sk, list) else str(sk)
+                story.append(Paragraph(f"<b>{esc(cat)}:</b> {esc(sk_str)}", bullet_style))
+            story.append(Spacer(1, 4))
+
+        edu = (profile_dict or {}).get("education")
+        if edu:
+            story.append(Paragraph("EDUCATION", h2_style))
+            edu_str = " · ".join([str(e) for e in edu]) if isinstance(edu, list) else str(edu)
+            story.append(Paragraph(esc(edu_str), body_style))
+
+        doc.build(story)
+        if os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 500:
+            return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+    return {"ok": False, "error": "ReportLab build failed"}
+
+
 def generate_master_cv(profile_dict=None, out_pdf=None):
     """Programmatic helper to build and compile the ATS Master CV PDF."""
     if profile_dict is None:
@@ -251,14 +432,16 @@ def generate_master_cv(profile_dict=None, out_pdf=None):
         tmp_path = tmp.name
     try:
         err = print_pdf(tmp_path, out_pdf)
-        if err:
-            return {"ok": False, "error": err}
-        return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
+        if not err and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 500:
+            return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
     finally:
         try:
             os.remove(tmp_path)
         except Exception:
             pass
+
+    # Instant resilient fallback to ReportLab
+    return generate_master_cv_reportlab(profile_dict, out_pdf)
 
 
 def generate_cover_letter_pdf(profile_dict, company, role, letter_text, out_pdf):
@@ -274,14 +457,16 @@ def generate_cover_letter_pdf(profile_dict, company, role, letter_text, out_pdf)
         tmp_path = tmp.name
     try:
         err = print_pdf(tmp_path, out_pdf)
-        if err:
-            return {"ok": False, "error": err}
-        return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
+        if not err and os.path.exists(out_pdf) and os.path.getsize(out_pdf) > 500:
+            return {"ok": True, "path": out_pdf, "size": os.path.getsize(out_pdf)}
     finally:
         try:
             os.remove(tmp_path)
         except Exception:
             pass
+
+    # Instant resilient fallback to ReportLab
+    return generate_cover_letter_pdf_reportlab(profile_dict, company, role, letter_text, out_pdf)
 
 
 def main():

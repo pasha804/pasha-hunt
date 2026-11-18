@@ -28,14 +28,14 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-CloseApplications=yes
+CloseApplications=force
 RestartApplications=no
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "..\dist\PashaHunt\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\PashaHunt\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
 Source: "icon.ico"; DestDir: "{app}\installer"; Flags: ignoreversion
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -59,21 +59,28 @@ Type: filesandordirs; Name: "{localappdata}\Programs\Job Hunter"
 Type: filesandordirs; Name: "{localappdata}\Pasha Hunt"
 Type: filesandordirs; Name: "{localappdata}\Pasha Hunt 2.0"
 Type: filesandordirs; Name: "{localappdata}\PashaHunt"
+Type: filesandordirs; Name: "{localappdata}\Pasha_Hunt"
 Type: filesandordirs; Name: "{userappdata}\Job Hunter"
 Type: filesandordirs; Name: "{userappdata}\Pasha Hunt"
+Type: filesandordirs; Name: "{%USERPROFILE}\.pashahunt"
 Type: files; Name: "{autodesktop}\Pasha Hunt.lnk"
 Type: files; Name: "{autodesktop}\Job Hunter.lnk"
 Type: files; Name: "{commonprograms}\Pasha Hunt.lnk"
 Type: files; Name: "{autoprograms}\Pasha Hunt.lnk"
 
 [Code]
-// Pre-install: kill any running instance so file access is never denied
+// Pre-install: kill any running instance and wait for OS to release file locks
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   ResultCode: Integer;
+  i: Integer;
 begin
-  Exec('taskkill.exe', '/F /IM PashaHunt.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  Exec('taskkill.exe', '/F /IM JobHunter.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  for i := 1 to 3 do
+  begin
+    Exec('taskkill.exe', '/F /IM PashaHunt.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec('taskkill.exe', '/F /IM JobHunter.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(250);
+  end;
   Result := '';
 end;
 
@@ -81,22 +88,28 @@ end;
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   ResultCode: Integer;
+  i: Integer;
 begin
   if CurUninstallStep = usUninstall then
   begin
-    Exec('taskkill.exe', '/F /IM PashaHunt.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec('taskkill.exe', '/F /IM JobHunter.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    for i := 1 to 3 do
+    begin
+      Exec('taskkill.exe', '/F /IM PashaHunt.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec('taskkill.exe', '/F /IM JobHunter.exe /T', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Sleep(200);
+    end;
   end
   else if CurUninstallStep = usPostUninstall then
   begin
-    DelTree(ExpandConstant('{app}'), True, True, True);
     DelTree(ExpandConstant('{localappdata}\Programs\Pasha Hunt'), True, True, True);
     DelTree(ExpandConstant('{localappdata}\Programs\Job Hunter'), True, True, True);
     DelTree(ExpandConstant('{localappdata}\Pasha Hunt'), True, True, True);
     DelTree(ExpandConstant('{localappdata}\Pasha Hunt 2.0'), True, True, True);
     DelTree(ExpandConstant('{localappdata}\PashaHunt'), True, True, True);
+    DelTree(ExpandConstant('{localappdata}\Pasha_Hunt'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\Job Hunter'), True, True, True);
     DelTree(ExpandConstant('{userappdata}\Pasha Hunt'), True, True, True);
+    DelTree(ExpandConstant('{%USERPROFILE}\.pashahunt'), True, True, True);
     DeleteFile(ExpandConstant('{autodesktop}\Pasha Hunt.lnk'));
     DeleteFile(ExpandConstant('{autodesktop}\Job Hunter.lnk'));
     DeleteFile(ExpandConstant('{autoprograms}\Pasha Hunt.lnk'));

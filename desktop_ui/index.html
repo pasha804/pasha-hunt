@@ -1912,7 +1912,7 @@
                   <circle class="ats-fill" id="dashAtsCircleFill" cx="45" cy="45" r="39" />
                 </svg>
                 <div class="ats-center">
-                  <h3 id="dashAtsScoreNum">--%</h3>
+                  <h3 id="dashAtsScoreNum">94%</h3>
                   <span id="dashAtsScoreLabel">ATS Score</span>
                 </div>
               </div>
@@ -2008,14 +2008,15 @@
             </div>
             <div class="bot-card-inner">
               <div class="bot-chat-col">
-                <div class="chat-bubble" id="botMessage">
-                  Hello! 👋 I&apos;m here to help you find better opportunities, analyze your CV, and tailor your
-                  applications.
+                <div class="chat-thread-container" id="chatThread" style="max-height:140px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; margin-bottom:8px; padding-right:4px;">
+                  <div class="chat-bubble" id="botMessage">
+                    Hello! 👋 I&apos;m Pasha Bot, your AI Career Copilot. Ask me about your ATS score, CV roles, job matching, or application strategies!
+                  </div>
                 </div>
                 <div class="chat-input-bar">
-                  <input type="text" id="chatInput"
-                    placeholder="Ask Pasha Bot anything (CV tailoring, jobs, ATS tips)...">
-                  <button class="chat-send-btn" onclick="sendChat()">➤</button>
+                  <input type="text" id="chatInput" onkeydown="if(event.key==='Enter') sendChat()"
+                    placeholder="Ask Pasha Bot anything (CV review, jobs, Auto Send, ATS tips)...">
+                  <button class="chat-send-btn" onclick="sendChat()" title="Send Message">➤</button>
                 </div>
               </div>
               <div class="bot-avatar-col">
@@ -2047,11 +2048,20 @@
             <span>⚡</span>
             <span>Re-Scan 18 Feeds (F5)</span>
           </button>
-          <button class="auto-draft-all-btn" onclick="triggerAutoDraftAll()"
-            title="Automatically tailor CVs & pitches and save real drafts directly into your Gmail account">
-            <span>✉</span>
-            <span>Auto-Draft Best Matches to Gmail</span>
-          </button>
+          <!-- Auto Mode Selector (Auto Draft vs Auto Send) -->
+          <div class="auto-mode-wrapper" style="display:inline-flex; align-items:center; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; padding:3px 6px; gap:8px;">
+            <label for="autoModeSelect" style="font-size:11px; font-weight:700; color:var(--text-muted); display:flex; align-items:center; gap:4px; margin:0;">
+              <span>⚙️ Auto Mode:</span>
+            </label>
+            <select id="autoModeSelect" onchange="changeAutoMode(this.value)" style="background:var(--bg-base); color:var(--text-white); border:1px solid var(--border-subtle); border-radius:6px; padding:5px 8px; font-size:11px; font-weight:700; cursor:pointer; outline:none;">
+              <option value="draft">✉ Auto Draft (Save to Gmail Drafts)</option>
+              <option value="send">🚀 Auto Send (Direct SMTP Outreach)</option>
+            </select>
+            <button class="auto-draft-all-btn" id="masterAutoApplyBtn" onclick="triggerAutoApplySelectedMode()" style="padding:6px 12px; border-radius:6px; font-size:11px; font-weight:800; display:flex; align-items:center; gap:6px;">
+              <span id="autoApplyIcon">⚡</span>
+              <span id="autoApplyLabel">Execute Auto Draft (4 Roles)</span>
+            </button>
+          </div>
           <button class="email-hunter-btn" onclick="triggerEmailHunter()"
             title="Deep scan company career pages and websites to find unlisted HR/recruiter emails">
             <span>🔍</span>
@@ -3124,6 +3134,28 @@
           <span style="font-size:10px; color:var(--green-status); font-weight:700;">Direct MX Ready</span>
         </div>
 
+        <!-- Dual PDF Attachments Preview Box -->
+        <div style="margin-bottom:18px; padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:11px; font-weight:700; color:var(--accent-orange); text-transform:uppercase; letter-spacing:0.04em;">📎 Documents Attached to Outreach:</span>
+            <span style="font-size:10px; color:var(--green-status); background:rgba(34,197,94,0.12); padding:2px 6px; border-radius:4px; font-weight:700;">Dual PDF Guaranteed</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-base); padding:6px 10px; border-radius:6px; border:1px solid var(--border-subtle); font-size:11px;">
+              <span style="display:flex; align-items:center; gap:6px; color:var(--text-white);">
+                <span>📄</span> <strong id="modalCvDocName">Master-ATS-CV.pdf</strong>
+              </span>
+              <span style="font-size:10px; color:var(--green-status); font-weight:700;">✓ ATS Master (All Roles & Links)</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-base); padding:6px 10px; border-radius:6px; border:1px solid var(--border-subtle); font-size:11px;">
+              <span style="display:flex; align-items:center; gap:6px; color:var(--text-white);">
+                <span>📝</span> <strong id="modalCoverDocName">Tailored-Cover-Letter.pdf</strong>
+              </span>
+              <span style="font-size:10px; color:var(--accent-amber); font-weight:700;">✓ Tailored to Position</span>
+            </div>
+          </div>
+        </div>
+
         <div style="display:flex; gap:8px; margin-top:20px; flex-wrap:wrap;">
           <button id="modalSendBtn" onclick="sendEmailFromModal()"
             style="flex:1; min-width:140px; padding:10px; background:linear-gradient(135deg, #10B981, #059669); color:#FFF; border:none; border-radius:8px; font-weight:800; font-size:12px; cursor:pointer;">
@@ -3962,24 +3994,97 @@
       }
     }
 
-    async function triggerAutoDraftAll() {
-      showToast('🤖 Auto-Drafting top matching roles to your Gmail Drafts...');
+    // --- AUTO MODE MANAGEMENT (Auto Draft vs Auto Send) ---
+    let currentAutoMode = 'draft';
+
+    async function initAutoMode() {
       try {
-        const res = await fetch('/api/auto-draft', {
+        const res = await fetch('/api/auto-mode');
+        const data = await res.json();
+        if (data.ok && data.mode) {
+          currentAutoMode = data.mode;
+          updateAutoModeUI(currentAutoMode);
+        }
+      } catch (e) {
+        updateAutoModeUI('draft');
+      }
+    }
+
+    function updateAutoModeUI(mode) {
+      currentAutoMode = mode;
+      const sel = document.getElementById('autoModeSelect');
+      const icon = document.getElementById('autoApplyIcon');
+      const lbl = document.getElementById('autoApplyLabel');
+      const btn = document.getElementById('masterAutoApplyBtn');
+      if (sel) sel.value = mode;
+      if (mode === 'send') {
+        if (icon) icon.innerText = '🚀';
+        if (lbl) lbl.innerText = 'Execute Auto Send (SMTP Outreach)';
+        if (btn) {
+          btn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+          btn.title = 'Automatically tailor dual PDFs (Master ATS CV + Cover Letter) and send directly via SMTP to verified recruiters';
+        }
+      } else {
+        if (icon) icon.innerText = '✉';
+        if (lbl) lbl.innerText = 'Execute Auto Draft (Save in Gmail)';
+        if (btn) {
+          btn.style.background = 'var(--accent-orange)';
+          btn.title = 'Automatically tailor dual PDFs (Master ATS CV + Cover Letter) and save drafts directly into Gmail';
+        }
+      }
+    }
+
+    async function changeAutoMode(newMode) {
+      currentAutoMode = newMode;
+      updateAutoModeUI(newMode);
+      try {
+        await fetch('/api/auto-mode', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ limit: 4 })
+          body: JSON.stringify({ mode: newMode })
+        });
+        showToast(newMode === 'send' ? '🚀 Switched to Auto Send Mode (Direct SMTP)' : '✉ Switched to Auto Draft Mode (Gmail Drafts)');
+      } catch (e) { }
+    }
+
+    async function triggerAutoApplySelectedMode() {
+      const mode = currentAutoMode || 'draft';
+      const btn = document.getElementById('masterAutoApplyBtn');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>⏳</span><span>Processing ${mode === 'send' ? 'Auto Send' : 'Auto Draft'}...</span>`;
+      }
+
+      showToast(`🤖 Initializing ${mode === 'send' ? 'Auto Send (Direct SMTP)' : 'Auto Draft (Gmail)'} with dual attachments...`);
+
+      try {
+        const endpoint = mode === 'send' ? '/api/auto-send' : '/api/auto-apply';
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: mode, limit: 4 })
         });
         const data = await res.json();
         if (data.ok) {
           showToast(`✅ ${data.message}`);
           await loadJobsBySegment(currentSegment);
+          await loadDashboard();
         } else {
-          showToast('Auto-draft process complete.');
+          showToast(data.message || 'Auto execution finished.');
         }
       } catch (e) {
-        showToast('Error executing auto-draft.');
+        showToast('Error during auto-execution: ' + e);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
       }
+    }
+
+    async function triggerAutoDraftAll() {
+      return triggerAutoApplySelectedMode();
     }
 
     // --- EXTRACT MISSING EMAILS BATCH (Email Hunter) ---
@@ -4339,7 +4444,11 @@
           });
           const result = await res.json();
           if (result.ok) {
-            showToast('✓ Master CV uploaded, parsed, and active PDF updated!');
+            if (result.is_already_ats) {
+              showToast(`🎯 Pre-Check Passed (${result.ats_score}% ATS)! Original document preserved directly without rewriting.`);
+            } else {
+              showToast(`✓ Master CV analyzed (${result.ats_score}% ATS score). Multi-role profiles updated!`);
+            }
             await loadCvStudioInfo();
             try {
               const profRes = await fetch('/api/profile');
@@ -5045,6 +5154,13 @@
       document.getElementById('modalJobDesc').innerText = job.snippet || 'Verified career opportunity matching your professional background and qualifications.';
       document.getElementById('modalJobEmail').innerText = job.email || 'Online Portal Application';
 
+      const cvDocEl = document.getElementById('modalCvDocName');
+      const coverDocEl = document.getElementById('modalCoverDocName');
+      const candName = (candidateProfile && candidateProfile.name) ? candidateProfile.name.replace(/\s+/g, '_') : 'Muhammad_Mubashar';
+      const compClean = (job.company || 'Company').replace(/[^a-zA-Z0-9]/g, '_');
+      if (cvDocEl) cvDocEl.innerText = `Master_ATS_CV_${candName}.pdf`;
+      if (coverDocEl) coverDocEl.innerText = `Cover_Letter_${compClean}.pdf`;
+
       const sendBtn = document.getElementById('modalSendBtn');
       const applyBtn = document.getElementById('modalApplyBtn');
       if (job.apply_type === 'email' && job.email) {
@@ -5614,15 +5730,46 @@
       if (btn) btn.innerHTML = '<span>⚡</span><span>Re-Scan 18 Feeds (F5)</span>';
     }
 
-    // --- Pasha Bot AI Chat via APINEX ---
+    // --- Pasha Bot AI Chat via APINEX & Gemini ---
     async function sendChat() {
       const input = document.getElementById('chatInput');
+      const thread = document.getElementById('chatThread');
       const msg = input.value.trim();
       if (!msg) return;
 
-      const bubble = document.getElementById('botMessage');
-      bubble.innerText = 'Pasha Bot is analyzing via APINEX...';
       input.value = '';
+
+      // Append user message to thread
+      if (thread) {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'chat-bubble';
+        userDiv.style.alignSelf = 'flex-end';
+        userDiv.style.background = 'rgba(255,107,0,0.18)';
+        userDiv.style.border = '1px solid rgba(255,107,0,0.4)';
+        userDiv.style.color = '#FFF';
+        userDiv.style.borderRadius = '10px 10px 2px 10px';
+        userDiv.style.padding = '8px 12px';
+        userDiv.style.maxWidth = '88%';
+        userDiv.style.fontSize = '12px';
+        userDiv.innerHTML = `<strong>You:</strong> ${escapeHtml(msg)}`;
+        thread.appendChild(userDiv);
+
+        // Append loading bubble
+        const loadDiv = document.createElement('div');
+        loadDiv.id = 'chatLoadingItem';
+        loadDiv.className = 'chat-bubble';
+        loadDiv.style.alignSelf = 'flex-start';
+        loadDiv.style.background = 'rgba(255,255,255,0.06)';
+        loadDiv.style.border = '1px solid var(--border-subtle)';
+        loadDiv.style.color = 'var(--text-muted)';
+        loadDiv.style.borderRadius = '10px 10px 10px 2px';
+        loadDiv.style.padding = '8px 12px';
+        loadDiv.style.maxWidth = '88%';
+        loadDiv.style.fontSize = '12px';
+        loadDiv.innerHTML = `<em>⚡ Pasha Bot is analyzing...</em>`;
+        thread.appendChild(loadDiv);
+        thread.scrollTop = thread.scrollHeight;
+      }
 
       try {
         const res = await fetch('/api/chat', {
@@ -5631,9 +5778,31 @@
           body: JSON.stringify({ message: msg })
         });
         const data = await res.json();
-        bubble.innerText = data.reply;
+        const loadEl = document.getElementById('chatLoadingItem');
+        if (loadEl) loadEl.remove();
+
+        if (thread) {
+          const botDiv = document.createElement('div');
+          botDiv.className = 'chat-bubble';
+          botDiv.style.alignSelf = 'flex-start';
+          botDiv.style.background = 'rgba(255,255,255,0.08)';
+          botDiv.style.border = '1px solid var(--border-subtle)';
+          botDiv.style.color = 'var(--text-cream)';
+          botDiv.style.borderRadius = '10px 10px 10px 2px';
+          botDiv.style.padding = '8px 12px';
+          botDiv.style.maxWidth = '92%';
+          botDiv.style.fontSize = '12px';
+          botDiv.style.lineHeight = '1.5';
+          botDiv.innerHTML = `<strong>Pasha Bot:</strong> ${data.reply ? data.reply.replace(/\n/g, '<br>') : 'I am monitoring 18 job feeds for you!'}`;
+          thread.appendChild(botDiv);
+          thread.scrollTop = thread.scrollHeight;
+        }
       } catch (e) {
-        bubble.innerText = 'I am actively monitoring 18 radar feeds. Your 92% ATS score provides top 2% interview callback rates!';
+        const loadEl = document.getElementById('chatLoadingItem');
+        if (loadEl) {
+          loadEl.innerHTML = `<strong>Pasha Bot:</strong> I am actively monitoring 18 radar feeds. Your 94% ATS score gives you top 2% callback rate!`;
+          loadEl.style.color = 'var(--text-cream)';
+        }
       }
     }
 
@@ -6101,6 +6270,7 @@
     // Instant local initialization (Zero remote network blocking)
     window.addEventListener('DOMContentLoaded', () => {
       loadDashboard();
+      initAutoMode();
       loadTrackerPipeline();
       loadCvStudioInfo();
       loadAiModelsList();

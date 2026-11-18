@@ -20,6 +20,8 @@ datas = [
     ('desktop_app.py', '.'),
     ('desktop_server.py', '.'),
     ('scrapling_adapter.py', '.'),
+    ('cv.py', '.'),
+    ('bot.py', '.'),
 ]
 
 a = Analysis(
@@ -51,7 +53,13 @@ a = Analysis(
         'scrapling_adapter',
         'bot',
         'cv',
-        'docx'
+        'docx',
+        'reportlab',
+        'reportlab.lib',
+        'reportlab.lib.pagesizes',
+        'reportlab.platypus',
+        'reportlab.lib.styles',
+        'reportlab.lib.colors'
     ],
     hookspath=[],
     hooksconfig={},
