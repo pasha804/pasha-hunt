@@ -2313,7 +2313,7 @@
 
             <!-- Live Rendered Document View -->
             <div
-              style="height:380px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.12); margin-bottom:14px; background:#FFFFFF;">
+              style="height:380px; border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.12); margin-bottom:14px; background:#0B0F17;">
               <iframe id="origCvInlineIframe" src="/api/cv/view-original"
                 style="width:100%; height:100%; border:none;"></iframe>
             </div>
@@ -4449,7 +4449,7 @@
             } else {
               showToast(`✓ Master CV analyzed (${result.ats_score}% ATS score). Multi-role profiles updated!`);
             }
-            await loadCvStudioInfo();
+            await loadCvStudioInfo(true);
             try {
               const profRes = await fetch('/api/profile');
               if (profRes.ok) {
@@ -5294,7 +5294,7 @@
 
             candidateProfile = cand;
             updateProfileUI(candidateProfile);
-            await loadCvStudioInfo();
+            await loadCvStudioInfo(true);
             await loadDashboard();
             await loadJobsByCriteria();
             showToast(`✓ Welcome ${cand.name}! Jobs aligned to: ${cand.default_title}`, 'success');

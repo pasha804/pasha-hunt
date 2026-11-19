@@ -44,7 +44,6 @@ CSS = """
 @media print {
   body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
   .page-container { box-shadow: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
-  .page-badge { display: none !important; }
 }
 @media screen {
   body {
@@ -66,19 +65,6 @@ CSS = """
     border-radius: 6px;
     box-sizing: border-box;
     color: #1a1a1a;
-  }
-  .page-badge {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 8pt;
-    color: #64748B;
-    margin-bottom: 12px;
-    padding-bottom: 6px;
-    border-bottom: 1px dashed #CBD5E1;
-    font-family: monospace;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 }
 body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; line-height: 1.4; }
@@ -158,7 +144,6 @@ def page(body):
         f"<title>Executive ATS Master Document</title>"
         f"<style>{CSS}</style></head>"
         f"<body><div class='page-container'>"
-        f"<div class='page-badge'><span>⚡ Verified Executive ATS Standard</span><span>1-Column Chronological Layout</span></div>"
         f"{body}</div></body></html>"
     )
 

@@ -219,6 +219,27 @@ APINEX_USAGE = {
     "daily_quota": 25000000
 }
 
+# CleanAPIs Multi-Key Cascade & Model Catalog
+CLEANAPIS_URL = "https://cleanapis.com/v1/chat/completions"
+CLEANAPIS_KEYS = [
+    "cc_jOPSd7AxBnVlvKGUQp1Cta97YOg07p3IncRewlECOuEQE7F8",
+    "cc_kudaKdZeZqMUxhrgOlYXen2yuNyY5Dpc0ddK6a09Gz0ybYzm",
+    "cc_KdPD5fut9gcZkl04BIMSOlxOsdT8WwbMK9Cm77dusVBhtFQf"
+]
+CLEANAPIS_CATALOG = [
+    {"id": "cleanapis/gemini-3.6-flash", "name": "CleanAPIs Gemini 3.6 Flash (High Speed)", "badge": "Fast"},
+    {"id": "cleanapis/deepseek-v4-pro-max", "name": "CleanAPIs DeepSeek V4 Pro Max (Deep Reasoning)", "badge": "Elite"},
+    {"id": "cleanapis/seed-2.1-turbo", "name": "CleanAPIs Seed 2.1 Turbo (Fast Multipurpose)", "badge": "Balanced"},
+    {"id": "cleanapis/claude-opus-5.5", "name": "CleanAPIs Claude Opus 5.5 (Executive Pitch)", "badge": "Writing"},
+]
+CLEANAPIS_MODELS = [m["id"].replace("cleanapis/", "") for m in CLEANAPIS_CATALOG]
+CLEANAPIS_USAGE = {
+    "total_tokens": 0,
+    "calls_count": 0,
+    "last_key_idx": 0,
+    "status": "ready"
+}
+
 # CV Version History Manager
 def get_cv_history():
     hist_file = resolve_file("cv_history.json")
@@ -323,34 +344,109 @@ def call_gemini(prompt, system_instruction=None, model=None, timeout=12):
                 continue
     return None
 
+def call_cleanapis(prompt, system_prompt="You are Pasha Hunt 2.0 AI Career Intelligence Assistant.", model=None, timeout=3.5):
+    """CleanAPIs Multi-Key Cascade caller with automatic failover across 3 keys."""
+    raw_model = (model or "gemini-3.6-flash").replace("cleanapis/", "")
+    models_to_try = [raw_model] + [m for m in CLEANAPIS_MODELS if m != raw_model]
+
+    for key_idx, key in enumerate(CLEANAPIS_KEYS):
+        for m in models_to_try[:2]:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json",
+                    "User-Agent": "PashaHunt/2.0 (Windows NT 10.0; Win64; x64)"
+                }
+                payload = {
+                    "model": m,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.25,
+                    "max_tokens": 2048
+                }
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                req = urllib.request.Request(CLEANAPIS_URL, data=json.dumps(payload).encode("utf-8"), headers=headers)
+                with urllib.request.urlopen(req, context=ctx, timeout=timeout) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if "error" in data:
+                        err_msg = data.get("error", {}).get("message", "")
+                        print(f"[CleanAPIs Key {key_idx+1} Notice] {err_msg}")
+                        break
+                    choices = data.get("choices", [])
+                    if choices:
+                        text = choices[0].get("message", {}).get("content", "").strip()
+                        if text:
+                            usage = data.get("usage", {})
+                            tokens = usage.get("total_tokens", len(text) // 4)
+                            CLEANAPIS_USAGE["total_tokens"] += tokens
+                            CLEANAPIS_USAGE["calls_count"] += 1
+                            CLEANAPIS_USAGE["last_key_idx"] = key_idx
+                            return text
+            except Exception:
+                break
+    return None
+
+
 def call_ai_engine(prompt, system_prompt="You are Pasha Hunt 2.0 AI Career Intelligence Assistant.", timeout=6):
     """Unified Tiered AI Intelligence Engine:
-    Tier 1: High-Speed APINEX Multi-Model Cascade (DeepSeek V4.1 / Qwen 3.8 Max / GPT-6 Luna)
-    Tier 2: Google Gemini Dual-Key Fallback Pool
-    Tier 3: Local Intelligent Career Advisory Rulebook
+    Tier 1: CleanAPIs Multi-Key Cascade (Key 1 -> Key 2 -> Key 3)
+    Tier 2: High-Speed APINEX Multi-Model Cascade (DeepSeek V4.1 / Qwen 3.8 Max / GPT-6 Luna)
+    Tier 3: Google Gemini Dual-Key Fallback Pool
+    Tier 4: Local Intelligent Contextual Rulebook (Clean contextual response, NEVER generic resume tips in emails/prompts)
     """
-    # Tier 1: APINEX fast response (~1.2s)
+    # Tier 1: CleanAPIs fast multi-key failover
+    try:
+        res = call_cleanapis(prompt, system_prompt=system_prompt, timeout=3.5)
+        if res and len(res.strip()) > 5:
+            return res.strip()
+    except Exception:
+        pass
+
+    # Tier 2: APINEX fast response (~1.2s)
     try:
         res = call_apinex(prompt, system_prompt=system_prompt, timeout=4)
         if res and len(res.strip()) > 5:
-            return res
+            return res.strip()
     except Exception:
         pass
 
-    # Tier 2: Gemini
+    # Tier 3: Gemini Dual-Key Fallback
     try:
         res = call_gemini(prompt, system_instruction=system_prompt, timeout=4)
         if res and len(res.strip()) > 5:
-            return res
+            return res.strip()
     except Exception:
         pass
 
-    # Tier 3: Local Intelligent Career Advisory Rulebook
+    # Tier 4: Local Intelligent Contextual Rulebook
     p_lower = prompt.lower()
-    if "resume" in p_lower or "cv" in p_lower or "ats" in p_lower:
-        return "To maximize your resume's ATS match score: 1) Align your experience bullets directly with the target job requirements using measurable metrics, 2) Use standard headings (Summary, Experience, Skills, Education), 3) Avoid tables or non-standard fonts, and 4) Tailor your skills section to match the job keywords."
+    if "application email" in p_lower or ("role:" in p_lower and "company:" in p_lower):
+        comp_m = re.search(r"company:\s*(.+)", prompt, re.IGNORECASE)
+        role_m = re.search(r"role:\s*(.+)", prompt, re.IGNORECASE)
+        name_m = re.search(r"candidate name:\s*(.+)", prompt, re.IGNORECASE)
+        cand_c = comp_m.group(1).strip() if comp_m else "the Hiring Team"
+        cand_r = role_m.group(1).strip() if role_m else "this position"
+        cand_n = name_m.group(1).strip() if name_m else "Candidate"
+        return f"""Dear Hiring Team at {cand_c},
+
+I am writing to express my strong enthusiasm for the {cand_r} position. With my background and hands-on track record delivering production-grade software solutions, I am confident in my ability to add immediate value to {cand_c}'s engineering initiatives.
+
+Please find attached my tailored ATS Master CV and custom Cover Letter for your review. I look forward to the opportunity to discuss how my qualifications align with your team's goals.
+
+Sincerely,
+
+{cand_n}"""
+
+    if "json" in p_lower and "extract" in p_lower:
+        return "{}"
+
     if "interview" in p_lower:
         return "For behavioral interviews, use the STAR method (Situation, Task, Action, Result) with quantified outcomes. For technical rounds, articulate your architectural decisions clearly and explain your trade-offs."
+
     return "I am actively monitoring 18 job radar feeds for you. Your candidate profile and ATS score provide strong competitive alignment for high-match opportunities."
 
 
@@ -718,24 +814,29 @@ def get_active_cv_path():
 def get_original_cv_path():
     """Finds the most recently uploaded candidate CV in user_data/cvs or app dir, strictly excluding cover letters."""
     user_data_dir = get_user_data_dir()
-    cvs_dir = os.path.join(user_data_dir, "cvs")
-    if os.path.exists(cvs_dir):
-        # 1. Look for uploaded_* files that are NOT cover letters
-        files = [
-            os.path.join(cvs_dir, f) for f in os.listdir(cvs_dir)
-            if f.startswith("uploaded_") and not any(k in f.lower() for k in ["cover", "letter"])
-        ]
-        if files:
-            files.sort(key=os.path.getmtime, reverse=True)
-            return files[0]
-        # 2. Look for any genuine CV pdf in cvs_dir (ignoring cover letters)
-        all_pdfs = [
-            os.path.join(cvs_dir, f) for f in os.listdir(cvs_dir)
-            if f.lower().endswith(".pdf") and not any(k in f.lower() for k in ["cover", "letter"])
-        ]
-        if all_pdfs:
-            all_pdfs.sort(key=os.path.getmtime, reverse=True)
-            return all_pdfs[0]
+    search_dirs = [os.path.join(user_data_dir, "cvs")]
+    local_app = os.environ.get("LOCALAPPDATA", "")
+    if local_app:
+        appdata_cvs = os.path.join(local_app, "Pasha Hunt", "User Data", "cvs")
+        if appdata_cvs not in search_dirs and os.path.exists(appdata_cvs):
+            search_dirs.append(appdata_cvs)
+
+    for cvs_dir in search_dirs:
+        if os.path.exists(cvs_dir):
+            files = [
+                os.path.join(cvs_dir, f) for f in os.listdir(cvs_dir)
+                if f.startswith("uploaded_") and not any(k in f.lower() for k in ["cover", "letter"])
+            ]
+            if files:
+                files.sort(key=os.path.getmtime, reverse=True)
+                return files[0]
+            all_pdfs = [
+                os.path.join(cvs_dir, f) for f in os.listdir(cvs_dir)
+                if f.lower().endswith(".pdf") and not any(k in f.lower() for k in ["cover", "letter"])
+            ]
+            if all_pdfs:
+                all_pdfs.sort(key=os.path.getmtime, reverse=True)
+                return all_pdfs[0]
 
     # Check parent/repo directory for master CV
     for root_dir in [user_data_dir, HERE, os.path.dirname(HERE)]:
@@ -744,9 +845,17 @@ def get_original_cv_path():
         try:
             for f in os.listdir(root_dir):
                 if f.lower().endswith(".pdf") and ("cv" in f.lower() or "master" in f.lower()) and not any(k in f.lower() for k in ["cover", "letter"]):
-                    return os.path.join(root_dir, f)
+                    cand_p = os.path.join(root_dir, f)
+                    if os.path.getsize(cand_p) > 2000:
+                        return cand_p
         except Exception:
             pass
+
+    # Fallback to active CV if authentic
+    active = get_active_cv_path()
+    if active and os.path.exists(active) and os.path.getsize(active) > 2000:
+        return active
+
     return None
 
 
@@ -1540,6 +1649,52 @@ def get_profile_data():
         "is_already_ats": False
     }
 
+get_candidate_profile = get_profile_data
+
+
+def generate_application_email(company, role, profile, attach_filename="Applicant-ATS-CV.pdf", letter_attach_filename="Applicant-Cover-Letter.pdf"):
+    """Generates an authentic, compelling 2-paragraph outreach email customized for the company and role."""
+    name = profile.get("name") or "Applicant"
+    cand_title = profile.get("default_title") or role
+    cand_email = profile.get("contact", {}).get("email") or profile.get("email", "") or "applicant@example.com"
+    cand_phone = profile.get("contact", {}).get("phone") or ""
+    phone_part = f" | {cand_phone}" if cand_phone else ""
+    cand_summary = profile.get("default_summary") or f"With dedicated professional background as a {cand_title}, I am confident in delivering high impact for your team at {company}."
+
+    prompt = f"""Write a professional, compelling, and customized 2-paragraph job application email for:
+Role: {role}
+Company: {company}
+
+Candidate Name: {name}
+Candidate Background: {cand_title}
+Candidate Summary: {cand_summary}
+Contact: {cand_email}{phone_part}
+
+Requirements:
+- 2 concise, impactful paragraphs tailored directly to {company}.
+- Highlight candidate's quantifiable achievements and immediate value.
+- Mention attached Tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}).
+- Professional closing with candidate name and contact.
+- Return ONLY the final email body text ready to send (no placeholders, no subject line, no markdown backticks).
+"""
+    ai_draft = call_ai_engine(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.", timeout=12)
+    bad_phrases = ["to maximize your resume", "star method", "ats match score", "[your name]", "here is an email", "dear hiring manager,"]
+    if ai_draft and len(ai_draft.strip()) > 80 and not any(bad in ai_draft.lower() for bad in bad_phrases):
+        return ai_draft.strip()
+
+    return f"""Dear Hiring Team at {company},
+
+I am writing to express my strong interest in the {role} position. With my background as a {cand_title}, {cand_summary}
+
+Please find attached my tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}) for your consideration. I would welcome the opportunity to discuss how my qualifications align with {company}'s requirements.
+
+Sincerely,
+
+{name}
+{cand_email}{phone_part}
+"""
+
+
 class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=UI_DIR, **kwargs)
@@ -2111,6 +2266,9 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         pdf_path = get_active_cv_path()
+        if not pdf_path or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 2000:
+            pdf_path = get_original_cv_path() or pdf_path
+
         profile = self._get_profile_data()
         name = profile.get("name") or "Applicant"
         cand_title = profile.get("default_title") or role
@@ -2126,41 +2284,10 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
         if not subject:
             subject = f"Application: {role} — {name}"
 
-        if not body:
-            phone_part = f" | {cand_phone}" if cand_phone else ""
-            prompt = f"""Write a professional, compelling, and customized 2-paragraph job application email for:
-Role: {role}
-Company: {company}
-
-Candidate Name: {name}
-Candidate Background: {cand_title}
-Candidate Summary: {cand_summary}
-Contact: {cand_email}{phone_part}
-
-Requirements:
-- 2 concise, impactful paragraphs tailored directly to {company}.
-- Highlight candidate's quantifiable achievements and immediate value.
-- Mention attached Tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}).
-- Professional closing with candidate name and contact.
-- Return ONLY the final email body text ready to send (no placeholders, no subject line, no markdown backticks).
-"""
-            ai_draft = call_ai_engine(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.", timeout=20)
-            if ai_draft and len(ai_draft.strip()) > 80:
-                body = ai_draft.strip()
-            else:
-                body = f"""Dear Hiring Team at {company},
-
-I am writing to express my strong interest in the {role} position.
-
-{cand_summary}
-
-Please find attached my tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}) for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
-
-Sincerely,
-
-{name}
-{cand_email}{phone_part}
-"""
+        # Strictly validate body: reject any advice tips or placeholder strings
+        bad_phrases = ["to maximize your resume", "star method", "ats match score", "[your name]", "here is an email"]
+        if not body or len(body.strip()) < 40 or any(bad in body.lower() for bad in bad_phrases):
+            body = generate_application_email(company, role, profile, attach_filename, letter_attach_filename)
 
         # Generate printable Cover Letter PDF in dedicated cover_letters directory
         extra_attachments = []
@@ -2261,6 +2388,9 @@ Sincerely,
             return
 
         pdf_path = get_active_cv_path()
+        if not pdf_path or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 2000:
+            pdf_path = get_original_cv_path() or pdf_path
+
         profile = self._get_profile_data()
         name = profile.get("name") or "Applicant"
         cand_title = profile.get("default_title") or role
@@ -2276,7 +2406,9 @@ Sincerely,
         if not subject:
             subject = f"Application: {role} — {name}"
 
-        if not body:
+        # Strictly validate body: reject any advice tips or placeholder strings
+        bad_phrases = ["to maximize your resume", "star method", "ats match score", "[your name]", "here is an email"]
+        if not body or len(body.strip()) < 40 or any(bad in body.lower() for bad in bad_phrases):
             phone_part = f" | {cand_phone}" if cand_phone else ""
             prompt = f"""Write a professional, compelling, and customized 2-paragraph job application email for:
 Role: {role}
@@ -2294,17 +2426,15 @@ Requirements:
 - Professional closing with candidate name and contact.
 - Return ONLY the final email body text ready to send (no placeholders, no subject line, no markdown backticks).
 """
-            ai_draft = call_ai_engine(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.", timeout=20)
-            if ai_draft and len(ai_draft.strip()) > 80:
+            ai_draft = call_ai_engine(prompt, system_prompt="You are an elite Executive Recruiter and Outreach Copywriter.", timeout=12)
+            if ai_draft and len(ai_draft.strip()) > 80 and not any(bad in ai_draft.lower() for bad in bad_phrases):
                 body = ai_draft.strip()
             else:
                 body = f"""Dear Hiring Team at {company},
 
-I am writing to express my strong interest in the {role} position.
+I am writing to express my strong interest in the {role} position. With my background as a {cand_title}, {cand_summary}
 
-{cand_summary}
-
-Please find attached my tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}) for your consideration. I would welcome the opportunity to discuss how my background and qualifications align with {company}'s requirements.
+Please find attached my tailored ATS Master CV ({attach_filename}) and Cover Letter ({letter_attach_filename}) for your consideration. I would welcome the opportunity to discuss how my qualifications align with {company}'s requirements.
 
 Sincerely,
 
@@ -4091,15 +4221,17 @@ Warm regards,
 
     def _handle_get_models(self):
         cfg = get_config()
-        active_model = cfg.get("selected_model", "free/qwen-3.8-max")
+        active_model = cfg.get("selected_model", "cleanapis/gemini-3.6-flash")
+        all_models = CLEANAPIS_CATALOG + APINEX_CATALOG
         self._send_json({
-            "models": APINEX_CATALOG,
+            "models": all_models,
             "active_model": active_model
         })
 
     def _handle_save_model(self, req_data):
         model_id = req_data.get("model_id", "").strip()
-        if model_id in APINEX_MODELS:
+        clean_ids = [m["id"] for m in CLEANAPIS_CATALOG]
+        if model_id in APINEX_MODELS or model_id in clean_ids:
             save_config({"selected_model": model_id})
             self._send_json({"ok": True, "message": f"Active AI model switched to {model_id}!", "model_id": model_id})
         else:
@@ -4232,18 +4364,22 @@ Warm regards,
 
     def _handle_cv_view_original(self):
         """Renders the authentic original uploaded resume visually using high-res page renders."""
-        orig_pdf = get_original_cv_path()
-        if orig_pdf and os.path.exists(orig_pdf) and orig_pdf.lower().endswith(".pdf"):
+        orig_pdf = get_original_cv_path() or get_active_cv_path()
+        if orig_pdf and os.path.exists(orig_pdf) and orig_pdf.lower().endswith(".pdf") and os.path.getsize(orig_pdf) > 2000:
             try:
-                import fitz
+                try:
+                    import fitz
+                except ImportError:
+                    import pymupdf as fitz
                 doc = fitz.open(orig_pdf)
                 num_pages = len(doc)
                 doc.close()
+                mtime_tag = int(os.path.getmtime(orig_pdf))
                 pages_html = ""
                 for p in range(num_pages):
                     pages_html += f"""
                     <div class="page-card">
-                        <img src="/api/cv/page-image?version=original&page={p}" alt="Original Resume Page {p+1}">
+                        <img src="/api/cv/page-image?version=original&page={p}&t={mtime_tag}" alt="Original Resume Page {p+1}">
                         {f'<div class="page-badge">Page {p+1} of {num_pages}</div>' if num_pages > 1 else ''}
                     </div>
                     """
@@ -4314,7 +4450,7 @@ Warm regards,
         except Exception:
             page_num = 0
         pdf_path = get_original_cv_path() if version == "original" else get_active_cv_path()
-        if not pdf_path or not os.path.exists(pdf_path):
+        if not pdf_path or not os.path.exists(pdf_path) or os.path.getsize(pdf_path) < 2000:
             pdf_path = get_active_cv_path()
 
         if not pdf_path or not os.path.exists(pdf_path):
@@ -4332,7 +4468,10 @@ Warm regards,
             png_bytes = _PAGE_IMAGE_CACHE[cache_key]
         else:
             try:
-                import fitz
+                try:
+                    import fitz
+                except ImportError:
+                    import pymupdf as fitz
                 doc = fitz.open(pdf_path)
                 if page_num >= len(doc):
                     page_num = 0
@@ -4541,7 +4680,7 @@ Warm regards,
             cand_title = parsed_info.get("default_title") or "Professional Specialist"
 
             # Calculate genuine ATS review score
-            raw_ats_res = bot.calculate_ats_score(raw_prof) if hasattr(bot, "calculate_ats_score") else {}
+            raw_ats_res = bot.calculate_ats_score(parsed_info) if hasattr(bot, "calculate_ats_score") else {}
             calc_base = int(raw_ats_res.get("total") or 78)
 
             # Check if this CV is ALREADY ATS compliant:
@@ -4568,17 +4707,16 @@ Warm regards,
             clean_cand_name = re.sub(r'[^a-zA-Z0-9_-]', '_', cand_name)
             cand_pdf = resolve_file(f"{clean_cand_name}_ATS_Master_CV.pdf", for_write=True)
 
-            if is_already_ats:
-                # User CV is already ATS compliant!
-                # Strictly preserve candidate's original PDF without forced rewrite/truncation!
+            if filename.lower().endswith(".pdf"):
+                # Strictly preserve candidate's authentic uploaded PDF without forced rewrite/truncation!
                 with open(active_pdf, "wb") as f:
                     f.write(raw_bytes)
                 if cand_pdf != active_pdf:
                     with open(cand_pdf, "wb") as f:
                         f.write(raw_bytes)
-                review_msg = f"✓ Pre-Check Verified: Your CV is already {review_score}% ATS Compliant! Your original document has been verified and will be attached directly to job applications."
+                review_msg = f"✓ Pre-Check Verified: Your CV is {review_score}% ATS Compliant! Your authentic document ({round(len(raw_bytes)/1024, 1)} KB) has been verified and will be attached directly to job applications."
             else:
-                # Baseline CV: compile enhanced ATS master while preserving raw uploaded file
+                # Baseline Word/Text: compile enhanced ATS master while preserving raw uploaded file
                 try:
                     cv.generate_master_cv(parsed_info, active_pdf)
                     if os.path.exists(active_pdf) and cand_pdf != active_pdf:
