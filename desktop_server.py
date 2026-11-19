@@ -1419,22 +1419,26 @@ def calculate_dynamic_job_match(job, prof_kw):
     title_words = prof_kw.get("title_words", [])
     cand_skills = prof_kw.get("skills", [])
 
-    # 1. Discipline alignment (up to 60 pts)
+    # 1. Discipline alignment (up to 75 pts)
     title_score = 0
     common_disc = set(cand_discs).intersection(set(job_disc))
+    direct_title_hits = sum(1 for w in title_words if len(w) > 3 and w in j_title)
     if common_disc:
         title_score = 60  # HUGE BOOST for exact career discipline!
+        if direct_title_hits >= 2:
+            title_score += 15
+        elif direct_title_hits == 1:
+            title_score += 10
     else:
-        direct_title_hits = sum(1 for w in title_words if len(w) > 3 and w in j_title)
         direct_desc_hits = sum(1 for w in title_words if len(w) > 3 and w in j_text)
         if direct_title_hits >= 2:
-            title_score = 50
+            title_score = 35
         elif direct_title_hits == 1:
-            title_score = 42
-        elif direct_desc_hits >= 2:
-            title_score = 30
-        elif direct_desc_hits == 1:
             title_score = 20
+        elif direct_desc_hits >= 2:
+            title_score = 12
+        elif direct_desc_hits == 1:
+            title_score = 8
         else:
             title_score = 5
 
@@ -1762,6 +1766,32 @@ class WorkstationRequestHandler(http.server.SimpleHTTPRequestHandler):
 
             if "selected_model" in new_data:
                 cfg_updates["selected_model"] = new_data["selected_model"].strip()
+
+            if "default_title" in new_data and new_data["default_title"].strip():
+                new_title = new_data["default_title"].strip()
+                current["default_title"] = new_title
+                new_discs = get_job_discipline(new_title)
+                cand_disc = new_discs[0] if new_discs else current.get("discipline", "dev")
+                current["discipline"] = cand_disc
+                disc_presets = {
+                    "dev": (["Software Engineer", "Full Stack Developer", "Backend Developer"], ["software", "all"]),
+                    "qa": (["QA Automation Engineer", "Software Tester", "SDET"], ["software", "all"]),
+                    "design": (["UI/UX Designer", "Product Designer", "Visual Designer", "Graphic Designer"], ["design", "all"]),
+                    "data": (["Data Analyst", "Data Scientist", "BI Specialist", "Data Engineer"], ["all"]),
+                    "finance": (["Financial Analyst", "Corporate Accountant", "Auditor", "Accountant"], ["management-and-finance", "all"]),
+                    "marketing": (["Marketing Manager", "SEO Specialist", "Digital Marketer"], ["sales-and-marketing", "all"]),
+                    "content": (["Technical Writer", "Content Writer", "Copywriter"], ["all-other-remote", "all"]),
+                    "hr": (["Technical Recruiter", "Talent Acquisition Specialist", "HR Specialist"], ["all-other-remote", "all"]),
+                    "pm": (["Product Manager", "Project Manager", "Scrum Master"], ["product", "all"]),
+                    "sales": (["Business Development Manager", "Account Executive", "Sales Representative"], ["sales-and-marketing", "all"]),
+                    "science": (["Research Scientist", "Laboratory Analyst", "Academic Researcher"], ["all-other-remote", "all"]),
+                }
+                roles_in_title = [r.strip() for r in re.split(r'[,|/&]+', new_title) if r.strip() and len(r.strip()) > 3]
+                keywords = list(dict.fromkeys(roles_in_title + [new_title]))
+                extra_kws, target_fields = disc_presets.get(cand_disc, ([], ["all"]))
+                keywords.extend(extra_kws)
+                cfg_updates["keywords"] = list(dict.fromkeys(keywords))[:8]
+                cfg_updates["job_fields"] = target_fields
 
             if cfg_updates:
                 save_config(cfg_updates)
@@ -4559,18 +4589,29 @@ Warm regards,
                         f.write(raw_bytes)
                 review_msg = f"Pre-Check Complete: Baseline ATS Score is {review_score}%. Click 'Boost to 96% Elite ATS' to optimize experience bullets with Google XYZ metrics."
 
-            # Update keywords in config.json to match candidate's actual multi-role domain
+            # Update keywords and job search fields in config.json to match candidate's actual domain
             roles_in_title = [r.strip() for r in re.split(r'[,|/&]+', cand_title) if r.strip() and len(r.strip()) > 3]
             keywords = list(dict.fromkeys(roles_in_title + [cand_title]))
-            if cand_disc == "qa":
-                keywords.extend(["QA Automation Engineer", "Software Tester", "SDET"])
-            elif cand_disc == "dev":
-                keywords.extend(["Software Engineer", "Full Stack Developer", "Backend Developer"])
-            elif cand_disc == "design":
-                keywords.extend(["UI/UX Designer", "Product Designer", "Visual Designer"])
+            
+            disc_presets = {
+                "dev": (["Software Engineer", "Full Stack Developer", "Backend Developer"], ["software", "all"]),
+                "qa": (["QA Automation Engineer", "Software Tester", "SDET"], ["software", "all"]),
+                "design": (["UI/UX Designer", "Product Designer", "Visual Designer", "Graphic Designer"], ["design", "all"]),
+                "data": (["Data Analyst", "Data Scientist", "BI Specialist", "Data Engineer"], ["all"]),
+                "finance": (["Financial Analyst", "Corporate Accountant", "Auditor", "Accountant"], ["management-and-finance", "all"]),
+                "marketing": (["Marketing Manager", "SEO Specialist", "Digital Marketer"], ["sales-and-marketing", "all"]),
+                "content": (["Technical Writer", "Content Writer", "Copywriter"], ["all-other-remote", "all"]),
+                "hr": (["Technical Recruiter", "Talent Acquisition Specialist", "HR Specialist"], ["all-other-remote", "all"]),
+                "pm": (["Product Manager", "Project Manager", "Scrum Master"], ["product", "all"]),
+                "sales": (["Business Development Manager", "Account Executive", "Sales Representative"], ["sales-and-marketing", "all"]),
+                "science": (["Research Scientist", "Laboratory Analyst", "Academic Researcher"], ["all-other-remote", "all"]),
+            }
+            extra_kws, target_fields = disc_presets.get(cand_disc, ([], ["all"]))
+            keywords.extend(extra_kws)
 
             cfg = get_config()
-            cfg["keywords"] = keywords[:5]
+            cfg["keywords"] = list(dict.fromkeys(keywords))[:8]
+            cfg["job_fields"] = target_fields
             save_config(cfg)
 
             hist = record_cv_upload(filename, review_score, size_kb)

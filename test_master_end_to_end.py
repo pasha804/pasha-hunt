@@ -233,6 +233,48 @@ class TestMasterSuite(unittest.TestCase):
         self.assertTrue(os.path.exists(out_cv))
         print("  ✓ [Phase 1.3] Finance Persona: Accountant / Auditor dual PDFs verified")
 
+    def test_phase1_04_cross_discipline_job_matching_isolation(self):
+        """Phase 1.4: Verify that CV discipline strictly drives job matching (Zero Cross-Discipline Contamination)."""
+        designer = {
+            "name": "Sarah Jenkins",
+            "default_title": "Lead UI/UX & Product Designer",
+            "discipline": "design",
+            "skills": {"Design": ["Figma", "Design Systems", "Wireframing", "UI Prototyping"]}
+        }
+        prof_designer = desktop_server.extract_candidate_matching_profile(designer)
+        
+        accountant = {
+            "name": "Zubair Khan",
+            "default_title": "Senior Financial Analyst & Corporate Auditor",
+            "discipline": "finance",
+            "skills": {"Finance": ["IFRS", "Statutory Audit", "Financial Modeling", "QuickBooks"]}
+        }
+        prof_accountant = desktop_server.extract_candidate_matching_profile(accountant)
+
+        job_design = {"title": "Senior UI/UX Product Designer", "company": "Canva", "text": "Build design tokens and Figma prototypes.", "mode": "remote"}
+        job_finance = {"title": "Corporate Financial Analyst & Auditor", "company": "KPMG", "text": "Perform statutory financial audits and variance analysis.", "mode": "remote"}
+        job_dev = {"title": "Python Backend Microservices Engineer", "company": "AWS", "text": "Build distributed FastAPI services and Docker containers.", "mode": "remote"}
+
+        # Designer scores
+        score_design_for_designer = desktop_server.calculate_dynamic_job_match(job_design, prof_designer)
+        score_finance_for_designer = desktop_server.calculate_dynamic_job_match(job_finance, prof_designer)
+        score_dev_for_designer = desktop_server.calculate_dynamic_job_match(job_dev, prof_designer)
+
+        self.assertGreaterEqual(score_design_for_designer, 80, "Designer must match design jobs with score >= 80%")
+        self.assertLess(score_finance_for_designer, 40, "Designer must NOT match finance jobs (< 40%)")
+        self.assertLess(score_dev_for_designer, 40, "Designer must NOT match dev jobs (< 40%)")
+
+        # Accountant scores
+        score_finance_for_accountant = desktop_server.calculate_dynamic_job_match(job_finance, prof_accountant)
+        score_design_for_accountant = desktop_server.calculate_dynamic_job_match(job_design, prof_accountant)
+        score_dev_for_accountant = desktop_server.calculate_dynamic_job_match(job_dev, prof_accountant)
+
+        self.assertGreaterEqual(score_finance_for_accountant, 80, "Accountant must match finance jobs with score >= 80%")
+        self.assertLess(score_design_for_accountant, 40, "Accountant must NOT match design jobs (< 40%)")
+        self.assertLess(score_dev_for_accountant, 40, "Accountant must NOT match dev jobs (< 40%)")
+
+        print("  ✓ [Phase 1.4] Discipline Isolation Verified: Zero role/job mismatch across distinct candidate CVs!")
+
     # --------------------------------------------------------------------------
     # PHASE 2: APINEX 5-MODEL INTELLIGENCE VAULT VERIFICATION
     # --------------------------------------------------------------------------
